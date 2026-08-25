@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type SubmitEvent } from "react";
+import { useState, type ChangeEvent, type SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   expiredLinkMessage,
   fieldFromAuthError,
   formString,
+  clearFieldError,
 } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -38,6 +39,16 @@ export function LoginForm({ callbackError = false }: LoginFormProps) {
     callbackError ? expiredLinkMessage : undefined,
   );
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  function handleChange(event: ChangeEvent<HTMLFormElement>) {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || !target.name) {
+      return;
+    }
+
+    setFormError(undefined);
+    setFieldErrors((current) => clearFieldError(current, target.name));
+  }
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -82,6 +93,7 @@ export function LoginForm({ callbackError = false }: LoginFormProps) {
     <form
       className="flex w-full min-w-0 flex-col gap-4 sm:gap-5 lg:gap-6"
       noValidate
+      onChange={handleChange}
       onSubmit={handleSubmit}
     >
       <AuthFormHeader title="Welcome back" description="Sign in to your account" />
@@ -93,7 +105,7 @@ export function LoginForm({ callbackError = false }: LoginFormProps) {
           type="email"
           name="email"
           autoComplete="email"
-          placeholder="linda@progresspad.com"
+          placeholder="johndoe@gmail.com"
           size="lg"
           leftIcon={<EnvelopeIcon />}
           state={fieldErrors.email ? "error" : "default"}

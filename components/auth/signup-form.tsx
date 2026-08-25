@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type SubmitEvent } from "react";
+import { useState, type ChangeEvent, type SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import {
   authRedirectTo,
+  clearFieldError,
   confirmPasswordError,
   emailError,
   fieldFromAuthError,
@@ -39,6 +40,15 @@ export function SignupForm() {
   const [pending, setPending] = useState(false);
   const [inboxEmail, setInboxEmail] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  function handleChange(event: ChangeEvent<HTMLFormElement>) {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || !target.name) {
+      return;
+    }
+
+    setFieldErrors((current) => clearFieldError(current, target.name));
+  }
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -111,6 +121,7 @@ export function SignupForm() {
     <form
       className="flex w-full min-w-0 flex-col gap-3 sm:gap-5 lg:gap-6"
       noValidate
+      onChange={handleChange}
       onSubmit={handleSubmit}
     >
       <AuthFormHeader title="Get Started Now" description="Let's create your account!" />
@@ -122,7 +133,7 @@ export function SignupForm() {
           name="name"
           size="lg"
           autoComplete="name"
-          placeholder="Linda Jason"
+          placeholder="John Doe"
           leftIcon={<UserIcon />}
           state={fieldErrors.name ? "error" : "default"}
           hint={fieldErrors.name}
@@ -134,7 +145,7 @@ export function SignupForm() {
           name="email"
           size="lg"
           autoComplete="email"
-          placeholder="linda@progresspad.com"
+          placeholder="johndoe@gmail.com"
           leftIcon={<EnvelopeIcon />}
           state={fieldErrors.email ? "error" : "default"}
           hint={fieldErrors.email}
@@ -170,7 +181,7 @@ export function SignupForm() {
         <Checkbox
           name="terms"
           disabled={pending}
-          className={fieldErrors.terms ? "text-error" : undefined}
+          invalid={Boolean(fieldErrors.terms)}
           label={
             <span>
               I agree to{" "}

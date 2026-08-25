@@ -13,6 +13,17 @@ export function formString(form: FormData, name: string) {
   return String(form.get(name) ?? "").trim();
 }
 
+export function clearFieldError<T extends Record<string, string | undefined>>(
+  errors: T,
+  name: string,
+): T {
+  if (!errors[name as keyof T]) {
+    return errors;
+  }
+
+  return { ...errors, [name]: undefined };
+}
+
 export function emailError(email: string) {
   if (!email) {
     return "Enter your email.";

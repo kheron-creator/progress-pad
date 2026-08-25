@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type SubmitEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { LockIcon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import {
+  clearFieldError,
   confirmPasswordError,
   fieldFromAuthError,
   formString,
@@ -27,6 +28,15 @@ export function ResetPasswordForm() {
   const [ready, setReady] = useState(false);
   const [pending, setPending] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  function handleChange(event: ChangeEvent<HTMLFormElement>) {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || !target.name) {
+      return;
+    }
+
+    setFieldErrors((current) => clearFieldError(current, target.name));
+  }
 
   useEffect(() => {
     const supabase = createClient();
@@ -92,6 +102,7 @@ export function ResetPasswordForm() {
     <form
       className="flex w-full min-w-0 flex-col gap-4 sm:gap-5 lg:gap-6"
       noValidate
+      onChange={handleChange}
       onSubmit={handleSubmit}
     >
       <AuthFormHeader

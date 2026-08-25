@@ -338,7 +338,7 @@ export function ComponentGallery() {
             <option value="evening">Evening</option>
           </Select>
           <div className="flex flex-col gap-3">
-            <Input label="Email address" placeholder="you@progresspad.app" />
+            <Input label="Email address" placeholder="you@gmail.com" />
             <Input label="Password" type="password" placeholder="••••••••" />
             <Button size="lg" fullWidth>
               Get started now

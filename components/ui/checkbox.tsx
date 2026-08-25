@@ -12,6 +12,7 @@ type CheckboxProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size" | "type"
   label?: ReactNode;
   size?: CheckboxSize;
   tone?: CheckboxTone;
+  invalid?: boolean;
 };
 
 const boxSize: Record<CheckboxSize, string> = {
@@ -32,6 +33,7 @@ export function Checkbox({
   label,
   size = "md",
   tone = "primary",
+  invalid = false,
   className,
   disabled,
   id,
@@ -56,10 +58,12 @@ export function Checkbox({
           disabled={disabled}
           className="peer absolute inset-0 z-10 cursor-pointer appearance-none disabled:cursor-not-allowed"
           {...props}
+          aria-invalid={invalid || undefined}
         />
         <span
           className={cn(
-            "flex size-full items-center justify-center rounded-xs border border-border bg-surface",
+            "flex size-full items-center justify-center rounded-xs border bg-surface",
+            invalid ? "border-border-error" : "border-border",
             tone === "accent"
               ? "text-accent-foreground peer-checked:border-accent peer-checked:bg-accent"
               : "text-primary-foreground peer-checked:border-primary peer-checked:bg-primary",

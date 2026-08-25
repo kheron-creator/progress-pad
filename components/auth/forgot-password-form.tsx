@@ -64,6 +64,7 @@ export function ForgotPasswordForm() {
     <form
       className="flex w-full min-w-0 flex-col gap-5 sm:gap-6 lg:gap-8"
       noValidate
+      onChange={() => setEmailFieldError(undefined)}
       onSubmit={handleSubmit}
     >
       <AuthFormHeader
@@ -76,7 +77,7 @@ export function ForgotPasswordForm() {
         type="email"
         name="email"
         autoComplete="email"
-        placeholder="linda@progresspad.com"
+        placeholder="johndoe@gmail.com"
         size="lg"
         leftIcon={<EnvelopeIcon />}
         state={emailFieldError ? "error" : "default"}
