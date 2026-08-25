@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Divider } from "@/components/ui/divider";
 import { EnvelopeIcon, LockIcon, UserIcon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Text } from "@/components/ui/text";
 import {
   authRedirectTo,
@@ -153,7 +154,6 @@ export function SignupForm() {
         />
         <Input
           label="Password"
-          type="password"
           name="password"
           size="lg"
           autoComplete="new-password"
@@ -163,9 +163,8 @@ export function SignupForm() {
           hint={fieldErrors.password}
           disabled={pending}
         />
-        <Input
+        <PasswordInput
           label="Confirm Password"
-          type="password"
           name="confirmPassword"
           size="lg"
           autoComplete="new-password"

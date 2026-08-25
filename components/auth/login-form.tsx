@@ -9,13 +9,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Divider } from "@/components/ui/divider";
 import { EnvelopeIcon, LockIcon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Text } from "@/components/ui/text";
 import {
   emailError,
   expiredLinkMessage,
-  fieldFromAuthError,
   formString,
   clearFieldError,
+  mapAuthError,
 } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -75,15 +76,19 @@ export function LoginForm({ callbackError = false }: LoginFormProps) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
-        const mapped = fieldFromAuthError(error, "password");
-        setFieldErrors({ [mapped.field]: mapped.message });
+        const mapped = mapAuthError(error);
+        if (mapped.field) {
+          setFieldErrors({ [mapped.field]: mapped.message });
+        } else {
+          setFormError(mapped.message);
+        }
         return;
       }
 
       router.push("/home");
       router.refresh();
     } catch {
-      setFieldErrors({ password: "Something went wrong. Please try again." });
+      setFormError("Something went wrong. Please try again.");
     } finally {
       setPending(false);
     }
@@ -97,7 +102,6 @@ export function LoginForm({ callbackError = false }: LoginFormProps) {
       onSubmit={handleSubmit}
     >
       <AuthFormHeader title="Welcome back" description="Sign in to your account" />
-      <AuthError message={formError} />
 
       <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
         <Input
@@ -112,9 +116,8 @@ export function LoginForm({ callbackError = false }: LoginFormProps) {
           hint={fieldErrors.email}
           disabled={pending}
         />
-        <Input
+        <PasswordInput
           label="Password"
-          type="password"
           name="password"
           autoComplete="current-password"
           placeholder="Enter your password"
@@ -125,6 +128,8 @@ export function LoginForm({ callbackError = false }: LoginFormProps) {
           disabled={pending}
         />
       </div>
+
+      <AuthError message={formError} />
 
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <Checkbox name="remember" label="Remember me" disabled={pending} />

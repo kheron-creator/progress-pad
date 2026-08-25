@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, type InputHTMLAttributes, type ReactNode } from "react";
+import { useId, type InputHTMLAttributes, type ReactNode, type Ref } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
@@ -22,6 +22,7 @@ type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
   state?: FieldState;
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
+  ref?: Ref<HTMLInputElement>;
 };
 
 const iconInsetClass: Record<FieldSize, { left: string; right: string; both: string }> = {
@@ -48,6 +49,7 @@ export function Input({
   className,
   disabled,
   id,
+  ref,
   ...props
 }: InputProps) {
   const generatedId = useId();
@@ -67,6 +69,7 @@ export function Input({
   const control = (
     <input
       id={inputId}
+      ref={ref}
       disabled={isDisabled}
       aria-invalid={resolvedState === "error" || undefined}
       aria-describedby={hintId}

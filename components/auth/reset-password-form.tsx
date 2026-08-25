@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { LockIcon } from "@/components/ui/icon";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Spinner } from "@/components/ui/spinner";
 import {
   clearFieldError,
@@ -111,9 +111,8 @@ export function ResetPasswordForm() {
       />
 
       <div className="flex flex-col gap-3 sm:gap-4">
-        <Input
+        <PasswordInput
           label="Password"
-          type="password"
           name="password"
           autoComplete="new-password"
           placeholder="Enter your password"
@@ -123,9 +122,8 @@ export function ResetPasswordForm() {
           hint={fieldErrors.password}
           disabled={pending}
         />
-        <Input
+        <PasswordInput
           label="Confirm Password"
-          type="password"
           name="confirmPassword"
           autoComplete="new-password"
           placeholder="Confirm your password"

@@ -86,7 +86,7 @@ export function mapAuthError(error: { message: string; code?: string }): MappedA
   const withPeriod = error.message.endsWith(".") ? error.message : `${error.message}.`;
 
   if (code === "invalid_credentials" || message.includes("invalid login credentials")) {
-    return { field: "password", message: "Email or password is incorrect." };
+    return { message: "Email or password is incorrect." };
   }
 
   if (isExistingAccountError(error)) {

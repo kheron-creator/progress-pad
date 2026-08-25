@@ -24,6 +24,8 @@ import {
   SunIcon as PhosphorSunIcon,
   TrashIcon as PhosphorTrashIcon,
   EnvelopeSimpleIcon,
+  EyeIcon as PhosphorEyeIcon,
+  EyeSlashIcon as PhosphorEyeSlashIcon,
   LockSimpleIcon,
   UploadSimpleIcon,
   PaperPlaneTiltIcon,
@@ -203,5 +205,17 @@ export function EnvelopeIcon({ className, ...props }: IconProps) {
 export function LockIcon({ className, ...props }: IconProps) {
   return (
     <LockSimpleIcon aria-hidden size={16} weight="regular" className={iconClass(className)} {...props} />
+  );
+}
+
+export function EyeIcon({ className, ...props }: IconProps) {
+  return (
+    <PhosphorEyeIcon aria-hidden size={16} weight="regular" className={iconClass(className)} {...props} />
+  );
+}
+
+export function EyeSlashIcon({ className, ...props }: IconProps) {
+  return (
+    <PhosphorEyeSlashIcon aria-hidden size={16} weight="regular" className={iconClass(className)} {...props} />
   );
 }

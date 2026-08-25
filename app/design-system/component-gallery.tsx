@@ -42,6 +42,7 @@ import {
   SunIcon,
 } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { NavLinks } from "@/components/ui/nav-links";
 import { Progress } from "@/components/ui/progress";
 import { ProgressSection } from "@/components/ui/progress-section";
@@ -339,7 +340,7 @@ export function ComponentGallery() {
           </Select>
           <div className="flex flex-col gap-3">
             <Input label="Email address" placeholder="you@gmail.com" />
-            <Input label="Password" type="password" placeholder="••••••••" />
+            <PasswordInput label="Password" placeholder="••••••••" />
             <Button size="lg" fullWidth>
               Get started now
             </Button>
