@@ -1,0 +1,530 @@
+:root {
+  /*
+   * Progress Pad design tokens — coded source of truth.
+   */
+
+  /* -------------------------------------------------------------------------- */
+  /* Primitive colour — Figma Primitives                                        */
+  /* -------------------------------------------------------------------------- */
+
+  --pp-spring-green-10: #f1fef6;
+  --pp-spring-green-25: #e4feee;
+  --pp-spring-green-50: #c9f9dd;
+  --pp-spring-green-100: #adf8cc;
+  --pp-spring-green-200: #8ff3bb;
+  --pp-spring-green-300: #44ef97;
+  --pp-spring-green-400: #00e873;
+  --pp-spring-green-500: #00e14b;
+  --pp-spring-green-600: #00b53b;
+  --pp-spring-green-700: #00872d;
+  --pp-spring-green-800: #005a1f;
+  --pp-spring-green-900: #002d0f;
+
+  --pp-green-25: #d5e5d6;
+  --pp-green-50: #c0d8c2;
+  --pp-green-100: #abcbad;
+  --pp-green-200: #97be99;
+  --pp-green-300: #82b184;
+  --pp-green-400: #58975b;
+  --pp-green-500: #2e7d32;
+  --pp-green-600: #256428;
+  --pp-green-700: #1c4b1e;
+  --pp-green-800: #123214;
+  --pp-green-900: #09190a;
+
+  --pp-magenta-10: #fff9f2;
+  --pp-magenta-25: #fff2e5;
+  --pp-magenta-50: #ffe2c9;
+  --pp-magenta-100: #ffd3ae;
+  --pp-magenta-200: #ffc492;
+  --pp-magenta-300: #ffa658;
+  --pp-magenta-400: #ff8700;
+  --pp-magenta-500: #ec6100;
+  --pp-magenta-600: #ca5400;
+  --pp-magenta-700: #983f00;
+  --pp-magenta-800: #652900;
+  --pp-magenta-900: #331500;
+
+  --pp-bondi-blue-10: #f1f9fb;
+  --pp-bondi-blue-25: #e3f2f7;
+  --pp-bondi-blue-50: #c9e5eb;
+  --pp-bondi-blue-100: #abd8e1;
+  --pp-bondi-blue-200: #8eccd8;
+  --pp-bondi-blue-300: #50b1c2;
+  --pp-bondi-blue-400: #0097af;
+  --pp-bondi-blue-500: #007c99;
+  --pp-bondi-blue-600: #00657b;
+  --pp-bondi-blue-700: #004a5c;
+  --pp-bondi-blue-800: #00323d;
+  --pp-bondi-blue-900: #00191f;
+
+  --pp-red-25: #ffe3de;
+  --pp-red-50: #ffc6be;
+  --pp-red-100: #ffa99d;
+  --pp-red-200: #ff8a7e;
+  --pp-red-300: #ff655b;
+  --pp-red-400: #ff3535;
+  --pp-red-500: #ff0000;
+  --pp-red-600: #c30000;
+  --pp-red-700: #850000;
+  --pp-red-800: #4a0000;
+  --pp-red-900: #170000;
+
+  --pp-yellow-25: #fff2e2;
+  --pp-yellow-50: #ffe3c4;
+  --pp-yellow-100: #ffd6a7;
+  --pp-yellow-200: #ffc686;
+  --pp-yellow-300: #ffb862;
+  --pp-yellow-400: #ffa92f;
+  --pp-yellow-500: #ff9900;
+  --pp-yellow-600: #c17000;
+  --pp-yellow-700: #844a00;
+  --pp-yellow-800: #492700;
+  --pp-yellow-900: #170700;
+
+  --pp-blue-25: #def4ff;
+  --pp-blue-50: #bee5ff;
+  --pp-blue-100: #9cd8ff;
+  --pp-blue-200: #76cbff;
+  --pp-blue-300: #4dbbff;
+  --pp-blue-400: #00adff;
+  --pp-blue-500: #009dff;
+  --pp-blue-600: #0066d0;
+  --pp-blue-700: #004999;
+  --pp-blue-800: #002f68;
+  --pp-blue-900: #001638;
+
+  --pp-grey-0: #ffffff;
+  --pp-grey-25: #eeefef;
+  --pp-grey-50: #dee0e0;
+  --pp-grey-100: #ced1d1;
+  --pp-grey-200: #bec2c2;
+  --pp-grey-300: #9da4a3;
+  --pp-grey-400: #7d8685;
+  --pp-grey-500: #5d6867;
+  --pp-grey-600: #4a5352;
+  --pp-grey-700: #373e3d;
+  --pp-grey-800: #252929;
+  --pp-grey-900: #121414;
+
+  /* -------------------------------------------------------------------------- */
+  /* Scale — spacing, type, radius, control (pixel-named)                       */
+  /* -------------------------------------------------------------------------- */
+
+  --pp-space-0: 0rem;
+  --pp-space-2: 0.125rem;
+  --pp-space-4: 0.25rem;
+  --pp-space-8: 0.5rem;
+  --pp-space-12: 0.75rem;
+  --pp-space-16: 1rem;
+  --pp-space-20: 1.25rem;
+  --pp-space-24: 1.5rem;
+  --pp-space-32: 2rem;
+  --pp-space-40: 2.5rem;
+  --pp-space-48: 3rem;
+  --pp-space-56: 3.5rem;
+  --pp-space-64: 4rem;
+  --pp-space-80: 5rem;
+  --pp-space-96: 6rem;
+  --pp-space-128: 8rem;
+
+  --pp-font-size-11: 0.6875rem;
+  --pp-font-size-12: 0.75rem;
+  --pp-font-size-14: 0.875rem;
+  --pp-font-size-16: 1rem;
+  --pp-font-size-18: 1.125rem;
+  --pp-font-size-20: 1.25rem;
+  --pp-font-size-22: 1.375rem;
+  --pp-font-size-24: 1.5rem;
+  --pp-font-size-28: 1.75rem;
+  --pp-font-size-32: 2rem;
+  --pp-font-size-36: 2.25rem;
+  --pp-font-size-45: 2.8125rem;
+
+  --pp-leading-16: 1rem;
+  --pp-leading-20: 1.25rem;
+  --pp-leading-24: 1.5rem;
+  --pp-leading-28: 1.75rem;
+  --pp-leading-32: 2rem;
+  --pp-leading-36: 2.25rem;
+  --pp-leading-40: 2.5rem;
+  --pp-leading-44: 2.75rem;
+  --pp-leading-52: 3.25rem;
+  --pp-leading-64: 4rem;
+
+  --pp-font-weight-regular: 400;
+  --pp-font-weight-medium: 500;
+  --pp-font-weight-semibold: 600;
+  --pp-font-weight-bold: 700;
+
+  --pp-tracking-tight: -0.02em;
+  --pp-tracking-snug: -0.01em;
+  --pp-tracking-normal: 0;
+  --pp-tracking-wide: 0.08em;
+
+  --pp-radius-4: 0.25rem;
+  --pp-radius-8: 0.5rem;
+  --pp-radius-12: 0.75rem;
+  --pp-radius-16: 1rem;
+  --pp-radius-24: 1.5rem;
+  --pp-radius-full: 9999px;
+
+  --pp-control-22: 1.375rem;
+  --pp-control-24: 1.5rem;
+  --pp-control-28: 1.75rem;
+  --pp-control-32: 2rem;
+  --pp-control-36: 2.25rem;
+  --pp-control-40: 2.5rem;
+  --pp-control-44: 2.75rem;
+  --pp-control-48: 3rem;
+  --pp-control-52: 3.25rem;
+
+  /* -------------------------------------------------------------------------- */
+  /* Semantic colour — role aliases into primitives                             */
+  /* -------------------------------------------------------------------------- */
+
+  --pp-fg-default: var(--pp-grey-900);
+  --pp-fg-secondary: var(--pp-grey-600);
+  --pp-fg-muted: var(--pp-grey-400);
+  --pp-fg-disabled: var(--pp-grey-300);
+  --pp-fg-inverse: var(--pp-grey-0);
+  --pp-fg-brand: var(--pp-spring-green-700);
+  --pp-fg-on-brand: var(--pp-grey-0);
+  --pp-fg-success: var(--pp-green-700);
+  --pp-fg-warning: var(--pp-yellow-700);
+  --pp-fg-error: var(--pp-red-700);
+  --pp-fg-info: var(--pp-blue-700);
+  --pp-fg-link: var(--pp-bondi-blue-600);
+  --pp-fg-accent: var(--pp-magenta-700);
+
+  --pp-bg-page: var(--pp-grey-25);
+  --pp-bg-subtle: var(--pp-grey-50);
+  --pp-bg-surface: var(--pp-grey-0);
+  --pp-bg-elevated: var(--pp-grey-0);
+  --pp-bg-overlay: color-mix(in srgb, var(--pp-grey-900) 48%, transparent);
+  --pp-bg-inverse: var(--pp-grey-900);
+  --pp-bg-brand: var(--pp-spring-green-700);
+  --pp-bg-brand-hover: var(--pp-spring-green-800);
+  --pp-bg-brand-active: var(--pp-spring-green-900);
+  --pp-bg-brand-muted: var(--pp-spring-green-25);
+  --pp-bg-brand-subtle: var(--pp-spring-green-10);
+  --pp-bg-secondary: var(--pp-bondi-blue-500);
+  --pp-bg-secondary-hover: var(--pp-bondi-blue-600);
+  --pp-bg-secondary-muted: var(--pp-bondi-blue-25);
+  --pp-bg-success: var(--pp-green-500);
+  --pp-bg-success-muted: var(--pp-green-25);
+  --pp-bg-warning: var(--pp-yellow-600);
+  --pp-bg-warning-muted: var(--pp-yellow-25);
+  --pp-bg-error: var(--pp-red-600);
+  --pp-bg-error-hover: var(--pp-red-700);
+  --pp-bg-error-muted: var(--pp-red-25);
+  --pp-bg-info: var(--pp-blue-600);
+  --pp-bg-info-muted: var(--pp-blue-25);
+  --pp-bg-disabled: var(--pp-grey-25);
+  --pp-bg-accent: var(--pp-magenta-500);
+  --pp-bg-accent-muted: var(--pp-magenta-25);
+
+  --pp-border-default: var(--pp-grey-50);
+  --pp-border-subtle: var(--pp-grey-25);
+  --pp-border-strong: var(--pp-grey-200);
+  --pp-border-focus: var(--pp-spring-green-700);
+  --pp-border-selected: var(--pp-spring-green-700);
+  --pp-border-error: var(--pp-red-600);
+  --pp-border-success: var(--pp-green-500);
+  --pp-border-disabled: var(--pp-grey-50);
+  --pp-border-brand: var(--pp-spring-green-700);
+
+  --pp-icon-default: var(--pp-fg-default);
+  --pp-icon-muted: var(--pp-fg-muted);
+  --pp-icon-brand: var(--pp-fg-brand);
+  --pp-icon-inverse: var(--pp-fg-inverse);
+  --pp-icon-success: var(--pp-fg-success);
+  --pp-icon-warning: var(--pp-fg-warning);
+  --pp-icon-error: var(--pp-fg-error);
+  --pp-icon-info: var(--pp-fg-info);
+  --pp-icon-disabled: var(--pp-fg-disabled);
+
+  --pp-ring-focus: var(--pp-border-focus);
+  --pp-divider: var(--pp-border-subtle);
+
+  --pp-button-primary-bg: var(--pp-bg-brand);
+  --pp-button-primary-bg-hover: var(--pp-bg-brand-hover);
+  --pp-button-primary-bg-active: var(--pp-bg-brand-active);
+  --pp-button-primary-fg: var(--pp-fg-on-brand);
+  --pp-button-secondary-bg: var(--pp-bg-secondary);
+  --pp-button-secondary-bg-hover: var(--pp-bg-secondary-hover);
+  --pp-button-secondary-fg: var(--pp-fg-on-brand);
+  --pp-button-danger-bg: var(--pp-bg-error);
+  --pp-button-danger-bg-hover: var(--pp-bg-error-hover);
+  --pp-button-danger-fg: var(--pp-fg-inverse);
+  --pp-button-disabled-bg: var(--pp-bg-disabled);
+  --pp-button-disabled-fg: var(--pp-fg-disabled);
+
+  --pp-input-bg: var(--pp-bg-surface);
+  --pp-input-fg: var(--pp-fg-default);
+  --pp-input-placeholder: var(--pp-fg-muted);
+  --pp-input-border: var(--pp-border-default);
+  --pp-input-border-focus: var(--pp-border-focus);
+  --pp-input-border-error: var(--pp-border-error);
+  --pp-input-border-success: var(--pp-border-success);
+  --pp-input-bg-disabled: var(--pp-bg-disabled);
+
+  --pp-card-bg: var(--pp-bg-surface);
+  --pp-card-bg-elevated: var(--pp-bg-elevated);
+  --pp-card-border: var(--pp-border-default);
+
+  /* Tailwind / component bridge — keep existing utility names working. */
+
+  --pp-color-background: var(--pp-bg-page);
+  --pp-color-background-subtle: var(--pp-bg-subtle);
+  --pp-color-surface: var(--pp-bg-surface);
+  --pp-color-surface-elevated: var(--pp-bg-elevated);
+  --pp-color-surface-brand: var(--pp-bg-brand);
+  --pp-color-surface-brand-muted: var(--pp-bg-brand-subtle);
+
+  --pp-color-text-primary: var(--pp-fg-default);
+  --pp-color-text-secondary: var(--pp-fg-secondary);
+  --pp-color-text-muted: var(--pp-fg-muted);
+  --pp-color-text-disabled: var(--pp-fg-disabled);
+  --pp-color-text-on-brand: var(--pp-fg-on-brand);
+  --pp-color-text-inverse: var(--pp-fg-inverse);
+
+  --pp-color-border: var(--pp-border-default);
+  --pp-color-border-subtle: var(--pp-border-subtle);
+  --pp-color-border-strong: var(--pp-border-strong);
+  --pp-color-border-focus: var(--pp-border-focus);
+  --pp-color-border-selected: var(--pp-border-selected);
+  --pp-color-border-error: var(--pp-border-error);
+  --pp-color-border-success: var(--pp-border-success);
+  --pp-color-border-disabled: var(--pp-border-disabled);
+
+  --pp-color-primary: var(--pp-bg-brand);
+  --pp-color-primary-hover: var(--pp-bg-brand-hover);
+  --pp-color-primary-active: var(--pp-bg-brand-active);
+  --pp-color-primary-muted: var(--pp-bg-brand-muted);
+  --pp-color-primary-foreground: var(--pp-fg-on-brand);
+
+  --pp-color-secondary: var(--pp-bg-secondary);
+  --pp-color-secondary-hover: var(--pp-bg-secondary-hover);
+  --pp-color-secondary-muted: var(--pp-bg-secondary-muted);
+  --pp-color-secondary-foreground: var(--pp-fg-on-brand);
+
+  --pp-color-success: var(--pp-bg-success);
+  --pp-color-success-muted: var(--pp-bg-success-muted);
+  --pp-color-success-foreground: var(--pp-fg-success);
+
+  --pp-color-warning: var(--pp-bg-warning);
+  --pp-color-warning-muted: var(--pp-bg-warning-muted);
+  --pp-color-warning-foreground: var(--pp-fg-warning);
+
+  --pp-color-error: var(--pp-bg-error);
+  --pp-color-error-hover: var(--pp-bg-error-hover);
+  --pp-color-error-muted: var(--pp-bg-error-muted);
+  --pp-color-error-foreground: var(--pp-fg-error);
+
+  --pp-color-info: var(--pp-bg-info);
+  --pp-color-info-muted: var(--pp-bg-info-muted);
+  --pp-color-info-foreground: var(--pp-fg-info);
+
+  --pp-color-accent: var(--pp-bg-accent);
+  --pp-color-accent-muted: var(--pp-bg-accent-muted);
+  --pp-color-accent-foreground: var(--pp-fg-on-brand);
+  --pp-color-accent-text: var(--pp-fg-accent);
+
+  --pp-color-focus-ring: var(--pp-ring-focus);
+
+  /* -------------------------------------------------------------------------- */
+  /* Semantic type / layout / radius — roles into Scale                         */
+  /* -------------------------------------------------------------------------- */
+
+  --pp-font-heading: var(--font-heading-face), ui-sans-serif, system-ui, sans-serif;
+  --pp-font-body: var(--font-body-face), ui-sans-serif, system-ui, sans-serif;
+
+  --pp-text-display-size: var(--pp-font-size-36);
+  --pp-text-display-leading: var(--pp-leading-44);
+  --pp-text-page-title-size: var(--pp-font-size-28);
+  --pp-text-page-title-leading: var(--pp-leading-36);
+  --pp-text-section-title-size: var(--pp-font-size-24);
+  --pp-text-section-title-leading: var(--pp-leading-32);
+  --pp-text-card-title-size: var(--pp-font-size-20);
+  --pp-text-card-title-leading: var(--pp-leading-28);
+  --pp-text-subtitle-size: var(--pp-font-size-16);
+  --pp-text-subtitle-leading: var(--pp-leading-24);
+  --pp-text-body-size: var(--pp-font-size-16);
+  --pp-text-body-leading: var(--pp-leading-24);
+  --pp-text-body-small-size: var(--pp-font-size-14);
+  --pp-text-body-small-leading: var(--pp-leading-20);
+  --pp-text-label-size: var(--pp-font-size-14);
+  --pp-text-label-leading: var(--pp-leading-20);
+  --pp-text-button-size: var(--pp-font-size-16);
+  --pp-text-button-leading: var(--pp-leading-24);
+  --pp-text-control-sm-size: var(--pp-font-size-14);
+  --pp-text-control-lg-size: var(--pp-font-size-18);
+  --pp-text-caption-size: var(--pp-font-size-12);
+  --pp-text-caption-leading: var(--pp-leading-16);
+  --pp-text-overline-size: var(--pp-font-size-11);
+  --pp-text-overline-leading: var(--pp-leading-16);
+  --pp-text-quote-size: var(--pp-font-size-18);
+  --pp-text-quote-leading: var(--pp-leading-28);
+
+  --pp-space-page-x: var(--pp-space-16);
+  --pp-space-page-y: var(--pp-space-24);
+  --pp-space-section: var(--pp-space-24);
+  --pp-space-card: var(--pp-space-32);
+  --pp-space-stack: var(--pp-space-12);
+  --pp-space-field: var(--pp-space-16);
+  --pp-space-inline: var(--pp-space-8);
+  --pp-space-heading-to-body: var(--pp-space-12);
+
+  --pp-radius-xs: var(--pp-radius-4);
+  --pp-radius-sm: var(--pp-radius-8);
+  --pp-radius-md: var(--pp-radius-12);
+  --pp-radius-lg: var(--pp-radius-16);
+  --pp-radius-xl: var(--pp-radius-24);
+
+  --pp-radius-button: var(--pp-radius-sm);
+  --pp-radius-input: var(--pp-radius-sm);
+  --pp-radius-card: var(--pp-radius-md);
+  --pp-radius-modal: var(--pp-radius-lg);
+  --pp-radius-badge: var(--pp-radius-full);
+  --pp-radius-avatar: var(--pp-radius-full);
+
+  --pp-control-height-sm: var(--pp-control-32);
+  --pp-control-height-md: var(--pp-control-36);
+  --pp-control-height-lg: var(--pp-control-52);
+  --pp-input-height-sm: var(--pp-control-40);
+  --pp-input-height-md: var(--pp-control-44);
+  --pp-input-height-lg: var(--pp-control-48);
+  --pp-icon-button-sm: var(--pp-control-28);
+  --pp-icon-button-md: var(--pp-control-36);
+  --pp-icon-button-lg: var(--pp-control-44);
+  --pp-badge-height-sm: var(--pp-control-22);
+  --pp-badge-height-md: var(--pp-control-24);
+  --pp-badge-height-lg: var(--pp-control-28);
+
+  --pp-avatar-sm: var(--pp-control-36);
+  --pp-avatar-md: var(--pp-space-48);
+  --pp-avatar-lg: var(--pp-space-64);
+  --pp-avatar-xl: var(--pp-space-80);
+
+  --pp-checkbox-xs: 1.125rem;
+  --pp-checkbox-sm: 1.625rem;
+  --pp-checkbox-md: var(--pp-control-32);
+  --pp-checkbox-lg: var(--pp-control-36);
+
+  --pp-chip-height-xs: 1.3125rem;
+  --pp-chip-height-sm: var(--pp-control-22);
+  --pp-chip-height-md: 1.5625rem;
+  --pp-chip-height-lg: var(--pp-control-32);
+
+  --pp-tag-height-xs: var(--pp-control-22);
+  --pp-tag-height-sm: 1.5625rem;
+  --pp-tag-height-lg: 1.6875rem;
+
+  --pp-progress-height-sm: var(--pp-space-4);
+  --pp-progress-height-md: var(--pp-space-8);
+  --pp-progress-height: var(--pp-progress-height-sm);
+  --pp-banner-height-lg: 17.5rem;
+  --pp-banner-height-sm: 12.5rem;
+  --pp-banner-height-lg-mobile: 13.125rem;
+  --pp-banner-height-sm-mobile: 10rem;
+  --pp-trigger-item-height: 3.125rem;
+  --pp-toggle-track-width: 2.75rem;
+  --pp-toggle-track-height: var(--pp-control-28);
+  --pp-toggle-thumb: var(--pp-control-22);
+
+  /* -------------------------------------------------------------------------- */
+  /* Elevation                                                                  */
+  /* -------------------------------------------------------------------------- */
+
+  --pp-shadow-color: var(--pp-grey-900);
+  --pp-shadow-sm-alpha: 6%;
+  --pp-shadow-md-alpha: 8%;
+  --pp-shadow-lg-alpha: 12%;
+  --pp-shadow-none: none;
+  --pp-shadow-sm: 0 1px 2px color-mix(in srgb, var(--pp-shadow-color) var(--pp-shadow-sm-alpha), transparent);
+  --pp-shadow-md: 0 4px 16px color-mix(in srgb, var(--pp-shadow-color) var(--pp-shadow-md-alpha), transparent);
+  --pp-shadow-lg: 0 12px 32px color-mix(in srgb, var(--pp-shadow-color) var(--pp-shadow-lg-alpha), transparent);
+
+  /* -------------------------------------------------------------------------- */
+  /* Breakpoints — mobile frames are 393px; product desktop is 1280px           */
+  /* -------------------------------------------------------------------------- */
+
+  --pp-breakpoint-sm: 40rem;
+  --pp-breakpoint-md: 48rem;
+  --pp-breakpoint-lg: 64rem;
+  --pp-breakpoint-xl: 80rem;
+  --pp-breakpoint-2xl: 96rem;
+}
+
+@media (min-width: 64rem) {
+  :root {
+    --pp-text-display-size: var(--pp-font-size-45);
+    --pp-text-display-leading: var(--pp-leading-52);
+    --pp-text-page-title-size: var(--pp-font-size-32);
+    --pp-text-page-title-leading: var(--pp-leading-40);
+    --pp-space-page-x: var(--pp-space-128);
+    --pp-space-page-y: var(--pp-space-32);
+    --pp-space-section: var(--pp-space-32);
+    --pp-progress-height: var(--pp-progress-height-md);
+  }
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --pp-fg-default: var(--pp-grey-25);
+  --pp-fg-secondary: var(--pp-grey-200);
+  --pp-fg-muted: var(--pp-grey-300);
+  --pp-fg-disabled: var(--pp-grey-500);
+  --pp-fg-inverse: var(--pp-grey-900);
+  --pp-fg-brand: var(--pp-spring-green-400);
+  --pp-fg-on-brand: var(--pp-grey-900);
+  --pp-fg-success: var(--pp-green-100);
+  --pp-fg-warning: var(--pp-yellow-300);
+  --pp-fg-error: var(--pp-red-100);
+  --pp-fg-info: var(--pp-blue-100);
+  --pp-fg-link: var(--pp-bondi-blue-200);
+  --pp-fg-accent: var(--pp-magenta-200);
+
+  --pp-bg-page: var(--pp-grey-900);
+  --pp-bg-subtle: var(--pp-grey-800);
+  --pp-bg-surface: var(--pp-grey-800);
+  --pp-bg-elevated: var(--pp-grey-700);
+  --pp-bg-overlay: color-mix(in srgb, var(--pp-grey-900) 56%, transparent);
+  --pp-bg-inverse: var(--pp-grey-25);
+  --pp-bg-brand: var(--pp-spring-green-400);
+  --pp-bg-brand-hover: var(--pp-spring-green-300);
+  --pp-bg-brand-active: var(--pp-spring-green-200);
+  --pp-bg-brand-muted: var(--pp-spring-green-900);
+  --pp-bg-brand-subtle: var(--pp-spring-green-900);
+  --pp-bg-secondary: var(--pp-bondi-blue-300);
+  --pp-bg-secondary-hover: var(--pp-bondi-blue-200);
+  --pp-bg-secondary-muted: var(--pp-bondi-blue-900);
+  --pp-bg-success: var(--pp-green-300);
+  --pp-bg-success-muted: var(--pp-green-900);
+  --pp-bg-warning: var(--pp-yellow-400);
+  --pp-bg-warning-muted: var(--pp-yellow-900);
+  --pp-bg-error: var(--pp-red-300);
+  --pp-bg-error-hover: var(--pp-red-200);
+  --pp-bg-error-muted: var(--pp-red-900);
+  --pp-bg-info: var(--pp-blue-300);
+  --pp-bg-info-muted: var(--pp-blue-900);
+  --pp-bg-disabled: var(--pp-grey-800);
+  --pp-bg-accent: var(--pp-magenta-400);
+  --pp-bg-accent-muted: var(--pp-magenta-900);
+
+  --pp-border-default: var(--pp-grey-700);
+  --pp-border-subtle: var(--pp-grey-800);
+  --pp-border-strong: var(--pp-grey-500);
+  --pp-border-focus: var(--pp-spring-green-400);
+  --pp-border-selected: var(--pp-spring-green-400);
+  --pp-border-error: var(--pp-red-300);
+  --pp-border-success: var(--pp-green-300);
+  --pp-border-disabled: var(--pp-grey-700);
+  --pp-border-brand: var(--pp-spring-green-400);
+
+  --pp-shadow-sm-alpha: 40%;
+  --pp-shadow-md-alpha: 45%;
+  --pp-shadow-lg-alpha: 55%;
+}
