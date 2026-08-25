@@ -69,7 +69,7 @@ export function LoginForm({ callbackError = false }: LoginFormProps) {
         return;
       }
 
-      router.push("/");
+      router.push("/home");
       router.refresh();
     } catch {
       setFieldErrors({ password: "Something went wrong. Please try again." });

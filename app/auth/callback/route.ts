@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
 
-const allowedNextPaths = new Set(["/", "/reset-password"]);
+const allowedNextPaths = new Set(["/home", "/reset-password"]);
 
 function safeNextPath(next: string | null) {
   if (!next) {
-    return "/";
+    return "/home";
   }
 
-  return allowedNextPaths.has(next) ? next : "/";
+  return allowedNextPaths.has(next) ? next : "/home";
 }
 
 export async function GET(request: Request) {

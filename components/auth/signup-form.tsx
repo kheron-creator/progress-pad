@@ -72,7 +72,7 @@ export function SignupForm() {
         password,
         options: {
           data: { full_name: name },
-          emailRedirectTo: authRedirectTo("/"),
+          emailRedirectTo: authRedirectTo("/home"),
         },
       });
 
@@ -83,7 +83,7 @@ export function SignupForm() {
       }
 
       if (data.session) {
-        router.push("/");
+        router.push("/home");
         router.refresh();
         return;
       }

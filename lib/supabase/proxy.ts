@@ -46,8 +46,8 @@ export async function updateSession(request: NextRequest) {
     return redirectResponse;
   }
 
-  if (isSignedIn && isGuestOnlyPath(pathname)) {
-    return redirectTo("/");
+  if (isSignedIn && (isGuestOnlyPath(pathname) || pathname === "/")) {
+    return redirectTo("/home");
   }
 
   if (!isSignedIn && pathname === "/reset-password") {
