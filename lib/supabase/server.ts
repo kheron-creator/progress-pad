@@ -25,7 +25,7 @@ export async function createClient() {
           );
         } catch {
           // Called from a Server Component, which cannot write cookies.
-          // Session refresh belongs in proxy.ts (not part of this phase).
+          // proxy.ts refreshes the session instead.
         }
       },
     },
