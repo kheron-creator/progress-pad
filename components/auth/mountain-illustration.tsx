@@ -11,6 +11,8 @@ export function MountainIllustration({ className }: { className?: string }) {
       height={682}
       className={cn("h-full w-full object-contain object-bottom", className)}
       quality={100}
+      priority
+      loading="eager"
     />
   );
 }

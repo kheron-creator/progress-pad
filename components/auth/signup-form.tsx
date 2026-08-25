@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { type SubmitEvent } from "react";
+import { useState, type SubmitEvent } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,17 +10,109 @@ import { Divider } from "@/components/ui/divider";
 import { EnvelopeIcon, LockIcon, UserIcon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
+import {
+  authRedirectTo,
+  confirmPasswordError,
+  emailError,
+  fieldFromAuthError,
+  formString,
+  nameError,
+  passwordError,
+} from "@/lib/auth/validation";
+import { createClient } from "@/lib/supabase/client";
 
+import { AuthCheckInbox } from "./auth-check-inbox";
+import { AuthError } from "./auth-error";
 import { AuthFormHeader } from "./auth-form-header";
 import { GoogleButton } from "./google-button";
 
+type FieldErrors = {
+  name?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  terms?: string;
+};
+
 export function SignupForm() {
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [inboxEmail, setInboxEmail] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const name = formString(form, "name");
+    const email = formString(form, "email");
+    const password = formString(form, "password");
+    const confirmPassword = formString(form, "confirmPassword");
+    const termsAccepted = form.get("terms") === "on";
+
+    const nextErrors: FieldErrors = {
+      name: nameError(name),
+      email: emailError(email),
+      password: passwordError(password),
+      confirmPassword: confirmPasswordError(password, confirmPassword),
+      terms: termsAccepted ? undefined : "Agree to the Terms & Conditions to continue.",
+    };
+
+    setFieldErrors(nextErrors);
+
+    if (Object.values(nextErrors).some(Boolean)) {
+      return;
+    }
+
+    setPending(true);
+
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: name },
+          emailRedirectTo: authRedirectTo("/"),
+        },
+      });
+
+      if (error) {
+        const mapped = fieldFromAuthError(error, "email");
+        setFieldErrors({ [mapped.field]: mapped.message });
+        return;
+      }
+
+      if (data.session) {
+        router.push("/");
+        router.refresh();
+        return;
+      }
+
+      if (data.user?.identities && data.user.identities.length === 0) {
+        setFieldErrors({ email: "An account with this email already exists." });
+        return;
+      }
+
+      setInboxEmail(email);
+    } catch {
+      setFieldErrors({ email: "Something went wrong. Please try again." });
+    } finally {
+      setPending(false);
+    }
+  }
+
+  if (inboxEmail) {
+    return (
+      <AuthCheckInbox description={`We sent a confirmation link to ${inboxEmail}.`} />
+    );
   }
 
   return (
-    <form className="flex w-full min-w-0 flex-col gap-3 sm:gap-5 lg:gap-6" onSubmit={handleSubmit}>
+    <form
+      className="flex w-full min-w-0 flex-col gap-3 sm:gap-5 lg:gap-6"
+      noValidate
+      onSubmit={handleSubmit}
+    >
       <AuthFormHeader title="Get Started Now" description="Let's create your account!" />
 
       <div className="flex min-w-0 flex-col gap-2">
@@ -31,6 +124,9 @@ export function SignupForm() {
           autoComplete="name"
           placeholder="Linda Jason"
           leftIcon={<UserIcon />}
+          state={fieldErrors.name ? "error" : "default"}
+          hint={fieldErrors.name}
+          disabled={pending}
         />
         <Input
           label="Email"
@@ -40,6 +136,9 @@ export function SignupForm() {
           autoComplete="email"
           placeholder="linda@progresspad.com"
           leftIcon={<EnvelopeIcon />}
+          state={fieldErrors.email ? "error" : "default"}
+          hint={fieldErrors.email}
+          disabled={pending}
         />
         <Input
           label="Password"
@@ -49,6 +148,9 @@ export function SignupForm() {
           autoComplete="new-password"
           placeholder="Enter your password"
           leftIcon={<LockIcon />}
+          state={fieldErrors.password ? "error" : "default"}
+          hint={fieldErrors.password}
+          disabled={pending}
         />
         <Input
           label="Confirm Password"
@@ -58,23 +160,31 @@ export function SignupForm() {
           autoComplete="new-password"
           placeholder="Confirm your password"
           leftIcon={<LockIcon />}
+          state={fieldErrors.confirmPassword ? "error" : "default"}
+          hint={fieldErrors.confirmPassword}
+          disabled={pending}
         />
       </div>
 
-      <Checkbox
-        name="terms"
-        label={
-          <span>
-            I agree to{" "}
-            <Link href="#" className="text-primary">
-              Terms & Conditions
-            </Link>
-          </span>
-        }
-      />
+      <div className="flex flex-col gap-1">
+        <Checkbox
+          name="terms"
+          disabled={pending}
+          className={fieldErrors.terms ? "text-error" : undefined}
+          label={
+            <span>
+              I agree to{" "}
+              <Link href="#" className="text-primary">
+                Terms & Conditions
+              </Link>
+            </span>
+          }
+        />
+        <AuthError message={fieldErrors.terms} />
+      </div>
 
       <div className="flex flex-col gap-3">
-        <Button type="submit" size="lg" fullWidth>
+        <Button type="submit" size="lg" fullWidth loading={pending}>
           Sign up
         </Button>
 
@@ -90,7 +200,6 @@ export function SignupForm() {
           </Link>
         </Text>
       </div>
-
     </form>
   );
 }

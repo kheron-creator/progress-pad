@@ -11,6 +11,8 @@ export function AuthLockPanel({ className }: { className?: string }) {
       height={3136}
       className={cn("h-full w-full rounded-xl object-cover", className)}
       quality={100}
+      priority
+      loading="eager"
     />
   );
 }

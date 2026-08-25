@@ -31,7 +31,56 @@ export async function updateSession(request: NextRequest) {
   });
 
   // Do not put other logic between createServerClient and getClaims().
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+  const isSignedIn = Boolean(data?.claims);
+  const pathname = request.nextUrl.pathname;
+
+  function redirectTo(path: string) {
+    const url = request.nextUrl.clone();
+    url.pathname = path;
+    url.search = "";
+    const redirectResponse = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value);
+    });
+    return redirectResponse;
+  }
+
+  if (isSignedIn && isGuestOnlyPath(pathname)) {
+    return redirectTo("/");
+  }
+
+  if (!isSignedIn && pathname === "/reset-password") {
+    return redirectTo("/forgot-password");
+  }
+
+  if (!isSignedIn && isProtectedPath(pathname)) {
+    return redirectTo("/login");
+  }
 
   return supabaseResponse;
+}
+
+const guestOnlyPaths = new Set(["/login", "/signup", "/forgot-password"]);
+
+const publicPaths = new Set([
+  "/",
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+  "/password-reset-success",
+  "/design-system",
+]);
+
+function isGuestOnlyPath(pathname: string) {
+  return guestOnlyPaths.has(pathname);
+}
+
+function isProtectedPath(pathname: string) {
+  if (publicPaths.has(pathname) || pathname.startsWith("/auth/") || pathname.startsWith("/design-system")) {
+    return false;
+  }
+
+  return true;
 }

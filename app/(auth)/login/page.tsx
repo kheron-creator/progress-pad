@@ -8,10 +8,16 @@ export const metadata: Metadata = {
   description: "Sign in to your Progress Pad account",
 };
 
-export default function LoginPage() {
+type LoginPageProps = {
+  searchParams: Promise<{ error?: string }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const { error } = await searchParams;
+
   return (
     <AuthShell panel="hero">
-      <LoginForm />
+      <LoginForm callbackError={error === "auth"} />
     </AuthShell>
   );
 }
