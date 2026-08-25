@@ -8,7 +8,7 @@ export const logoSources = {
 } as const;
 
 export type LogoVariant = "light" | "dark" | "auto";
-export type LogoSize = "sm" | "md" | "lg";
+export type LogoSize = "sm" | "md" | "lg" | "xl";
 
 type LogoProps = {
   variant?: LogoVariant;
@@ -21,6 +21,7 @@ const sizeClass: Record<LogoSize, string> = {
   sm: "h-8",
   md: "h-10",
   lg: "h-12",
+  xl: "h-16",
 };
 
 function LogoMark({

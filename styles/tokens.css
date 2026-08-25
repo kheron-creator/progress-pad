@@ -358,8 +358,11 @@
   --pp-text-label-leading: var(--pp-leading-20);
   --pp-text-button-size: var(--pp-font-size-16);
   --pp-text-button-leading: var(--pp-leading-24);
-  --pp-text-control-sm-size: var(--pp-font-size-14);
-  --pp-text-control-lg-size: var(--pp-font-size-18);
+  --pp-text-control-sm-size: var(--pp-font-size-12);
+  --pp-text-control-md-size: var(--pp-font-size-14);
+  --pp-text-control-lg-size: var(--pp-font-size-16);
+  --pp-text-control-xl-size: var(--pp-font-size-18);
+  --pp-text-control-xs-size: var(--pp-text-control-sm-size);
   --pp-text-caption-size: var(--pp-font-size-12);
   --pp-text-caption-leading: var(--pp-leading-16);
   --pp-text-overline-size: var(--pp-font-size-11);
@@ -390,14 +393,20 @@
   --pp-radius-avatar: var(--pp-radius-full);
 
   --pp-control-height-sm: var(--pp-control-32);
-  --pp-control-height-md: var(--pp-control-36);
-  --pp-control-height-lg: var(--pp-control-52);
-  --pp-input-height-sm: var(--pp-control-40);
-  --pp-input-height-md: var(--pp-control-44);
-  --pp-input-height-lg: var(--pp-control-48);
-  --pp-icon-button-sm: var(--pp-control-28);
-  --pp-icon-button-md: var(--pp-control-36);
-  --pp-icon-button-lg: var(--pp-control-44);
+  --pp-control-height-md: var(--pp-control-40);
+  --pp-control-height-lg: var(--pp-control-48);
+  --pp-control-height-xl: var(--pp-control-52);
+  --pp-control-height-xs: var(--pp-control-height-sm);
+  --pp-input-height-sm: var(--pp-control-height-sm);
+  --pp-input-height-md: var(--pp-control-height-md);
+  --pp-input-height-lg: var(--pp-control-height-lg);
+  --pp-input-height-xl: var(--pp-control-height-xl);
+  --pp-input-height-xs: var(--pp-control-height-sm);
+  --pp-icon-button-sm: var(--pp-control-height-sm);
+  --pp-icon-button-md: var(--pp-control-height-md);
+  --pp-icon-button-lg: var(--pp-control-height-lg);
+  --pp-icon-button-xl: var(--pp-control-height-xl);
+  --pp-icon-button-xs: var(--pp-control-height-sm);
   --pp-badge-height-sm: var(--pp-control-22);
   --pp-badge-height-md: var(--pp-control-24);
   --pp-badge-height-lg: var(--pp-control-28);
@@ -407,10 +416,11 @@
   --pp-avatar-lg: var(--pp-space-64);
   --pp-avatar-xl: var(--pp-space-80);
 
-  --pp-checkbox-xs: 1.125rem;
-  --pp-checkbox-sm: 1.625rem;
-  --pp-checkbox-md: var(--pp-control-32);
-  --pp-checkbox-lg: var(--pp-control-36);
+  --pp-checkbox-sm: 0.75rem;
+  --pp-checkbox-md: 1rem;
+  --pp-checkbox-lg: 1.125rem;
+  --pp-checkbox-xl: 1.25rem;
+  --pp-checkbox-xs: var(--pp-checkbox-sm);
 
   --pp-chip-height-xs: 1.3125rem;
   --pp-chip-height-sm: var(--pp-control-22);

@@ -113,7 +113,7 @@ export function TriggerCard({
   const statusSlot = isItem && status ? <DefaultStatus state={state} /> : tag;
   const deleteButton =
     isItem && state !== "select" ? (
-      <IconButton label={`Delete ${title}`} variant="danger" look="clear" size="sm" onClick={onDelete}>
+      <IconButton label={`Delete ${title}`} variant="danger" look="clear" size="md" onClick={onDelete}>
         <TrashIcon />
       </IconButton>
     ) : (

@@ -55,11 +55,11 @@ export function ScenariosLibrary({
       <div className="flex items-center justify-between gap-3">
         <Text variant="cardTitle">{title}</Text>
         {state === "add" ? (
-          <Button size="sm" onClick={onSave}>
+          <Button size="md" onClick={onSave}>
             Save
           </Button>
         ) : (
-          <Button size="sm" onClick={onAdd}>
+          <Button size="md" onClick={onAdd}>
             <PlusIcon size={14} />
             Add New Scenario
           </Button>

@@ -19,7 +19,7 @@ export function Radio({ label, className, disabled, id, ...props }: RadioProps) 
         className,
       )}
     >
-      <span className="relative inline-flex size-[var(--pp-checkbox-sm)] shrink-0 items-center justify-center">
+      <span className="relative inline-flex size-[var(--pp-checkbox-md)] shrink-0 items-center justify-center">
         <input
           id={inputId}
           type="radio"
@@ -33,7 +33,7 @@ export function Radio({ label, className, disabled, id, ...props }: RadioProps) 
             "peer-checked:border-primary",
             "peer-disabled:border-border-disabled peer-disabled:bg-background-subtle",
             "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus-ring",
-            "after:size-2.5 after:rounded-full after:bg-primary after:content-[''] after:opacity-0 peer-checked:after:opacity-100",
+            "after:size-1.5 after:rounded-full after:bg-primary after:content-[''] after:opacity-0 peer-checked:after:opacity-100",
           )}
         />
       </span>

@@ -23,6 +23,8 @@ import {
   StarIcon as PhosphorStarIcon,
   SunIcon as PhosphorSunIcon,
   TrashIcon as PhosphorTrashIcon,
+  EnvelopeSimpleIcon,
+  LockSimpleIcon,
   UploadSimpleIcon,
   PaperPlaneTiltIcon,
   UserIcon as PhosphorUserIcon,
@@ -189,5 +191,17 @@ export function BarbellIcon({ className, ...props }: IconProps) {
 export function NoteIcon({ className, ...props }: IconProps) {
   return (
     <PhosphorNoteIcon aria-hidden size={16} weight="regular" className={iconClass(className)} {...props} />
+  );
+}
+
+export function EnvelopeIcon({ className, ...props }: IconProps) {
+  return (
+    <EnvelopeSimpleIcon aria-hidden size={16} weight="regular" className={iconClass(className)} {...props} />
+  );
+}
+
+export function LockIcon({ className, ...props }: IconProps) {
+  return (
+    <LockSimpleIcon aria-hidden size={16} weight="regular" className={iconClass(className)} {...props} />
   );
 }

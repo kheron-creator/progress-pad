@@ -49,7 +49,7 @@ export function WrittenItem({
     >
       {checkbox ? (
         <Checkbox
-          size="xs"
+          size="sm"
           tone="accent"
           checked={checked}
           onChange={(event) => onCheckedChange?.(event.currentTarget.checked)}
@@ -79,7 +79,7 @@ export function WrittenItem({
         </Tag>
       ) : null}
       {onDelete ? (
-        <IconButton label={`Delete ${title}`} variant="danger" look="clear" size="sm" onClick={onDelete}>
+        <IconButton label={`Delete ${title}`} variant="danger" look="clear" size="md" onClick={onDelete}>
           <TrashIcon />
         </IconButton>
       ) : null}

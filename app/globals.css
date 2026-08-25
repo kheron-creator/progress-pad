@@ -92,6 +92,7 @@
 }
 
 @layer base {
+
   *,
   *::before,
   *::after {
@@ -147,6 +148,22 @@
 }
 
 @layer components {
+  @media (width < 64rem) {
+    .pp-auth {
+      --pp-text-page-title-size: var(--pp-font-size-22);
+      --pp-text-page-title-leading: var(--pp-leading-28);
+      --pp-text-body-size: var(--pp-font-size-14);
+      --pp-text-body-leading: var(--pp-leading-20);
+      --pp-text-label-size: var(--pp-font-size-12);
+      --pp-text-label-leading: var(--pp-leading-16);
+      --pp-text-button-size: var(--pp-font-size-14);
+      --pp-text-button-leading: var(--pp-leading-20);
+      --pp-text-control-lg-size: var(--pp-font-size-14);
+      --pp-control-height-lg: var(--pp-control-40);
+      --pp-checkbox-md: 0.875rem;
+    }
+  }
+
   .type-display {
     font-family: var(--pp-font-heading);
     font-size: var(--pp-text-display-size);
@@ -272,6 +289,17 @@
     color: var(--pp-input-placeholder);
   }
 
+  .pp-control:-webkit-autofill,
+  .pp-control:-webkit-autofill:hover,
+  .pp-control:-webkit-autofill:focus,
+  .pp-control:-webkit-autofill:active,
+  .pp-control:autofill {
+    -webkit-text-fill-color: var(--pp-input-fg);
+    caret-color: var(--pp-input-fg);
+    box-shadow: 0 0 0 1000px var(--pp-input-bg) inset;
+    -webkit-box-shadow: 0 0 0 1000px var(--pp-input-bg) inset;
+  }
+
   .pp-control:disabled {
     cursor: not-allowed;
     border-color: var(--pp-border-disabled);
@@ -293,6 +321,16 @@
 
   [data-theme="dark"] .pp-logo-auto .pp-logo-dark {
     display: block;
+  }
+}
+
+@layer utilities {
+  @media (width < 64rem) {
+    .pp-auth .type-button,
+    .pp-auth .pp-control {
+      font-size: var(--pp-font-size-14);
+      line-height: var(--pp-leading-20);
+    }
   }
 }
 

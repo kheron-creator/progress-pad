@@ -107,11 +107,11 @@ export function CalendarStrip({
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1">
-          <IconButton label="Previous" look="clear" size="sm" onClick={() => shift(-1)}>
+          <IconButton label="Previous" look="clear" size="md" onClick={() => shift(-1)}>
             <ChevronLeftIcon />
           </IconButton>
           <Text variant="label">{view === "week" ? "This week" : monthLabel(selected)}</Text>
-          <IconButton label="Next" look="clear" size="sm" onClick={() => shift(1)}>
+          <IconButton label="Next" look="clear" size="md" onClick={() => shift(1)}>
             <ChevronRightIcon />
           </IconButton>
         </div>
