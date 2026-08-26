@@ -114,6 +114,15 @@ export function mapAuthError(error: { message: string; code?: string }): MappedA
     return { field: "email", message: "Too many attempts. Try again in a few minutes." };
   }
 
+  if (
+    code === "provider_disabled" ||
+    code.includes("unsupported_provider") ||
+    message.includes("provider is not enabled") ||
+    message.includes("unsupported provider")
+  ) {
+    return { message: "Google sign-in is not available. Try email instead." };
+  }
+
   if (message.includes("same password") || message.includes("different from the old password")) {
     return { field: "password", message: "Choose a password you have not used before." };
   }

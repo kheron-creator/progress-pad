@@ -15,7 +15,7 @@ function displayName(user: {
   email?: string | null;
   user_metadata?: Record<string, unknown>;
 }) {
-  const fullName = user.user_metadata?.full_name;
+  const fullName = user.user_metadata?.full_name ?? user.user_metadata?.name;
   if (typeof fullName === "string" && fullName.trim()) {
     return fullName.trim();
   }

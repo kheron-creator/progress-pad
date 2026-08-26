@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ChangeEvent, type SubmitEvent } from "react";
+import { useState, type ChangeEvent, type MouseEvent, type SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,10 @@ import { EnvelopeIcon, LockIcon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Text } from "@/components/ui/text";
+import { startGoogleSignIn } from "@/lib/auth/google";
 import { setRememberPreference } from "@/lib/auth/remember";
 import {
   emailError,
-  expiredLinkMessage,
   formString,
   clearFieldError,
   mapAuthError,
@@ -31,16 +31,16 @@ type FieldErrors = {
 };
 
 type LoginFormProps = {
-  callbackError?: boolean;
+  errorMessage?: string;
 };
 
-export function LoginForm({ callbackError = false }: LoginFormProps) {
+export function LoginForm({ errorMessage }: LoginFormProps) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
-  const [formError, setFormError] = useState<string | undefined>(
-    callbackError ? expiredLinkMessage : undefined,
-  );
+  const [oauthPending, setOauthPending] = useState(false);
+  const [formError, setFormError] = useState<string | undefined>(errorMessage);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const busy = pending || oauthPending;
 
   function handleChange(event: ChangeEvent<HTMLFormElement>) {
     const target = event.target;
@@ -97,6 +97,27 @@ export function LoginForm({ callbackError = false }: LoginFormProps) {
     }
   }
 
+  async function handleGoogleSignIn(event: MouseEvent<HTMLButtonElement>) {
+    setFormError(undefined);
+    setFieldErrors({});
+    setOauthPending(true);
+
+    try {
+      const form = event.currentTarget.form;
+      const remember = form ? new FormData(form).get("remember") === "on" : false;
+      setRememberPreference(remember);
+
+      const error = await startGoogleSignIn();
+      if (error) {
+        setFormError(mapAuthError(error).message);
+      }
+    } catch {
+      setFormError("Something went wrong. Please try again.");
+    } finally {
+      setOauthPending(false);
+    }
+  }
+
   return (
     <form
       className="flex w-full min-w-0 flex-col gap-4 sm:gap-5 lg:gap-6"
@@ -117,7 +138,7 @@ export function LoginForm({ callbackError = false }: LoginFormProps) {
           leftIcon={<EnvelopeIcon />}
           state={fieldErrors.email ? "error" : "default"}
           hint={fieldErrors.email}
-          disabled={pending}
+          disabled={busy}
         />
         <PasswordInput
           label="Password"
@@ -128,14 +149,14 @@ export function LoginForm({ callbackError = false }: LoginFormProps) {
           leftIcon={<LockIcon />}
           state={fieldErrors.password ? "error" : "default"}
           hint={fieldErrors.password}
-          disabled={pending}
+          disabled={busy}
         />
       </div>
 
       <AuthError message={formError} />
 
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-        <Checkbox name="remember" label="Remember me" disabled={pending} />
+        <Checkbox name="remember" label="Remember me" disabled={busy} />
         <Link
           href="/forgot-password"
           className="type-label inline-flex min-h-11 shrink-0 items-center text-primary"
@@ -145,12 +166,17 @@ export function LoginForm({ callbackError = false }: LoginFormProps) {
       </div>
 
       <div className="flex flex-col gap-3">
-        <Button type="submit" size="lg" fullWidth loading={pending}>
+        <Button type="submit" size="lg" fullWidth loading={pending} disabled={busy}>
           Sign in
         </Button>
 
         <Divider label="or" />
-        <GoogleButton label="Sign in with Google" />
+        <GoogleButton
+          label="Sign in with Google"
+          loading={oauthPending}
+          disabled={busy}
+          onClick={handleGoogleSignIn}
+        />
         <Text
           variant="body"
           className="type-label flex flex-wrap items-center justify-center gap-x-1 text-center"

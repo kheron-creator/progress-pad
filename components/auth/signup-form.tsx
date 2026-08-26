@@ -11,6 +11,7 @@ import { EnvelopeIcon, LockIcon, UserIcon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Text } from "@/components/ui/text";
+import { startGoogleSignIn } from "@/lib/auth/google";
 import {
   authRedirectTo,
   clearFieldError,
@@ -41,8 +42,11 @@ type FieldErrors = {
 export function SignupForm() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const [oauthPending, setOauthPending] = useState(false);
   const [inboxEmail, setInboxEmail] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string>();
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const busy = pending || oauthPending;
 
   function handleChange(event: ChangeEvent<HTMLFormElement>) {
     const target = event.target;
@@ -51,6 +55,7 @@ export function SignupForm() {
     }
 
     setFieldErrors((current) => clearFieldError(current, target.name));
+    setFormError(undefined);
   }
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -71,6 +76,7 @@ export function SignupForm() {
     };
 
     setFieldErrors(nextErrors);
+    setFormError(undefined);
 
     if (Object.values(nextErrors).some(Boolean)) {
       return;
@@ -137,6 +143,23 @@ export function SignupForm() {
     return mapAuthError(error).message;
   }
 
+  async function handleGoogleSignUp() {
+    setFormError(undefined);
+    setFieldErrors({});
+    setOauthPending(true);
+
+    try {
+      const error = await startGoogleSignIn();
+      if (error) {
+        setFormError(mapAuthError(error).message);
+      }
+    } catch {
+      setFormError("Something went wrong. Please try again.");
+    } finally {
+      setOauthPending(false);
+    }
+  }
+
   if (inboxEmail) {
     return (
       <AuthCheckInbox
@@ -166,7 +189,7 @@ export function SignupForm() {
           leftIcon={<UserIcon />}
           state={fieldErrors.name ? "error" : "default"}
           hint={fieldErrors.name}
-          disabled={pending}
+          disabled={busy}
         />
         <Input
           label="Email"
@@ -178,7 +201,7 @@ export function SignupForm() {
           leftIcon={<EnvelopeIcon />}
           state={fieldErrors.email ? "error" : "default"}
           hint={fieldErrors.email}
-          disabled={pending}
+          disabled={busy}
         />
         <PasswordInput
           label="Password"
@@ -189,7 +212,7 @@ export function SignupForm() {
           leftIcon={<LockIcon />}
           state={fieldErrors.password ? "error" : "default"}
           hint={fieldErrors.password}
-          disabled={pending}
+          disabled={busy}
         />
         <PasswordInput
           label="Confirm Password"
@@ -200,14 +223,14 @@ export function SignupForm() {
           leftIcon={<LockIcon />}
           state={fieldErrors.confirmPassword ? "error" : "default"}
           hint={fieldErrors.confirmPassword}
-          disabled={pending}
+          disabled={busy}
         />
       </div>
 
       <div className="flex flex-col gap-1">
         <Checkbox
           name="terms"
-          disabled={pending}
+          disabled={busy}
           invalid={Boolean(fieldErrors.terms)}
           label={
             <span>
@@ -221,13 +244,20 @@ export function SignupForm() {
         <AuthError message={fieldErrors.terms} />
       </div>
 
+      <AuthError message={formError} />
+
       <div className="flex flex-col gap-3">
-        <Button type="submit" size="lg" fullWidth loading={pending}>
+        <Button type="submit" size="lg" fullWidth loading={pending} disabled={busy}>
           Sign up
         </Button>
 
         <Divider label="or" />
-        <GoogleButton label="Sign up with Google" />
+        <GoogleButton
+          label="Sign up with Google"
+          loading={oauthPending}
+          disabled={busy}
+          onClick={handleGoogleSignUp}
+        />
         <Text
           variant="body"
           className="type-label flex flex-wrap items-center justify-center gap-x-1 text-center"
