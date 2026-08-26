@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Text } from "@/components/ui/text";
 import { startGoogleSignIn } from "@/lib/auth/google";
+import { setRememberPreference } from "@/lib/auth/remember";
 import {
   authRedirectTo,
   clearFieldError,
@@ -102,6 +103,7 @@ export function SignupForm() {
       }
 
       if (data.session) {
+        setRememberPreference(true);
         router.push("/home");
         router.refresh();
         return;
@@ -149,6 +151,7 @@ export function SignupForm() {
     setOauthPending(true);
 
     try {
+      setRememberPreference(true);
       const error = await startGoogleSignIn();
       if (error) {
         setFormError(mapAuthError(error).message);

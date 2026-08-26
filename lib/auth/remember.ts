@@ -21,3 +21,10 @@ export function clearRememberPreference() {
   const secure = window.location.protocol === "https:" ? "; Secure" : "";
   document.cookie = `${REMEMBER_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
 }
+
+export function withoutCookieLifetime<T extends object>(options: T) {
+  const rest = { ...options } as T & { maxAge?: unknown; expires?: unknown };
+  delete rest.maxAge;
+  delete rest.expires;
+  return rest;
+}
