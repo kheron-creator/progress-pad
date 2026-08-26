@@ -1,13 +1,11 @@
 import type { ReactNode } from "react";
 
 import { ChoiceItem } from "@/components/ui/choice-item";
-import { FeatureCard } from "@/components/ui/feature-card";
-import { IconMark } from "@/components/ui/icon-mark";
 import {
   ChartLineIcon,
-  CheckCircleIcon,
   LightningIcon,
   MoonIcon,
+  SparkleIcon,
   SunHorizonIcon,
   SunIcon,
   TargetIcon,
@@ -29,6 +27,7 @@ import {
 import { cn } from "@/lib/utils/cn";
 
 import { optionIcon } from "./option-icons";
+import { ReadyConfetti } from "./ready-confetti";
 
 const STEP_BODY_MIN_HEIGHT =
   "min-h-[calc(4*3.5rem+3*0.75rem)] sm:min-h-[calc(4*4.5rem+3*0.75rem)]";
@@ -148,36 +147,45 @@ export function MeetPadStep() {
         title="Meet your Progress Pad"
         description="Your space to check in, clear your head, and move forward"
       />
-      <StepBody className="mx-auto grid max-w-4xl grid-cols-3 content-center gap-3 sm:gap-0">
-        <IntroColumn
-          icon={
-            <IconMark size="lg" shape="circle" tone="warning">
-              <TargetIcon size={20} />
-            </IconMark>
-          }
-          title="Mind Sweep"
-          description="Get everything out of your head."
-        />
-        <IntroColumn
-          icon={
-            <IconMark size="lg" shape="circle" tone="primary">
-              <LightningIcon size={20} />
-            </IconMark>
-          }
-          title="Triggers"
-          description="Turn intentions into things you can actually act on."
-          divider
-        />
-        <IntroColumn
-          icon={
-            <IconMark size="lg" shape="circle" tone="info">
-              <ChartLineIcon size={20} />
-            </IconMark>
-          }
-          title="Progress"
-          description="Look back and see how you're doing over time."
-          divider
-        />
+      <StepBody className="flex flex-col justify-center gap-16">
+        <div className="grid grid-cols-3 content-center gap-3 sm:gap-0">
+          <IntroColumn
+            icon={
+              <TargetIcon
+                size={56}
+                weight="bold"
+                className="text-(--pp-magenta-500)"
+              />
+            }
+            title="Mind Sweep"
+            description="Get everything out of your head."
+          />
+          <IntroColumn
+            icon={
+              <LightningIcon
+                size={56}
+                weight="bold"
+                className="text-(--pp-spring-green-600)"
+              />
+            }
+            title="Triggers"
+            description="Turn intentions into things you can actually act on."
+            divider
+          />
+          <IntroColumn
+            icon={
+              <ChartLineIcon
+                size={56}
+                weight="bold"
+                className="text-(--pp-bondi-blue-500)"
+              />
+            }
+            title="Progress"
+            description="Look back and see how you're doing over time."
+            divider
+          />
+        </div>
+        <NextUpBanner />
       </StepBody>
     </StepLayout>
   );
@@ -224,31 +232,32 @@ export function CheckInStep({
         title="When would you like to check in with yourself?"
         description="You can change this anytime later"
       />
-      <StepBody className="mx-auto flex max-w-4xl flex-row items-center justify-center gap-3 sm:gap-4">
+      <StepBody className="grid grid-cols-3 content-center gap-3">
         {checkInOptions.map((option) => (
-          <FeatureCard
+          <button
             key={option.id}
-            title={option.title}
-            description={option.description}
-            selected={draft.checkIn === option.id}
+            type="button"
+            aria-pressed={draft.checkIn === option.id}
             onClick={() => onSelect(option.id)}
-            className="max-w-none flex-1"
-            icon={
-              <IconMark
-                size="lg"
-                shape="circle"
-                tone={option.id === "morning" ? "primary" : option.id === "afternoon" ? "warning" : "info"}
-              >
-                {option.id === "morning" ? (
-                  <SunIcon size={20} />
-                ) : option.id === "afternoon" ? (
-                  <SunHorizonIcon size={20} />
-                ) : (
-                  <MoonIcon size={20} />
-                )}
-              </IconMark>
-            }
-          />
+            className={cn(
+              "flex flex-col items-center gap-2 rounded-md border px-4 py-14 text-center sm:gap-3 sm:py-16",
+              draft.checkIn === option.id
+                ? "border-(--pp-spring-green-600) bg-(--pp-spring-green-10)"
+                : "border-(--pp-grey-50) bg-surface",
+            )}
+          >
+            {option.id === "morning" ? (
+              <SunIcon size={56} weight="bold" className="text-(--pp-spring-green-600)" />
+            ) : option.id === "afternoon" ? (
+              <SunHorizonIcon size={56} weight="bold" className="text-(--pp-magenta-500)" />
+            ) : (
+              <MoonIcon size={56} weight="bold" className="text-(--pp-bondi-blue-500)" />
+            )}
+            <Text variant="cardTitle" className="font-semibold">
+              {option.title}
+            </Text>
+            <Text variant="description">{option.description}</Text>
+          </button>
         ))}
       </StepBody>
     </StepLayout>
@@ -258,19 +267,25 @@ export function CheckInStep({
 export function ReadyStep() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center text-center">
-      <span className="relative inline-flex size-24 items-center justify-center">
-        <span className="absolute size-3 rounded-sm bg-accent -translate-x-10 -translate-y-8 rotate-12" />
-        <span className="absolute size-2 rounded-sm bg-warning translate-x-10 -translate-y-6 -rotate-6" />
-        <span className="absolute size-2.5 rounded-sm bg-info -translate-x-12 translate-y-6 rotate-45" />
-        <span className="absolute size-2 rounded-sm bg-secondary translate-x-12 translate-y-8 -rotate-12" />
-        <CheckCircleIcon size={80} weight="fill" className="text-primary" />
-      </span>
-      <Text as="h1" variant="pageTitle" className="mt-6 text-balance">
+      <ReadyConfetti className="relative mb-16 inline-flex size-48 items-center justify-center" />
+      <Text as="h1" variant="pageTitle" className="text-balance">
         Your Progress Pad is ready
       </Text>
       <Text variant="description" className="mt-2 max-w-md text-pretty">
         You&apos;ve already got a few things to work with. You can add, change, or remove anything
         whenever you want.
+      </Text>
+    </div>
+  );
+}
+
+function NextUpBanner() {
+  return (
+    <div className="flex items-center justify-center gap-3 rounded-md border border-(--pp-grey-50) bg-(--pp-spring-green-10) px-5 py-3">
+      <SparkleIcon size={20} weight="fill" className="text-(--pp-spring-green-600)" />
+      <Text as="p" variant="bodySmall" className="m-0 text-pretty">
+        <span className="font-semibold text-(--pp-spring-green-600)">Next up: </span>
+        We&apos;ll help you choose a few small triggers for your day.
       </Text>
     </div>
   );
@@ -292,7 +307,9 @@ function IntroColumn({
       className={`flex flex-col items-center gap-2 px-2 text-center sm:gap-3 sm:px-6 ${divider ? "sm:border-l sm:border-border" : ""}`}
     >
       {icon}
-      <Text variant="subtitle">{title}</Text>
+      <Text variant="cardTitle" className="font-semibold">
+        {title}
+      </Text>
       <Text variant="description">{description}</Text>
     </div>
   );
