@@ -92,7 +92,7 @@ export function SignupForm() {
         password,
         options: {
           data: { full_name: name },
-          emailRedirectTo: authRedirectTo("/home"),
+          emailRedirectTo: authRedirectTo("/onboarding"),
         },
       });
 
@@ -104,7 +104,7 @@ export function SignupForm() {
 
       if (data.session) {
         setRememberPreference(true);
-        router.push("/home");
+        router.push("/onboarding");
         router.refresh();
         return;
       }
@@ -131,7 +131,7 @@ export function SignupForm() {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: inboxEmail,
-      options: { emailRedirectTo: authRedirectTo("/home") },
+      options: { emailRedirectTo: authRedirectTo("/onboarding") },
     });
 
     if (!error) {

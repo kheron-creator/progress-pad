@@ -6,7 +6,7 @@ export async function startGoogleSignIn() {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: authRedirectTo("/home"),
+      redirectTo: authRedirectTo("/onboarding"),
     },
   });
 

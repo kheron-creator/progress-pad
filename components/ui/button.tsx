@@ -20,10 +20,10 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const sizeClass: Record<ButtonSize, string> = {
-  sm: "h-[var(--pp-control-height-sm)] min-h-[var(--pp-control-height-sm)] min-w-[var(--pp-control-height-sm)] gap-1 px-2.5 text-[length:var(--pp-text-control-sm-size)]",
-  md: "h-[var(--pp-control-height-md)] min-h-[var(--pp-control-height-md)] min-w-[var(--pp-control-height-md)] gap-1 px-3 text-[length:var(--pp-text-control-md-size)]",
-  lg: "h-[var(--pp-control-height-lg)] min-h-[var(--pp-control-height-lg)] min-w-[var(--pp-control-height-lg)] gap-1.5 px-4 text-[length:var(--pp-text-control-lg-size)]",
-  xl: "h-[var(--pp-control-height-xl)] min-h-[var(--pp-control-height-xl)] min-w-[var(--pp-control-height-xl)] gap-2 px-5 text-[length:var(--pp-text-control-xl-size)]",
+  sm: "h-[var(--pp-control-height-sm)] min-h-[var(--pp-control-height-sm)] min-w-[var(--pp-control-height-sm)] gap-1 px-10.5 text-[length:var(--pp-text-control-sm-size)]",
+  md: "h-[var(--pp-control-height-md)] min-h-[var(--pp-control-height-md)] min-w-[var(--pp-control-height-md)] gap-1 px-11 text-[length:var(--pp-text-control-md-size)]",
+  lg: "h-[var(--pp-control-height-lg)] min-h-[var(--pp-control-height-lg)] min-w-[var(--pp-control-height-lg)] gap-1.5 px-12 text-[length:var(--pp-text-control-lg-size)]",
+  xl: "h-[var(--pp-control-height-xl)] min-h-[var(--pp-control-height-xl)] min-w-[var(--pp-control-height-xl)] gap-2 px-13 text-[length:var(--pp-text-control-xl-size)]",
 };
 
 const iconSizeClass: Record<ButtonSize, string> = {

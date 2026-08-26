@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 
+import { getCurrentUser } from "@/lib/auth/user";
 import { createClient } from "@/lib/supabase/server";
 
-const allowedNextPaths = new Set(["/home", "/reset-password"]);
+const allowedNextPaths = new Set(["/home", "/onboarding", "/reset-password"]);
 
 function safeNextPath(next: string | null) {
   if (!next) {
-    return "/home";
+    return "/onboarding";
   }
 
-  return allowedNextPaths.has(next) ? next : "/home";
+  return allowedNextPaths.has(next) ? next : "/onboarding";
 }
 
 export async function GET(request: Request) {
@@ -31,7 +32,13 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      if (next === "/reset-password") {
+        return NextResponse.redirect(`${origin}${next}`);
+      }
+
+      const user = await getCurrentUser();
+      const destination = user?.onboardingComplete ? "/home" : "/onboarding";
+      return NextResponse.redirect(`${origin}${destination}`);
     }
 
     return NextResponse.redirect(`${origin}/login?error=oauth`);

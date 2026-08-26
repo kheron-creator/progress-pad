@@ -4,12 +4,19 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 
+import {
+  isOnboardingComplete,
+  parseOnboardingDraft,
+  type OnboardingDraft,
+} from "@/lib/onboarding/draft";
 import { createClient } from "@/lib/supabase/server";
 
 export type CurrentUser = {
   id: string;
   email: string | null;
   name: string;
+  onboardingComplete: boolean;
+  onboarding: OnboardingDraft;
 };
 
 function displayName(user: User) {
@@ -26,6 +33,8 @@ function toCurrentUser(user: User): CurrentUser {
     id: user.id,
     email: user.email ?? null,
     name: displayName(user),
+    onboardingComplete: isOnboardingComplete(user.user_metadata?.onboarding_completed_at),
+    onboarding: parseOnboardingDraft(user.user_metadata?.onboarding),
   };
 }
 

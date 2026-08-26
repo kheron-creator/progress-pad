@@ -1,24 +1,29 @@
 "use client";
 
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
-import { CheckCircleIcon, PencilIcon } from "./icon";
+import { Checkbox } from "./checkbox";
+import { IconMark } from "./icon-mark";
+import { PencilIcon } from "./icon";
 import { Text } from "./text";
 
 export type ChoiceItemSize = "sm" | "lg";
 
-type ChoiceItemProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
+type ChoiceItemProps = {
   label: string;
   selected?: boolean;
   size?: ChoiceItemSize;
   icon?: ReactNode;
+  disabled?: boolean;
+  className?: string;
+  onClick?: () => void;
 };
 
 const sizeClass: Record<ChoiceItemSize, string> = {
-  sm: "min-h-10 px-3 py-2",
-  lg: "min-h-14 px-4 py-3",
+  sm: "h-12 w-full max-w-[420px] px-4 py-4",
+  lg: "h-14 w-full max-w-[420px] px-3 py-2 sm:h-[72px] sm:px-4 sm:py-4",
 };
 
 export function ChoiceItem({
@@ -26,35 +31,47 @@ export function ChoiceItem({
   selected = false,
   size = "lg",
   icon,
+  disabled = false,
   className,
-  type = "button",
-  ...props
+  onClick,
 }: ChoiceItemProps) {
+  const iconSize = size === "sm" ? 16 : 20;
+
   return (
-    <button
-      type={type}
-      aria-pressed={selected}
+    <label
       className={cn(
-        "flex w-full items-center gap-3 rounded-md bg-surface text-left",
+        "flex items-center gap-4 rounded-sm border text-left",
         sizeClass[size],
-        selected ? "border-2 border-primary" : "border border-border",
+        selected
+          ? "border-(--pp-spring-green-600) bg-(--pp-spring-green-10)"
+          : "border-(--pp-grey-50) bg-(--pp-grey-25)",
+        disabled ? "cursor-not-allowed" : "cursor-pointer",
         className,
       )}
-      {...props}
     >
-      {icon ?? (
-        <span className="text-warning" aria-hidden>
-          <PencilIcon size={16} />
-        </span>
-      )}
-      <Text as="span" variant="label" className="min-w-0 flex-1 truncate">
+      <IconMark
+        size={size === "sm" ? "sm" : "md"}
+        shape="square"
+        tone="surface"
+        className="text-(--pp-spring-green-600)"
+        aria-hidden
+      >
+        {icon ?? <PencilIcon size={iconSize} />}
+      </IconMark>
+      <Text as="span" variant={size === "sm" ? "label" : "body"} className="min-w-0 flex-1 truncate">
         {label}
       </Text>
-      {selected ? (
-        <CheckCircleIcon size={20} weight="fill" className="text-primary" />
-      ) : (
-        <span className="size-5 shrink-0 rounded-full border border-border" aria-hidden />
-      )}
-    </button>
+      <Checkbox
+        checked={selected}
+        disabled={disabled}
+        size={size === "sm" ? "lg" : "xl"}
+        boxClassName={
+          selected
+            ? "border-[var(--pp-spring-green-600)] bg-[var(--pp-spring-green-600)] text-primary-foreground"
+            : "border-[var(--pp-grey-300)] bg-transparent text-primary-foreground"
+        }
+        onChange={() => onClick?.()}
+      />
+    </label>
   );
 }

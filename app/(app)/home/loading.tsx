@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function AppLoading() {
+export default function HomeLoading() {
   return (
     <div className="flex flex-col">
       <Skeleton className="h-8 w-56 max-w-full" />

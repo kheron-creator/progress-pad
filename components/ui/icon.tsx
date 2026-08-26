@@ -7,6 +7,7 @@ import {
   CaretRightIcon,
   CaretDownIcon,
   ChatIcon as PhosphorChatIcon,
+  ChartLineUpIcon as PhosphorChartLineUpIcon,
   CheckCircleIcon as PhosphorCheckCircleIcon,
   CheckIcon as PhosphorCheckIcon,
   DotsSixVerticalIcon,
@@ -21,7 +22,9 @@ import {
   SparkleIcon as PhosphorSparkleIcon,
   SquaresFourIcon,
   StarIcon as PhosphorStarIcon,
+  SunHorizonIcon as PhosphorSunHorizonIcon,
   SunIcon as PhosphorSunIcon,
+  TargetIcon as PhosphorTargetIcon,
   TrashIcon as PhosphorTrashIcon,
   EnvelopeSimpleIcon,
   EyeIcon as PhosphorEyeIcon,
@@ -193,6 +196,24 @@ export function BarbellIcon({ className, ...props }: IconProps) {
 export function NoteIcon({ className, ...props }: IconProps) {
   return (
     <PhosphorNoteIcon aria-hidden size={16} weight="regular" className={iconClass(className)} {...props} />
+  );
+}
+
+export function TargetIcon({ className, ...props }: IconProps) {
+  return (
+    <PhosphorTargetIcon aria-hidden size={16} weight="fill" className={iconClass(className)} {...props} />
+  );
+}
+
+export function ChartLineIcon({ className, ...props }: IconProps) {
+  return (
+    <PhosphorChartLineUpIcon aria-hidden size={16} weight="regular" className={iconClass(className)} {...props} />
+  );
+}
+
+export function SunHorizonIcon({ className, ...props }: IconProps) {
+  return (
+    <PhosphorSunHorizonIcon aria-hidden size={16} weight="fill" className={iconClass(className)} {...props} />
   );
 }
 
