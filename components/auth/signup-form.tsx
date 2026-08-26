@@ -18,6 +18,8 @@ import {
   emailError,
   fieldFromAuthError,
   formString,
+  isRateLimitError,
+  mapAuthError,
   nameError,
   passwordError,
 } from "@/lib/auth/validation";
@@ -112,9 +114,35 @@ export function SignupForm() {
     }
   }
 
+  async function resendConfirmation() {
+    if (!inboxEmail) {
+      return "Something went wrong. Please try again.";
+    }
+
+    const supabase = createClient();
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: inboxEmail,
+      options: { emailRedirectTo: authRedirectTo("/home") },
+    });
+
+    if (!error) {
+      return;
+    }
+
+    if (isRateLimitError(error)) {
+      return "Too many attempts. Try again in a few minutes.";
+    }
+
+    return mapAuthError(error).message;
+  }
+
   if (inboxEmail) {
     return (
-      <AuthCheckInbox description={`We sent a confirmation link to ${inboxEmail}.`} />
+      <AuthCheckInbox
+        description={`We sent a confirmation link to ${inboxEmail}.`}
+        onResend={resendConfirmation}
+      />
     );
   }
 
@@ -152,7 +180,7 @@ export function SignupForm() {
           hint={fieldErrors.email}
           disabled={pending}
         />
-        <Input
+        <PasswordInput
           label="Password"
           name="password"
           size="lg"

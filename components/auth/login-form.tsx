@@ -11,6 +11,7 @@ import { EnvelopeIcon, LockIcon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Text } from "@/components/ui/text";
+import { setRememberPreference } from "@/lib/auth/remember";
 import {
   emailError,
   expiredLinkMessage,
@@ -56,6 +57,7 @@ export function LoginForm({ callbackError = false }: LoginFormProps) {
     const form = new FormData(event.currentTarget);
     const email = formString(form, "email");
     const password = formString(form, "password");
+    const remember = form.get("remember") === "on";
 
     const nextErrors: FieldErrors = {
       email: emailError(email),
@@ -85,6 +87,7 @@ export function LoginForm({ callbackError = false }: LoginFormProps) {
         return;
       }
 
+      setRememberPreference(remember);
       router.push("/home");
       router.refresh();
     } catch {

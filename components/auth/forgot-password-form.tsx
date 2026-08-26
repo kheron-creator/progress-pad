@@ -19,8 +19,19 @@ import { AuthFormHeader } from "./auth-form-header";
 
 export function ForgotPasswordForm() {
   const [pending, setPending] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [sentEmail, setSentEmail] = useState<string | null>(null);
   const [emailFieldError, setEmailFieldError] = useState<string>();
+
+  async function sendResetEmail(email: string) {
+    const supabase = createClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: authRedirectTo("/reset-password"),
+    });
+
+    if (error && isRateLimitError(error)) {
+      return fieldFromAuthError(error, "email").message;
+    }
+  }
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,17 +47,13 @@ export function ForgotPasswordForm() {
     setPending(true);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: authRedirectTo("/reset-password"),
-      });
-
-      if (error && isRateLimitError(error)) {
-        setEmailFieldError(fieldFromAuthError(error, "email").message);
+      const error = await sendResetEmail(email);
+      if (error) {
+        setEmailFieldError(error);
         return;
       }
 
-      setSent(true);
+      setSentEmail(email);
     } catch {
       setEmailFieldError("Something went wrong. Please try again.");
     } finally {
@@ -54,9 +61,12 @@ export function ForgotPasswordForm() {
     }
   }
 
-  if (sent) {
+  if (sentEmail) {
     return (
-      <AuthCheckInbox description="If an account exists for that email, we sent a link to reset your password." />
+      <AuthCheckInbox
+        description="If an account exists for that email, we sent a link to reset your password."
+        onResend={() => sendResetEmail(sentEmail)}
+      />
     );
   }
 

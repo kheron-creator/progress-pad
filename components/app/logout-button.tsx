@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { clearRememberPreference } from "@/lib/auth/remember";
 import { createClient } from "@/lib/supabase/client";
 
 export function LogoutButton() {
@@ -16,6 +17,7 @@ export function LogoutButton() {
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
+      clearRememberPreference();
       router.push("/login");
       router.refresh();
     } finally {

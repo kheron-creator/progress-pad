@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { isPersistentSession, REMEMBER_COOKIE } from "@/lib/auth/remember";
+
 export async function updateSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -10,6 +12,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
+  const persistSession = isPersistentSession(request.cookies.get(REMEMBER_COOKIE)?.value);
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(url, key, {
@@ -21,7 +24,11 @@ export async function updateSession(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         supabaseResponse = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options),
+          supabaseResponse.cookies.set(
+            name,
+            value,
+            persistSession ? options : withoutLifetime(options),
+          ),
         );
         Object.entries(headers).forEach(([headerName, value]) =>
           supabaseResponse.headers.set(headerName, value),
@@ -35,6 +42,13 @@ export async function updateSession(request: NextRequest) {
   const isSignedIn = Boolean(data?.claims);
   const pathname = request.nextUrl.pathname;
 
+  function finish(response: NextResponse) {
+    if (!persistSession) {
+      writeSessionAuthCookies(request, response);
+    }
+    return response;
+  }
+
   function redirectTo(path: string) {
     const url = request.nextUrl.clone();
     url.pathname = path;
@@ -43,7 +57,7 @@ export async function updateSession(request: NextRequest) {
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie.name, cookie.value);
     });
-    return redirectResponse;
+    return finish(redirectResponse);
   }
 
   if (isSignedIn && (isGuestOnlyPath(pathname) || pathname === "/")) {
@@ -58,7 +72,28 @@ export async function updateSession(request: NextRequest) {
     return redirectTo("/login");
   }
 
-  return supabaseResponse;
+  return finish(supabaseResponse);
+}
+
+function withoutLifetime<T extends object>(options: T) {
+  const rest = { ...options } as T & { maxAge?: unknown; expires?: unknown };
+  delete rest.maxAge;
+  delete rest.expires;
+  return rest;
+}
+
+function writeSessionAuthCookies(request: NextRequest, response: NextResponse) {
+  for (const cookie of request.cookies.getAll()) {
+    if (!cookie.name.startsWith("sb-")) {
+      continue;
+    }
+
+    response.cookies.set(cookie.name, cookie.value, {
+      path: "/",
+      sameSite: "lax",
+      httpOnly: false,
+    });
+  }
 }
 
 const guestOnlyPaths = new Set(["/login", "/signup", "/forgot-password"]);
