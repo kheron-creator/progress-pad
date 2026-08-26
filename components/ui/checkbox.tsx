@@ -2,28 +2,38 @@ import { useId, type InputHTMLAttributes, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
+import { type ControlSize } from "./field";
 import { CheckIcon } from "./icon";
 
-export type CheckboxSize = "xs" | "sm" | "md" | "lg";
+export type CheckboxSize = ControlSize;
 export type CheckboxTone = "primary" | "accent";
 
 type CheckboxProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size" | "type"> & {
   label?: ReactNode;
   size?: CheckboxSize;
   tone?: CheckboxTone;
+  invalid?: boolean;
 };
 
 const boxSize: Record<CheckboxSize, string> = {
-  xs: "size-[var(--pp-checkbox-xs)]",
   sm: "size-[var(--pp-checkbox-sm)]",
   md: "size-[var(--pp-checkbox-md)]",
   lg: "size-[var(--pp-checkbox-lg)]",
+  xl: "size-[var(--pp-checkbox-xl)]",
+};
+
+const iconSize: Record<CheckboxSize, number> = {
+  sm: 8,
+  md: 10,
+  lg: 12,
+  xl: 14,
 };
 
 export function Checkbox({
   label,
-  size = "sm",
+  size = "md",
   tone = "primary",
+  invalid = false,
   className,
   disabled,
   id,
@@ -36,7 +46,7 @@ export function Checkbox({
     <label
       htmlFor={inputId}
       className={cn(
-        "inline-flex items-center gap-[var(--pp-space-8)]",
+        "inline-flex min-w-0 items-center gap-[var(--pp-space-8)]",
         disabled ? "cursor-not-allowed text-foreground-disabled" : "cursor-pointer",
         className,
       )}
@@ -48,10 +58,12 @@ export function Checkbox({
           disabled={disabled}
           className="peer absolute inset-0 z-10 cursor-pointer appearance-none disabled:cursor-not-allowed"
           {...props}
+          aria-invalid={invalid || undefined}
         />
         <span
           className={cn(
-            "flex size-full items-center justify-center rounded-xs border border-border bg-surface",
+            "flex size-full items-center justify-center rounded-xs border bg-surface",
+            invalid ? "border-border-error" : "border-border",
             tone === "accent"
               ? "text-accent-foreground peer-checked:border-accent peer-checked:bg-accent"
               : "text-primary-foreground peer-checked:border-primary peer-checked:bg-primary",
@@ -60,10 +72,10 @@ export function Checkbox({
             "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus-ring",
           )}
         >
-          <CheckIcon className="size-3 opacity-0" />
+          <CheckIcon size={iconSize[size]} className="opacity-0" />
         </span>
       </span>
-      {label ? <span className="type-label">{label}</span> : null}
+      {label ? <span className="type-label min-w-0 text-pretty">{label}</span> : null}
     </label>
   );
 }

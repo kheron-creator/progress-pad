@@ -4,17 +4,34 @@ import { useId, type TextareaHTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
-import { Field, FieldHint, FieldLabel, fieldStatusClass, type FieldStatus } from "./field";
+import {
+  Field,
+  FieldHint,
+  FieldLabel,
+  fieldPaddingClass,
+  fieldStatusClass,
+  type FieldSize,
+  type FieldStatus,
+} from "./field";
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: string;
   hint?: string;
+  size?: FieldSize;
   status?: FieldStatus;
+};
+
+const minHeightClass: Record<FieldSize, string> = {
+  sm: "min-h-[var(--pp-control-height-sm)]",
+  md: "min-h-[var(--pp-control-height-md)]",
+  lg: "min-h-[var(--pp-control-height-lg)]",
+  xl: "min-h-[var(--pp-control-height-xl)]",
 };
 
 export function Textarea({
   label,
   hint,
+  size = "md",
   status = "default",
   className,
   disabled,
@@ -36,7 +53,9 @@ export function Textarea({
         aria-invalid={status === "error" || undefined}
         aria-describedby={hintId}
         className={cn(
-          "type-body pp-control min-h-[var(--pp-control-height-lg)] resize-y px-3.5 py-3",
+          "type-body pp-control resize-y py-3",
+          minHeightClass[size],
+          fieldPaddingClass[size],
           fieldStatusClass[status],
           className,
         )}

@@ -60,7 +60,7 @@ export function ProgressSection({
             {description}
           </Text>
         </div>
-        <Button size="sm" variant="secondary" onClick={onUpdate}>
+        <Button size="md" variant="secondary" onClick={onUpdate}>
           Update
         </Button>
       </div>

@@ -2,11 +2,12 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
+import { type ControlSize } from "./field";
 import { Spinner } from "./spinner";
 
 export type ButtonVariant = "primary" | "secondary" | "danger";
 export type ButtonLook = "filled" | "outline" | "clear" | "ghost";
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonSize = ControlSize;
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
@@ -19,15 +20,24 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const sizeClass: Record<ButtonSize, string> = {
-  sm: "h-[var(--pp-control-height-sm)] min-h-[var(--pp-control-height-sm)] min-w-[var(--pp-control-height-sm)] gap-1 px-3 text-[length:var(--pp-text-control-sm-size)]",
-  md: "h-[var(--pp-control-height-md)] min-h-[var(--pp-control-height-md)] min-w-[var(--pp-control-height-md)] gap-1.5 px-4",
-  lg: "h-[var(--pp-control-height-lg)] min-h-[var(--pp-control-height-lg)] min-w-[var(--pp-control-height-lg)] gap-2 px-5 text-[length:var(--pp-text-control-lg-size)]",
+  sm: "h-[var(--pp-control-height-sm)] min-h-[var(--pp-control-height-sm)] min-w-[var(--pp-control-height-sm)] gap-1 px-2.5 text-[length:var(--pp-text-control-sm-size)]",
+  md: "h-[var(--pp-control-height-md)] min-h-[var(--pp-control-height-md)] min-w-[var(--pp-control-height-md)] gap-1 px-3 text-[length:var(--pp-text-control-md-size)]",
+  lg: "h-[var(--pp-control-height-lg)] min-h-[var(--pp-control-height-lg)] min-w-[var(--pp-control-height-lg)] gap-1.5 px-4 text-[length:var(--pp-text-control-lg-size)]",
+  xl: "h-[var(--pp-control-height-xl)] min-h-[var(--pp-control-height-xl)] min-w-[var(--pp-control-height-xl)] gap-2 px-5 text-[length:var(--pp-text-control-xl-size)]",
 };
 
 const iconSizeClass: Record<ButtonSize, string> = {
   sm: "h-[var(--pp-icon-button-sm)] w-[var(--pp-icon-button-sm)] p-0",
   md: "h-[var(--pp-icon-button-md)] w-[var(--pp-icon-button-md)] p-0",
   lg: "h-[var(--pp-icon-button-lg)] w-[var(--pp-icon-button-lg)] p-0",
+  xl: "h-[var(--pp-icon-button-xl)] w-[var(--pp-icon-button-xl)] p-0",
+};
+
+const spinnerSize: Record<ButtonSize, number> = {
+  sm: 12,
+  md: 14,
+  lg: 16,
+  xl: 18,
 };
 
 const lookClass: Record<`${ButtonVariant}-${"filled" | "outline" | "clear"}`, string> = {
@@ -81,7 +91,7 @@ export function Button({
       )}
       {...props}
     >
-      {loading ? <Spinner size={size === "lg" ? 18 : 14} /> : null}
+      {loading ? <Spinner size={spinnerSize[size]} /> : null}
       {iconOnly && loading ? null : children}
     </button>
   );

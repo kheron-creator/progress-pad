@@ -2,20 +2,25 @@ import type { HTMLAttributes, LabelHTMLAttributes, ReactNode } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
-export type FieldSize = "sm" | "md" | "lg";
+export type ControlSize = "sm" | "md" | "lg" | "xl";
+export type FieldSize = ControlSize;
 export type FieldStatus = "default" | "success" | "error";
 export type FieldState = FieldStatus | "filled" | "focus" | "disabled";
 
+export const controlSizes: ControlSize[] = ["sm", "md", "lg", "xl"];
+
 export const fieldSizeClass: Record<FieldSize, string> = {
-  sm: "h-[var(--pp-input-height-sm)] text-[length:var(--pp-text-control-sm-size)]",
-  md: "h-[var(--pp-input-height-md)]",
-  lg: "h-[var(--pp-input-height-lg)] text-[length:var(--pp-text-control-lg-size)]",
+  sm: "h-[var(--pp-control-height-sm)] text-[length:var(--pp-text-control-sm-size)]",
+  md: "h-[var(--pp-control-height-md)] text-[length:var(--pp-text-control-md-size)]",
+  lg: "h-[var(--pp-control-height-lg)] text-[length:var(--pp-text-control-lg-size)]",
+  xl: "h-[var(--pp-control-height-xl)] text-[length:var(--pp-text-control-xl-size)]",
 };
 
 export const fieldPaddingClass: Record<FieldSize, string> = {
-  sm: "px-3",
-  md: "px-3.5",
-  lg: "px-4",
+  sm: "px-2.5",
+  md: "px-3",
+  lg: "px-3.5",
+  xl: "px-4",
 };
 
 export const fieldStatusClass: Record<FieldStatus, string> = {

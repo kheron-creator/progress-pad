@@ -42,7 +42,7 @@ export function Select({
             "type-body pp-control appearance-none",
             fieldSizeClass[size],
             fieldStatusClass[status],
-            size === "sm" ? "pl-3 pr-9" : size === "lg" ? "pl-4 pr-11" : "pl-3.5 pr-10",
+            size === "sm" ? "pl-2.5 pr-8" : size === "md" ? "pl-3 pr-9" : size === "xl" ? "pl-4 pr-11" : "pl-3.5 pr-10",
             className,
           )}
           {...props}

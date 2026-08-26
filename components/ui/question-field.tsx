@@ -63,7 +63,7 @@ export function QuestionField({
         </div>
         <div className="flex items-center gap-2">
           <Dropdown
-            size="sm"
+            size="md"
             value={`${scaleValue ?? 1}/${max}`}
             onChange={(next) => onScaleChange?.(Number(next.split("/")[0]))}
             options={numbers.map((number) => ({
@@ -72,7 +72,7 @@ export function QuestionField({
             }))}
           />
           {onDelete ? (
-            <IconButton label="Delete question" variant="danger" look="clear" size="sm" onClick={onDelete}>
+            <IconButton label="Delete question" variant="danger" look="clear" size="md" onClick={onDelete}>
               <TrashIcon />
             </IconButton>
           ) : null}

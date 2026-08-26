@@ -78,7 +78,7 @@ export function TriggerDropzone({
                 label={`Remove ${item.name}`}
                 variant="danger"
                 look="clear"
-                size="sm"
+                size="md"
                 onClick={() => onRemove?.(item.id)}
               >
                 <CloseIcon />

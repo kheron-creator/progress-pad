@@ -15,7 +15,7 @@ export { Divider } from "./divider";
 export { Dropdown } from "./dropdown";
 export { EmojiPicker } from "./emoji-picker";
 export { EmptyState } from "./empty-state";
-export { Field, FieldHint, FieldLabel } from "./field";
+export { Field, FieldHint, FieldLabel, controlSizes } from "./field";
 export { FeatureCard } from "./feature-card";
 export { FilterBar } from "./filter-bar";
 export { FlowNavigator } from "./flow-navigator";
@@ -33,7 +33,9 @@ export {
   ChevronRightIcon,
   CloseIcon,
   DragHandleIcon,
+  EnvelopeIcon,
   GridIcon,
+  LockIcon,
   LightningIcon,
   ListBulletsIcon,
   MenuIcon,

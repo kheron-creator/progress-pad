@@ -42,6 +42,7 @@ import {
   SunIcon,
 } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { NavLinks } from "@/components/ui/nav-links";
 import { Progress } from "@/components/ui/progress";
 import { ProgressSection } from "@/components/ui/progress-section";
@@ -179,10 +180,16 @@ export function ComponentGallery() {
                   Ghost
                 </Button>
                 <Button variant={variant} size="sm">
-                  Small
+                  SM
+                </Button>
+                <Button variant={variant} size="md">
+                  MD
                 </Button>
                 <Button variant={variant} size="lg">
-                  Large
+                  LG
+                </Button>
+                <Button variant={variant} size="xl">
+                  XL
                 </Button>
                 <Button variant={variant} disabled>
                   Disabled
@@ -234,11 +241,12 @@ export function ComponentGallery() {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-3">
             <Text variant="label">Size</Text>
-            <div className="grid gap-field md:grid-cols-3">
+            <div className="grid gap-field md:grid-cols-4">
               {([
-                ["lg", "Large"],
-                ["md", "Medium"],
-                ["sm", "Small"],
+                ["xl", "XL"],
+                ["lg", "LG"],
+                ["md", "MD"],
+                ["sm", "SM"],
               ] as const).map(([size, name]) => (
                 <div key={size} className="flex flex-col gap-2">
                   <Text variant="caption">{name}</Text>
@@ -331,8 +339,8 @@ export function ComponentGallery() {
             <option value="evening">Evening</option>
           </Select>
           <div className="flex flex-col gap-3">
-            <Input label="Email address" placeholder="you@progresspad.app" />
-            <Input label="Password" type="password" placeholder="••••••••" />
+            <Input label="Email address" placeholder="you@gmail.com" />
+            <PasswordInput label="Password" placeholder="••••••••" />
             <Button size="lg" fullWidth>
               Get started now
             </Button>
@@ -350,7 +358,7 @@ export function ComponentGallery() {
           <div className="flex flex-col gap-3">
             <Text variant="label">Choices</Text>
             <Checkbox label="Save this as a default" defaultChecked />
-            <Checkbox label="I agree to Terms & Conditions" size="xs" />
+            <Checkbox label="I agree to Terms & Conditions" size="sm" />
             <Checkbox label="Disabled option" disabled />
             <Radio name="cadence" value="daily" label="Daily" defaultChecked />
             <Radio name="cadence" value="weekly" label="Weekly" />
@@ -912,7 +920,7 @@ export function ComponentGallery() {
               <Progress value={45} size="md" label="Medium progress" />
               <Progress value={45} size="sm" label="Small progress" />
             </div>
-            <IconButton label="Edit" look="outline" size="sm">
+            <IconButton label="Edit" look="outline" size="md">
               <SparkleIcon />
             </IconButton>
             <IconMark>
@@ -938,7 +946,7 @@ export function ComponentGallery() {
           <EmptyState
             title="Your Progress Pad is ready."
             description="Add a first note when you want to capture the day."
-            action={<Button size="sm">Add a note</Button>}
+            action={<Button size="md">Add a note</Button>}
           />
         </div>
       </PreviewSection>

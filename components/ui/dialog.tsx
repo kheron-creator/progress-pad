@@ -59,7 +59,7 @@ export function Dialog({ open, onOpenChange, title, description, children }: Dia
             </Text>
           ) : null}
         </div>
-        <IconButton label="Close" look="clear" size="sm" onClick={() => onOpenChange(false)}>
+        <IconButton label="Close" look="clear" size="md" onClick={() => onOpenChange(false)}>
           <CloseIcon />
         </IconButton>
       </div>

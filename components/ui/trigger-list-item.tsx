@@ -58,7 +58,7 @@ export function TriggerListItem({
     >
       {checkbox ? (
         <Checkbox
-          size="xs"
+          size="sm"
           checked={checked}
           onChange={(event) => onCheckedChange?.(event.currentTarget.checked)}
           aria-label={title}
@@ -86,7 +86,7 @@ export function TriggerListItem({
         </Tag>
       ) : null}
       {onDelete ? (
-        <IconButton label={`Delete ${title}`} variant="danger" look="clear" size="sm" onClick={onDelete}>
+        <IconButton label={`Delete ${title}`} variant="danger" look="clear" size="md" onClick={onDelete}>
           <TrashIcon />
         </IconButton>
       ) : null}
