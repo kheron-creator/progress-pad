@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database, Json } from "@/lib/supabase/database";
 
+import { appPathForComplete } from "@/lib/auth/paths";
+
 import { isOnboardingComplete, parseOnboardingDraft, type OnboardingDraft } from "./draft";
 
 type Client = SupabaseClient<Database>;
@@ -21,6 +23,19 @@ export async function loadOnboarding(supabase: Client, userId: string) {
     onboarding: parseOnboardingDraft(data?.onboarding),
     onboardingComplete: isOnboardingComplete(data?.onboarding_completed_at),
   };
+}
+
+export async function loadAppPath(supabase: Client) {
+  const { data, error } = await supabase
+    .from("user_data")
+    .select("onboarding_completed_at")
+    .maybeSingle();
+
+  if (error) {
+    return appPathForComplete(false);
+  }
+
+  return appPathForComplete(isOnboardingComplete(data?.onboarding_completed_at));
 }
 
 export async function saveOnboarding(

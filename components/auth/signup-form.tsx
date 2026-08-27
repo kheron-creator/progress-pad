@@ -20,6 +20,7 @@ import {
   emailError,
   fieldFromAuthError,
   formString,
+  isExistingAccountError,
   isRateLimitError,
   mapAuthError,
   nameError,
@@ -86,6 +87,7 @@ export function SignupForm() {
     setPending(true);
 
     try {
+      setRememberPreference(true);
       const supabase = createClient();
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -97,20 +99,19 @@ export function SignupForm() {
       });
 
       if (error) {
+        if (isExistingAccountError(error)) {
+          setInboxEmail(email);
+          return;
+        }
+
         const mapped = fieldFromAuthError(error, "email");
         setFieldErrors({ [mapped.field]: mapped.message });
         return;
       }
 
       if (data.session) {
-        setRememberPreference(true);
         router.push("/onboarding");
         router.refresh();
-        return;
-      }
-
-      if (data.user?.identities && data.user.identities.length === 0) {
-        setFieldErrors({ email: "An account with this email already exists." });
         return;
       }
 
@@ -152,7 +153,7 @@ export function SignupForm() {
 
     try {
       setRememberPreference(true);
-      const error = await startGoogleSignIn();
+      const error = await startGoogleSignIn("/onboarding");
       if (error) {
         setFormError(mapAuthError(error).message);
       }

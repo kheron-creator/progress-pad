@@ -1,40 +1,36 @@
 import "server-only";
 
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { appPathForComplete } from "@/lib/auth/paths";
+import { GATE_COOKIE, RECOVERY_COOKIE, REDIRECTED_SEARCH } from "@/lib/auth/remember";
 import { getCurrentUser, type CurrentUser } from "@/lib/auth/user";
 
-export const REDIRECTED_SEARCH = "redirected";
-
 export function appPathForUser(user: Pick<CurrentUser, "onboardingComplete">) {
-  return user.onboardingComplete ? "/home" : "/onboarding";
+  return appPathForComplete(user.onboardingComplete);
 }
 
 export function withRedirectGuard(path: "/home" | "/onboarding") {
   return `${path}?${REDIRECTED_SEARCH}=1`;
 }
 
-export async function withRedirected(path: string) {
-  const headerList = await headers();
-  if (headerList.get("x-pp-redirected") !== "1") {
-    return path;
-  }
-
-  const url = new URL(path, "http://local.invalid");
-  url.searchParams.set(REDIRECTED_SEARCH, "1");
-  return `${url.pathname}${url.search}`;
-}
-
 export async function redirectSignedInUser() {
   const user = await getCurrentUser();
-  if (user) {
-    redirect(appPathForUser(user));
+  if (!user) {
+    return;
   }
+
+  const inRecovery = (await cookies()).get(RECOVERY_COOKIE)?.value === "1";
+  if (inRecovery) {
+    redirect("/reset-password");
+  }
+
+  redirect(appPathForUser(user));
 }
 
 export async function enforceAppGate(user: CurrentUser, area: "home" | "onboarding") {
-  const redirected = (await headers()).get("x-pp-redirected") === "1";
+  const redirected = (await cookies()).get(GATE_COOKIE)?.value === "1";
   if (redirected) {
     return;
   }

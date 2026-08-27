@@ -19,6 +19,7 @@ import {
   clearFieldError,
   mapAuthError,
 } from "@/lib/auth/validation";
+import { loadAppPath } from "@/lib/onboarding/store";
 import { createClient } from "@/lib/supabase/client";
 
 import { AuthError } from "./auth-error";
@@ -74,6 +75,7 @@ export function LoginForm({ errorMessage }: LoginFormProps) {
     setPending(true);
 
     try {
+      setRememberPreference(remember);
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -87,8 +89,8 @@ export function LoginForm({ errorMessage }: LoginFormProps) {
         return;
       }
 
-      setRememberPreference(remember);
-      router.push("/home");
+      const destination = await loadAppPath(supabase);
+      router.push(destination);
       router.refresh();
     } catch {
       setFormError("Something went wrong. Please try again.");
@@ -107,7 +109,7 @@ export function LoginForm({ errorMessage }: LoginFormProps) {
       const remember = form ? new FormData(form).get("remember") === "on" : false;
       setRememberPreference(remember);
 
-      const error = await startGoogleSignIn();
+      const error = await startGoogleSignIn("/home");
       if (error) {
         setFormError(mapAuthError(error).message);
       }

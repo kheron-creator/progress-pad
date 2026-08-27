@@ -1,6 +1,7 @@
 -- User data (onboarding and future profile fields).
 -- Answers live in jsonb so questions can be added or removed in app code
 -- without altering this table.
+-- Safe to re-run: existing onboarding answers are never overwritten.
 
 create table if not exists public.user_data (
   user_id uuid primary key references auth.users (id) on delete cascade,
@@ -75,7 +76,7 @@ create trigger on_auth_user_created
   for each row
   execute procedure public.handle_new_user();
 
--- Copy existing answers out of auth metadata (safe to re-run).
+-- Copy answers out of auth metadata only when user_data is still empty.
 insert into public.user_data (user_id, onboarding, onboarding_completed_at)
 select
   id,
@@ -83,10 +84,20 @@ select
   case
     when nullif(raw_user_meta_data ->> 'onboarding_completed_at', '') is not null
       then (raw_user_meta_data ->> 'onboarding_completed_at')::timestamptz
+    when coalesce(raw_user_meta_data ->> 'onboarding_complete', '') in ('true', 't', '1')
+      or coalesce(raw_user_meta_data ->> 'onboardingComplete', '') in ('true', 't', '1')
+      then now()
     else null
   end
 from auth.users
 on conflict (user_id) do update
   set
-    onboarding = excluded.onboarding,
-    onboarding_completed_at = excluded.onboarding_completed_at;
+    onboarding = case
+      when public.user_data.onboarding = '{}'::jsonb
+        then excluded.onboarding
+      else public.user_data.onboarding
+    end,
+    onboarding_completed_at = coalesce(
+      public.user_data.onboarding_completed_at,
+      excluded.onboarding_completed_at
+    );

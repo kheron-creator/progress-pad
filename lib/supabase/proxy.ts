@@ -2,7 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import {
+  GATE_COOKIE,
+  GATE_MAX_AGE,
   isPersistentSession,
+  RECOVERY_COOKIE,
+  REDIRECTED_SEARCH,
   REMEMBER_COOKIE,
   withoutCookieLifetime,
 } from "@/lib/auth/remember";
@@ -17,6 +21,8 @@ const publicPaths = new Set([
   "/design-system",
 ]);
 
+const recoveryAllowedPaths = new Set(["/reset-password", "/password-reset-success"]);
+
 function isProtectedPath(pathname: string) {
   if (publicPaths.has(pathname) || pathname.startsWith("/auth/") || pathname.startsWith("/design-system")) {
     return false;
@@ -25,21 +31,26 @@ function isProtectedPath(pathname: string) {
   return true;
 }
 
+function isRecoveryPath(pathname: string) {
+  return recoveryAllowedPaths.has(pathname) || pathname.startsWith("/auth/");
+}
+
 export async function updateSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   const pathname = request.nextUrl.pathname;
+  const secure = request.nextUrl.protocol === "https:";
 
   if (!url || !key) {
     if (isProtectedPath(pathname)) {
       return redirectToPath(request, "/login");
     }
 
-    return nextWithPath(request);
+    return NextResponse.next({ request });
   }
 
   const persistSession = isPersistentSession(request.cookies.get(REMEMBER_COOKIE)?.value);
-  let supabaseResponse = nextWithPath(request);
+  let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(url, key, {
     cookies: {
@@ -48,7 +59,7 @@ export async function updateSession(request: NextRequest) {
       },
       setAll(cookiesToSet, headers) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        supabaseResponse = nextWithPath(request);
+        supabaseResponse = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) =>
           supabaseResponse.cookies.set(
             name,
@@ -71,6 +82,17 @@ export async function updateSession(request: NextRequest) {
     if (!persistSession) {
       writeSessionAuthCookies(request, response);
     }
+
+    if (pathname === "/password-reset-success") {
+      response.cookies.set(RECOVERY_COOKIE, "", {
+        path: "/",
+        maxAge: 0,
+        sameSite: "lax",
+        httpOnly: true,
+        secure,
+      });
+    }
+
     return response;
   }
 
@@ -80,8 +102,27 @@ export async function updateSession(request: NextRequest) {
     return finish(redirectResponse);
   }
 
-  // Send signed-in users away from "/" only. Guest auth pages decide with
-  // getUser() so a claims/user mismatch cannot bounce /login ↔ /home.
+  if (request.nextUrl.searchParams.get(REDIRECTED_SEARCH) === "1") {
+    const cleanUrl = request.nextUrl.clone();
+    cleanUrl.searchParams.delete(REDIRECTED_SEARCH);
+    const redirectResponse = NextResponse.redirect(cleanUrl);
+    copySetCookies(supabaseResponse, redirectResponse);
+    redirectResponse.cookies.set(GATE_COOKIE, "1", {
+      path: "/",
+      maxAge: GATE_MAX_AGE,
+      sameSite: "lax",
+      httpOnly: true,
+      secure,
+    });
+    return finish(redirectResponse);
+  }
+
+  const inRecovery = request.cookies.get(RECOVERY_COOKIE)?.value === "1";
+
+  if (isSignedIn && inRecovery && !isRecoveryPath(pathname)) {
+    return redirectTo("/reset-password");
+  }
+
   if (isSignedIn && pathname === "/") {
     return redirectTo("/home");
   }
@@ -95,20 +136,6 @@ export async function updateSession(request: NextRequest) {
   }
 
   return finish(supabaseResponse);
-}
-
-function nextWithPath(request: NextRequest) {
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set(
-    "x-pp-redirected",
-    request.nextUrl.searchParams.get("redirected") === "1" ? "1" : "0",
-  );
-
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
 }
 
 function redirectToPath(request: NextRequest, path: string) {

@@ -1,5 +1,7 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { RECOVERY_COOKIE, RECOVERY_MAX_AGE } from "@/lib/auth/remember";
 import { appPathForUser } from "@/lib/auth/routing";
 import { getCurrentUser } from "@/lib/auth/user";
 import { createClient } from "@/lib/supabase/server";
@@ -8,10 +10,10 @@ const allowedNextPaths = new Set(["/home", "/onboarding", "/reset-password"]);
 
 function safeNextPath(next: string | null) {
   if (!next) {
-    return "/onboarding";
+    return "/home";
   }
 
-  return allowedNextPaths.has(next) ? next : "/onboarding";
+  return allowedNextPaths.has(next) ? next : "/home";
 }
 
 export async function GET(request: Request) {
@@ -34,15 +36,29 @@ export async function GET(request: Request) {
 
     if (!error) {
       if (next === "/reset-password") {
-        return NextResponse.redirect(`${origin}${next}`);
+        const cookieStore = await cookies();
+        cookieStore.set(RECOVERY_COOKIE, "1", {
+          path: "/",
+          maxAge: RECOVERY_MAX_AGE,
+          sameSite: "lax",
+          httpOnly: true,
+          secure: origin.startsWith("https"),
+        });
+        return NextResponse.redirect(`${origin}/reset-password`);
       }
 
+      // `next` from Google/email confirm is only a hint. Completed users always
+      // go to /home even if the OAuth start URL said /onboarding.
       const user = await getCurrentUser();
       const destination = user ? appPathForUser(user) : "/onboarding";
       return NextResponse.redirect(`${origin}${destination}`);
     }
 
-    return NextResponse.redirect(`${origin}/login?error=oauth`);
+    if (next === "/reset-password") {
+      return NextResponse.redirect(`${origin}/forgot-password?error=auth`);
+    }
+
+    return NextResponse.redirect(`${origin}/login?error=auth`);
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth`);
