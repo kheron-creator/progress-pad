@@ -19,6 +19,7 @@ import {
   type OnboardingDraft,
   type OnboardingStepId,
 } from "@/lib/onboarding/draft";
+import { saveOnboarding } from "@/lib/onboarding/store";
 import { createClient } from "@/lib/supabase/client";
 
 import { OnboardingProgress } from "./onboarding-progress";
@@ -47,16 +48,7 @@ export function OnboardingWizard({ step, initialDraft }: OnboardingWizardProps) 
 
   async function persist(nextDraft: OnboardingDraft, complete = false) {
     const supabase = createClient();
-    const { error: saveError } = await supabase.auth.updateUser({
-      data: {
-        onboarding: nextDraft,
-        ...(complete ? { onboarding_completed_at: new Date().toISOString() } : {}),
-      },
-    });
-
-    if (saveError) {
-      throw saveError;
-    }
+    await saveOnboarding(supabase, nextDraft, { complete });
   }
 
   async function goTo(nextStep: number, nextDraft: OnboardingDraft) {

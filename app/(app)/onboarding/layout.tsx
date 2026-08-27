@@ -1,13 +1,11 @@
 import type { ReactNode } from "react";
-import { redirect } from "next/navigation";
 
+import { enforceAppGate } from "@/lib/auth/routing";
 import { requireUser } from "@/lib/auth/user";
 
 export default async function OnboardingLayout({ children }: { children: ReactNode }) {
   const user = await requireUser();
-  if (user.onboardingComplete) {
-    redirect("/home");
-  }
+  await enforceAppGate(user, "onboarding");
 
   return children;
 }

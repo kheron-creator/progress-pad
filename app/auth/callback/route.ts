@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { appPathForUser } from "@/lib/auth/routing";
 import { getCurrentUser } from "@/lib/auth/user";
 import { createClient } from "@/lib/supabase/server";
 
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
       }
 
       const user = await getCurrentUser();
-      const destination = user?.onboardingComplete ? "/home" : "/onboarding";
+      const destination = user ? appPathForUser(user) : "/onboarding";
       return NextResponse.redirect(`${origin}${destination}`);
     }
 

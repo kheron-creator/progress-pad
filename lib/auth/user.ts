@@ -4,6 +4,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 
+import { loadOnboarding } from "@/lib/onboarding/store";
 import {
   isOnboardingComplete,
   parseOnboardingDraft,
@@ -28,24 +29,48 @@ function displayName(user: User) {
   return user.email ?? "there";
 }
 
-function toCurrentUser(user: User): CurrentUser {
-  return {
-    id: user.id,
-    email: user.email ?? null,
-    name: displayName(user),
-    onboardingComplete: isOnboardingComplete(user.user_metadata?.onboarding_completed_at),
-    onboarding: parseOnboardingDraft(user.user_metadata?.onboarding),
-  };
-}
-
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return user ? toCurrentUser(user) : null;
+  if (!user) {
+    return null;
+  }
+
+  const fromMetadata = onboardingFromMetadata(user);
+  let onboarding = fromMetadata.onboarding;
+  let onboardingComplete = fromMetadata.onboardingComplete;
+
+  try {
+    const loaded = await loadOnboarding(supabase, user.id);
+    onboarding = loaded.onboarding;
+    onboardingComplete = loaded.onboardingComplete || fromMetadata.onboardingComplete;
+  } catch {
+    // Table missing or RLS blocked until the migration is applied.
+  }
+
+  return {
+    id: user.id,
+    email: user.email ?? null,
+    name: displayName(user),
+    onboardingComplete,
+    onboarding,
+  };
 });
+
+function onboardingFromMetadata(user: User) {
+  const meta = user.user_metadata ?? {};
+
+  return {
+    onboarding: parseOnboardingDraft(meta.onboarding),
+    onboardingComplete:
+      isOnboardingComplete(meta.onboarding_completed_at) ||
+      meta.onboarding_complete === true ||
+      meta.onboardingComplete === true,
+  };
+}
 
 export async function requireUser(): Promise<CurrentUser> {
   const user = await getCurrentUser();

@@ -2,10 +2,12 @@ export const ONBOARDING_STEP_COUNT = 6;
 export const ONBOARDING_READY_STEP = 7;
 export const ONBOARDING_MAX_MULTI = 3;
 export const ONBOARDING_MAX_TRIGGERS = 5;
+export const ONBOARDING_SCHEMA_VERSION = 1;
 
 export type CheckInTime = "morning" | "afternoon" | "evening";
 
 export type OnboardingDraft = {
+  schemaVersion: number;
   reasons: string[];
   spaceFor: string[];
   routine: string | null;
@@ -19,6 +21,7 @@ export type OnboardingStepId = 1 | 2 | 3 | 4 | 5 | 6 | "ready";
 
 export function emptyOnboardingDraft(): OnboardingDraft {
   return {
+    schemaVersion: ONBOARDING_SCHEMA_VERSION,
     reasons: [],
     spaceFor: [],
     routine: null,
@@ -38,6 +41,10 @@ export function parseOnboardingDraft(value: unknown): OnboardingDraft {
   const record = value as Record<string, unknown>;
 
   return {
+    schemaVersion:
+      typeof record.schemaVersion === "number" && Number.isFinite(record.schemaVersion)
+        ? record.schemaVersion
+        : ONBOARDING_SCHEMA_VERSION,
     reasons: stringList(record.reasons),
     spaceFor: stringList(record.spaceFor),
     routine: typeof record.routine === "string" ? record.routine : null,
@@ -49,7 +56,20 @@ export function parseOnboardingDraft(value: unknown): OnboardingDraft {
 }
 
 export function isOnboardingComplete(value: unknown) {
-  return typeof value === "string" && value.length > 0;
+  if (value instanceof Date) {
+    return !Number.isNaN(value.getTime());
+  }
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 && trimmed !== "null" && trimmed !== "false";
+  }
+
+  return false;
 }
 
 export function parseOnboardingStep(value: string): OnboardingStepId | null {

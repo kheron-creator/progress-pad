@@ -7,8 +7,6 @@ import {
   withoutCookieLifetime,
 } from "@/lib/auth/remember";
 
-const guestOnlyPaths = new Set(["/login", "/signup", "/forgot-password"]);
-
 const publicPaths = new Set([
   "/",
   "/login",
@@ -18,10 +16,6 @@ const publicPaths = new Set([
   "/password-reset-success",
   "/design-system",
 ]);
-
-function isGuestOnlyPath(pathname: string) {
-  return guestOnlyPaths.has(pathname);
-}
 
 function isProtectedPath(pathname: string) {
   if (publicPaths.has(pathname) || pathname.startsWith("/auth/") || pathname.startsWith("/design-system")) {
@@ -41,11 +35,11 @@ export async function updateSession(request: NextRequest) {
       return redirectToPath(request, "/login");
     }
 
-    return NextResponse.next({ request });
+    return nextWithPath(request);
   }
 
   const persistSession = isPersistentSession(request.cookies.get(REMEMBER_COOKIE)?.value);
-  let supabaseResponse = NextResponse.next({ request });
+  let supabaseResponse = nextWithPath(request);
 
   const supabase = createServerClient(url, key, {
     cookies: {
@@ -54,7 +48,7 @@ export async function updateSession(request: NextRequest) {
       },
       setAll(cookiesToSet, headers) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        supabaseResponse = NextResponse.next({ request });
+        supabaseResponse = nextWithPath(request);
         cookiesToSet.forEach(({ name, value, options }) =>
           supabaseResponse.cookies.set(
             name,
@@ -86,7 +80,9 @@ export async function updateSession(request: NextRequest) {
     return finish(redirectResponse);
   }
 
-  if (isSignedIn && (isGuestOnlyPath(pathname) || pathname === "/")) {
+  // Send signed-in users away from "/" only. Guest auth pages decide with
+  // getUser() so a claims/user mismatch cannot bounce /login ↔ /home.
+  if (isSignedIn && pathname === "/") {
     return redirectTo("/home");
   }
 
@@ -99,6 +95,20 @@ export async function updateSession(request: NextRequest) {
   }
 
   return finish(supabaseResponse);
+}
+
+function nextWithPath(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(
+    "x-pp-redirected",
+    request.nextUrl.searchParams.get("redirected") === "1" ? "1" : "0",
+  );
+
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 }
 
 function redirectToPath(request: NextRequest, path: string) {

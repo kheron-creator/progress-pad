@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 
 import { isPersistentSession, REMEMBER_COOKIE, withoutCookieLifetime } from "@/lib/auth/remember";
 
+import type { Database } from "./database";
+
 export async function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -16,7 +18,7 @@ export async function createClient() {
   const cookieStore = await cookies();
   const persistSession = isPersistentSession(cookieStore.get(REMEMBER_COOKIE)?.value);
 
-  return createServerClient(url, key, {
+  return createServerClient<Database>(url, key, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
