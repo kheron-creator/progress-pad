@@ -7,7 +7,7 @@ import { Text } from "@/components/ui/text";
 export default function HomePage() {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center px-page-x py-page-y">
-      <Logo className="mb-6" />
+      <Logo size="xl" priority className="mb-6" />
       <Text as="h1" variant="pageTitle" className="text-center">
         Progress Pad
       </Text>

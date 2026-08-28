@@ -1,7 +1,8 @@
 export const ONBOARDING_STEP_COUNT = 6;
 export const ONBOARDING_READY_STEP = 7;
 export const ONBOARDING_MAX_MULTI = 3;
-export const ONBOARDING_MAX_TRIGGERS = 5;
+export const ONBOARDING_MAX_ROUTINE = 2;
+export const ONBOARDING_MAX_TRIGGERS = 6;
 export const ONBOARDING_SCHEMA_VERSION = 1;
 
 export type CheckInTime = "morning" | "afternoon" | "evening";
@@ -10,7 +11,7 @@ export type OnboardingDraft = {
   schemaVersion: number;
   reasons: string[];
   spaceFor: string[];
-  routine: string | null;
+  routine: string[];
   triggerIds: string[];
   checkIn: CheckInTime | null;
   checkInSkipped: boolean;
@@ -24,7 +25,7 @@ export function emptyOnboardingDraft(): OnboardingDraft {
     schemaVersion: ONBOARDING_SCHEMA_VERSION,
     reasons: [],
     spaceFor: [],
-    routine: null,
+    routine: [],
     triggerIds: [],
     checkIn: null,
     checkInSkipped: false,
@@ -47,7 +48,7 @@ export function parseOnboardingDraft(value: unknown): OnboardingDraft {
         : ONBOARDING_SCHEMA_VERSION,
     reasons: stringList(record.reasons),
     spaceFor: stringList(record.spaceFor),
-    routine: typeof record.routine === "string" ? record.routine : null,
+    routine: parseRoutine(record.routine),
     triggerIds: stringList(record.triggerIds),
     checkIn: isCheckInTime(record.checkIn) ? record.checkIn : null,
     checkInSkipped: record.checkInSkipped === true,
@@ -112,7 +113,7 @@ export function canContinue(step: OnboardingStepId, draft: OnboardingDraft) {
   }
 
   if (step === 3) {
-    return Boolean(draft.routine);
+    return inRange(draft.routine.length, 1, ONBOARDING_MAX_ROUTINE);
   }
 
   if (step === 4) {
@@ -144,6 +145,14 @@ function stringList(value: unknown) {
   }
 
   return value.filter((item): item is string => typeof item === "string" && item.length > 0);
+}
+
+function parseRoutine(value: unknown) {
+  if (typeof value === "string" && value.length > 0) {
+    return [value];
+  }
+
+  return stringList(value).slice(0, ONBOARDING_MAX_ROUTINE);
 }
 
 function isCheckInTime(value: unknown): value is CheckInTime {

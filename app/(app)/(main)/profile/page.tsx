@@ -20,14 +20,17 @@ function memberSinceLabel(createdAt: string) {
 
 export default async function ProfileRoute() {
   const user = await requireUser();
-  const roleLabel = routineOptions.find((option) => option.id === user.onboarding.routine)?.label;
+  const roleLabels = user.onboarding.routine.flatMap((id) => {
+    const label = routineOptions.find((option) => option.id === id)?.label;
+    return label ? [label] : [];
+  });
 
   return (
     <ProfilePage
       name={user.name}
       email={user.email}
       avatarUrl={user.avatarUrl}
-      roleLabel={roleLabel}
+      roleLabels={roleLabels}
       memberSince={memberSinceLabel(user.createdAt)}
     />
   );

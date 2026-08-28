@@ -3,8 +3,8 @@ import Image from "next/image";
 import { cn } from "@/lib/utils/cn";
 
 export const logoSources = {
-  light: { src: "/brand/logo-light.png", width: 953, height: 176 },
-  dark: { src: "/brand/logo-dark.png", width: 952, height: 177 },
+  light: { src: "/brand/logo-light.png", width: 1384, height: 308 },
+  dark: { src: "/brand/logo-dark.png", width: 1380, height: 308 },
 } as const;
 
 export type LogoVariant = "light" | "dark" | "auto";
@@ -15,6 +15,7 @@ type LogoProps = {
   size?: LogoSize;
   className?: string;
   alt?: string;
+  priority?: boolean;
 };
 
 const sizeClass: Record<LogoSize, string> = {
@@ -28,10 +29,12 @@ function LogoMark({
   variant,
   className,
   alt,
+  priority,
 }: {
   variant: "light" | "dark";
   className?: string;
   alt: string;
+  priority?: boolean;
 }) {
   const asset = logoSources[variant];
 
@@ -41,7 +44,9 @@ function LogoMark({
       alt={alt}
       width={asset.width}
       height={asset.height}
-      className={cn("w-auto max-w-full object-contain object-left", className)}
+      priority={priority}
+      className={cn("max-h-full max-w-full object-contain object-left", className)}
+      style={{ width: "auto", height: "100%" }}
       quality={100}
     />
   );
@@ -52,21 +57,24 @@ export function Logo({
   size = "md",
   className,
   alt = "Progress Today",
+  priority,
 }: LogoProps) {
-  const frameClass = cn(sizeClass[size], className);
-
   if (variant !== "auto") {
     return (
-      <span className={cn("inline-flex items-center overflow-hidden", frameClass)}>
-        <LogoMark variant={variant} alt={alt} className={frameClass} />
+      <span className={cn("inline-flex items-center", sizeClass[size], className)}>
+        <LogoMark variant={variant} alt={alt} priority={priority} />
       </span>
     );
   }
 
   return (
-    <span className={cn("pp-logo-auto inline-flex items-center overflow-hidden", frameClass)} role="img" aria-label={alt}>
-      <LogoMark variant="light" className={cn("pp-logo-light", frameClass)} alt="" />
-      <LogoMark variant="dark" className={cn("pp-logo-dark", frameClass)} alt="" />
+    <span
+      className={cn("pp-logo-auto inline-flex items-center", sizeClass[size], className)}
+      role="img"
+      aria-label={alt}
+    >
+      <LogoMark variant="light" className="pp-logo-light" alt="" priority={priority} />
+      <LogoMark variant="dark" className="pp-logo-dark" alt="" />
     </span>
   );
 }

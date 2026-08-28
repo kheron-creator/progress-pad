@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icon";
 import { Logo } from "@/components/ui/logo";
 import { Text } from "@/components/ui/text";
+import { cn } from "@/lib/utils/cn";
 import {
   ONBOARDING_MAX_MULTI,
+  ONBOARDING_MAX_ROUTINE,
   ONBOARDING_MAX_TRIGGERS,
   ONBOARDING_READY_STEP,
   canContinue,
@@ -111,123 +113,143 @@ export function OnboardingWizard({ step, initialDraft }: OnboardingWizardProps) 
   }
 
   return (
-    <div className="relative h-dvh overflow-hidden bg-background">
-      <header className="absolute left-10 top-10 z-10 lg:left-14">
-        <Logo size="sm" />
+    <div className="pp-onboarding flex h-dvh max-h-dvh flex-col overflow-hidden bg-background px-(--pp-space-40) pt-[max(var(--pp-space-36),env(safe-area-inset-top))] pb-[max(var(--pp-space-36),env(safe-area-inset-bottom))] lg:px-10 lg:pt-12 lg:pb-4">
+      <header
+        className={cn(
+          "flex shrink-0 flex-col items-center gap-(--pp-space-36) pb-(--pp-space-24)",
+          "lg:gap-6 lg:pb-8",
+        )}
+      >
+        <Logo size="sm" className="h-7 w-auto sm:h-8" />
+        {step !== "ready" ? <OnboardingProgress current={current} /> : null}
       </header>
 
-      <div className="flex h-full flex-col items-center justify-center px-6">
-        <div className="flex w-[calc(2*26.25rem+0.75rem)] max-w-full flex-col gap-12">
-          {step !== "ready" ? (
-            <div className="flex shrink-0 justify-center">
-              <OnboardingProgress current={current} />
-            </div>
-          ) : null}
-
-          <main className="flex min-h-0 w-full flex-col gap-16">
-            <div className="flex min-h-0 flex-col">
-              {step === 1 ? (
-                <IntentStep
-                  draft={draft}
-                  onToggle={(id) =>
-                    setDraft((currentDraft) => ({
-                      ...currentDraft,
-                      reasons: toggleLimited(currentDraft.reasons, id, ONBOARDING_MAX_MULTI),
-                    }))
-                  }
-                />
-              ) : null}
-              {step === 2 ? (
-                <SpaceStep
-                  draft={draft}
-                  onToggle={(id) =>
-                    setDraft((currentDraft) => ({
-                      ...currentDraft,
-                      spaceFor: toggleLimited(currentDraft.spaceFor, id, ONBOARDING_MAX_MULTI),
-                    }))
-                  }
-                />
-              ) : null}
-              {step === 3 ? (
-                <RoutineStep
-                  draft={draft}
-                  onSelect={(id) =>
-                    setDraft((currentDraft) => ({
-                      ...currentDraft,
-                      routine: currentDraft.routine === id ? null : id,
-                    }))
-                  }
-                />
-              ) : null}
-              {step === 4 ? <MeetPadStep /> : null}
-              {step === 5 ? (
-                <TriggersStep
-                  draft={draft}
-                  onToggle={(id) =>
-                    setDraft((currentDraft) => ({
-                      ...currentDraft,
-                      triggerIds: toggleLimited(currentDraft.triggerIds, id, ONBOARDING_MAX_TRIGGERS),
-                    }))
-                  }
-                />
-              ) : null}
-              {step === 6 ? (
-                <CheckInStep
-                  draft={draft}
-                  onSelect={(id: CheckInTime) =>
-                    setDraft((currentDraft) => ({
-                      ...currentDraft,
-                      checkIn: id,
-                      checkInSkipped: false,
-                    }))
-                  }
-                />
-              ) : null}
-              {step === "ready" ? <ReadyStep /> : null}
-            </div>
+      <div className="mx-auto flex min-h-0 w-full max-w-[calc(2*26.25rem+0.75rem)] flex-1 flex-col overflow-hidden lg:px-6">
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden lg:py-3">
+          <div className="flex min-h-0 flex-1 flex-col">
+            {step === 1 ? (
+              <IntentStep
+                draft={draft}
+                onToggle={(id) =>
+                  setDraft((currentDraft) => ({
+                    ...currentDraft,
+                    reasons: toggleLimited(currentDraft.reasons, id, ONBOARDING_MAX_MULTI),
+                  }))
+                }
+              />
+            ) : null}
+            {step === 2 ? (
+              <SpaceStep
+                draft={draft}
+                onToggle={(id) =>
+                  setDraft((currentDraft) => ({
+                    ...currentDraft,
+                    spaceFor: toggleLimited(currentDraft.spaceFor, id, ONBOARDING_MAX_MULTI),
+                  }))
+                }
+              />
+            ) : null}
+            {step === 3 ? (
+              <RoutineStep
+                draft={draft}
+                onToggle={(id) =>
+                  setDraft((currentDraft) => ({
+                    ...currentDraft,
+                    routine: toggleLimited(currentDraft.routine, id, ONBOARDING_MAX_ROUTINE),
+                  }))
+                }
+              />
+            ) : null}
+            {step === 4 ? <MeetPadStep /> : null}
+            {step === 5 ? (
+              <TriggersStep
+                draft={draft}
+                onToggle={(id) =>
+                  setDraft((currentDraft) => ({
+                    ...currentDraft,
+                    triggerIds: toggleLimited(currentDraft.triggerIds, id, ONBOARDING_MAX_TRIGGERS),
+                  }))
+                }
+              />
+            ) : null}
+            {step === 6 ? (
+              <CheckInStep
+                draft={draft}
+                onSelect={(id: CheckInTime) =>
+                  setDraft((currentDraft) => ({
+                    ...currentDraft,
+                    checkIn: id,
+                    checkInSkipped: false,
+                  }))
+                }
+              />
+            ) : null}
+            {step === "ready" ? <ReadyStep /> : null}
 
             {error ? (
-              <Text variant="caption" className="mt-2 shrink-0 text-center text-error" role="alert">
+              <Text variant="caption" className="shrink-0 text-center text-error" role="alert">
                 {error}
               </Text>
             ) : null}
+          </div>
+        </main>
 
-            {step === "ready" ? (
-              <div className="flex shrink-0 justify-center">
-                <Button size="lg" loading={pending} onClick={() => void handleFinish()}>
-                  Go to my Progress Pad
-                  <ChevronRightIcon />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex shrink-0 items-center justify-between gap-3">
-                {current > 1 ? (
-                  <Button look="outline" size="lg" disabled={pending} onClick={handleBack}>
-                    <ChevronLeftIcon />
-                    Back
-                  </Button>
-                ) : (
-                  <span />
-                )}
-                <div className="flex items-center gap-4">
-                  {step === 6 ? (
-                    <Button look="clear" size="lg" disabled={pending} onClick={handleSkip}>
-                      Skip
-                    </Button>
-                  ) : null}
-                  <Button
-                    size="lg"
-                    loading={pending}
-                    disabled={!continueEnabled}
-                    onClick={handleContinue}
-                  >
-                    Continue
-                  </Button>
-                </div>
-              </div>
+        {step === "ready" ? (
+          <div className="flex shrink-0 justify-center bg-background pt-4 lg:py-4">
+            <Button
+              size="lg"
+              loading={pending}
+              className="w-full px-6 sm:w-auto sm:px-12"
+              onClick={() => void handleFinish()}
+            >
+              Go to my Progress Pad
+              <ChevronRightIcon />
+            </Button>
+          </div>
+        ) : (
+          <div
+            className={cn(
+              "flex shrink-0 flex-row items-center gap-3 bg-background pt-4 lg:py-4",
+              current > 1 ? "justify-between" : "justify-end",
             )}
-          </main>
-        </div>
+          >
+            {current > 1 ? (
+              <Button
+                look="outline"
+                size="lg"
+                disabled={pending}
+                className="min-w-0 flex-1 px-4 sm:flex-none sm:px-12"
+                onClick={handleBack}
+              >
+                <ChevronLeftIcon />
+                Back
+              </Button>
+            ) : null}
+            {step === 6 ? (
+              <Button
+                look="clear"
+                size="lg"
+                disabled={pending}
+                className="min-w-0 flex-1 px-4 sm:flex-none sm:px-12"
+                onClick={handleSkip}
+              >
+                Skip
+              </Button>
+            ) : null}
+            <Button
+              size="lg"
+              loading={pending}
+              disabled={!continueEnabled}
+              className={cn(
+                "min-w-0 px-4 sm:flex-none sm:px-12",
+                current > 1 ? "flex-1" : "w-full sm:w-auto",
+              )}
+              onClick={handleContinue}
+            >
+              Continue
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

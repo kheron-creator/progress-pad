@@ -120,14 +120,17 @@
   --pp-space-20: 1.25rem;
   --pp-space-24: 1.5rem;
   --pp-space-32: 2rem;
+  --pp-space-36: 2.25rem;
   --pp-space-40: 2.5rem;
   --pp-space-48: 3rem;
   --pp-space-56: 3.5rem;
+  --pp-space-60: 3.75rem;
   --pp-space-64: 4rem;
   --pp-space-80: 5rem;
   --pp-space-96: 6rem;
   --pp-space-128: 8rem;
 
+  --pp-font-size-10: 0.625rem;
   --pp-font-size-11: 0.6875rem;
   --pp-font-size-12: 0.75rem;
   --pp-font-size-14: 0.875rem;
@@ -417,7 +420,7 @@
   --pp-avatar-xl: var(--pp-space-80);
   --pp-avatar-2xl: var(--pp-space-128);
 
-  --pp-checkbox-sm: 0.75rem;
+  --pp-checkbox-sm: 0.90rem;
   --pp-checkbox-md: 1rem;
   --pp-checkbox-lg: 1.125rem;
   --pp-checkbox-xl: 1.25rem;

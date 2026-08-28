@@ -22,8 +22,8 @@ type ChoiceItemProps = {
 };
 
 const sizeClass: Record<ChoiceItemSize, string> = {
-  sm: "h-12 w-full max-w-[420px] px-4 py-4",
-  lg: "h-14 w-full max-w-[420px] px-3 py-2 sm:h-[72px] sm:px-4 sm:py-4",
+  sm: "min-h-12 w-full px-3 py-3 sm:max-w-[420px] sm:px-4 sm:py-4",
+  lg: "min-h-14 w-full px-3 py-2.5 sm:min-h-[72px] sm:max-w-[420px] sm:px-4 sm:py-4",
 };
 
 export function ChoiceItem({
@@ -35,12 +35,12 @@ export function ChoiceItem({
   className,
   onClick,
 }: ChoiceItemProps) {
-  const iconSize = size === "sm" ? 16 : 20;
+  const iconSize = size === "sm" ? 14 : 20;
 
   return (
     <label
       className={cn(
-        "flex items-center gap-4 rounded-sm border text-left",
+        "flex items-center gap-(--pp-space-16) rounded-sm border text-left",
         sizeClass[size],
         selected
           ? "border-(--pp-spring-green-600) bg-(--pp-spring-green-10)"
@@ -50,21 +50,36 @@ export function ChoiceItem({
       )}
     >
       <IconMark
-        size={size === "sm" ? "sm" : "md"}
+        size="sm"
         shape="square"
         tone="surface"
-        className="text-(--pp-spring-green-600)"
+        className={cn(
+          "shrink-0 text-(--pp-spring-green-600) [&_svg]:size-3.5",
+          size === "lg" && "sm:size-9 sm:[&_svg]:size-5",
+        )}
         aria-hidden
       >
         {icon ?? <PencilIcon size={iconSize} />}
       </IconMark>
-      <Text as="span" variant={size === "sm" ? "label" : "body"} className="min-w-0 flex-1 truncate">
+      <Text
+        as="span"
+        variant={size === "sm" ? "label" : "body"}
+        className={cn(
+          "min-w-0 flex-1 text-pretty text-[length:var(--pp-font-size-14)] leading-[length:var(--pp-font-size-14)]",
+          size === "lg" &&
+            "sm:text-[length:var(--pp-text-body-size)] sm:leading-[var(--pp-text-body-leading)]",
+        )}
+      >
         {label}
       </Text>
       <Checkbox
         checked={selected}
         disabled={disabled}
-        size={size === "sm" ? "lg" : "xl"}
+        size="sm"
+        className={cn(
+          "shrink-0",
+          size === "lg" && "sm:size-(--pp-checkbox-xl) sm:[&_svg]:size-3.5",
+        )}
         boxClassName={
           selected
             ? "border-[var(--pp-spring-green-600)] bg-[var(--pp-spring-green-600)] text-primary-foreground"
