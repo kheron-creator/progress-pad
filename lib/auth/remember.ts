@@ -1,9 +1,30 @@
 export const REMEMBER_COOKIE = "pp-remember";
+export const GATE_COOKIE = "pp-gate";
+export const RECOVERY_COOKIE = "pp-recovery";
 
-const persistentMaxAge = 400 * 24 * 60 * 60;
+export const persistentMaxAge = 400 * 24 * 60 * 60;
+export const GATE_MAX_AGE = 15;
+export const RECOVERY_MAX_AGE = 30 * 60;
+export const REDIRECTED_SEARCH = "redirected";
 
 export function isPersistentSession(rememberValue: string | undefined) {
-  return rememberValue !== "0";
+  return rememberValue === "1";
+}
+
+export function readRememberPreference() {
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const parts = document.cookie.split(";");
+  for (const part of parts) {
+    const [name, ...rest] = part.trim().split("=");
+    if (name === REMEMBER_COOKIE) {
+      return isPersistentSession(rest.join("="));
+    }
+  }
+
+  return false;
 }
 
 export function setRememberPreference(remember: boolean) {
@@ -14,7 +35,7 @@ export function setRememberPreference(remember: boolean) {
     return;
   }
 
-  document.cookie = `${REMEMBER_COOKIE}=0; Path=/; SameSite=Lax${secure}`;
+  document.cookie = `${REMEMBER_COOKIE}=0; Path=/; Max-Age=${persistentMaxAge}; SameSite=Lax${secure}`;
 }
 
 export function clearRememberPreference() {

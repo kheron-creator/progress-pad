@@ -20,11 +20,13 @@ import {
   emailError,
   fieldFromAuthError,
   formString,
+  isExistingAccountError,
   isRateLimitError,
   mapAuthError,
   nameError,
   passwordError,
 } from "@/lib/auth/validation";
+import { saveFullName } from "@/lib/onboarding/store";
 import { createClient } from "@/lib/supabase/client";
 
 import { AuthCheckInbox } from "./auth-check-inbox";
@@ -86,31 +88,36 @@ export function SignupForm() {
     setPending(true);
 
     try {
+      setRememberPreference(true);
       const supabase = createClient();
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: { full_name: name },
-          emailRedirectTo: authRedirectTo("/home"),
+          emailRedirectTo: authRedirectTo("/onboarding"),
         },
       });
 
       if (error) {
+        if (isExistingAccountError(error)) {
+          setInboxEmail(email);
+          return;
+        }
+
         const mapped = fieldFromAuthError(error, "email");
         setFieldErrors({ [mapped.field]: mapped.message });
         return;
       }
 
       if (data.session) {
-        setRememberPreference(true);
-        router.push("/home");
+        try {
+          await saveFullName(supabase, name);
+        } catch {
+          // Trigger still copies full_name into user_data on user insert.
+        }
+        router.push("/onboarding");
         router.refresh();
-        return;
-      }
-
-      if (data.user?.identities && data.user.identities.length === 0) {
-        setFieldErrors({ email: "An account with this email already exists." });
         return;
       }
 
@@ -131,7 +138,7 @@ export function SignupForm() {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: inboxEmail,
-      options: { emailRedirectTo: authRedirectTo("/home") },
+      options: { emailRedirectTo: authRedirectTo("/onboarding") },
     });
 
     if (!error) {
@@ -152,7 +159,7 @@ export function SignupForm() {
 
     try {
       setRememberPreference(true);
-      const error = await startGoogleSignIn();
+      const error = await startGoogleSignIn("/onboarding");
       if (error) {
         setFormError(mapAuthError(error).message);
       }

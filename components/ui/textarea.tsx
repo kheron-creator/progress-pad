@@ -9,16 +9,18 @@ import {
   FieldHint,
   FieldLabel,
   fieldPaddingClass,
-  fieldStatusClass,
+  fieldStateClass,
+  fieldTextClass,
   type FieldSize,
-  type FieldStatus,
+  type FieldState,
 } from "./field";
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: string;
+  labelClassName?: string;
   hint?: string;
   size?: FieldSize;
-  status?: FieldStatus;
+  state?: FieldState;
 };
 
 const minHeightClass: Record<FieldSize, string> = {
@@ -28,11 +30,19 @@ const minHeightClass: Record<FieldSize, string> = {
   xl: "min-h-[var(--pp-control-height-xl)]",
 };
 
+const fieldBlockPaddingClass: Record<FieldSize, string> = {
+  sm: "py-[calc((var(--pp-control-height-sm)-var(--pp-text-body-leading))/2)]",
+  md: "py-[calc((var(--pp-control-height-md)-var(--pp-text-body-leading))/2)]",
+  lg: "py-[calc((var(--pp-control-height-lg)-var(--pp-text-body-leading))/2)]",
+  xl: "py-[calc((var(--pp-control-height-xl)-var(--pp-text-body-leading))/2)]",
+};
+
 export function Textarea({
   label,
+  labelClassName,
   hint,
   size = "md",
-  status = "default",
+  state = "default",
   className,
   disabled,
   id,
@@ -42,27 +52,35 @@ export function Textarea({
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const hintId = hint ? `${inputId}-hint` : undefined;
+  const isDisabled = disabled || state === "disabled";
+  const resolvedState: FieldState = isDisabled ? "disabled" : state;
 
   return (
     <Field>
-      {label ? <FieldLabel htmlFor={inputId}>{label}</FieldLabel> : null}
+      {label ? (
+        <FieldLabel htmlFor={inputId} className={labelClassName}>
+          {label}
+        </FieldLabel>
+      ) : null}
       <textarea
         id={inputId}
-        disabled={disabled}
+        disabled={isDisabled}
         rows={rows}
-        aria-invalid={status === "error" || undefined}
+        aria-invalid={resolvedState === "error" || undefined}
         aria-describedby={hintId}
         className={cn(
-          "type-body pp-control resize-y py-3",
-          minHeightClass[size],
+          "type-body pp-control w-full resize-y",
+          fieldTextClass[size],
           fieldPaddingClass[size],
-          fieldStatusClass[status],
+          fieldBlockPaddingClass[size],
+          fieldStateClass[resolvedState],
+          minHeightClass[size],
           className,
         )}
         {...props}
       />
       {hint ? (
-        <FieldHint id={hintId} error={status === "error"}>
+        <FieldHint id={hintId} error={resolvedState === "error"}>
           {hint}
         </FieldHint>
       ) : null}

@@ -60,7 +60,7 @@ export function confirmPasswordError(password: string, confirmPassword: string) 
   }
 }
 
-export function authRedirectTo(next: "/home" | "/reset-password") {
+export function authRedirectTo(next: "/home" | "/onboarding" | "/reset-password") {
   return `${window.location.origin}/auth/callback?next=${next}`;
 }
 

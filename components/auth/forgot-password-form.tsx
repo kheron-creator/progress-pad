@@ -17,10 +17,14 @@ import { createClient } from "@/lib/supabase/client";
 import { AuthCheckInbox } from "./auth-check-inbox";
 import { AuthFormHeader } from "./auth-form-header";
 
-export function ForgotPasswordForm() {
+type ForgotPasswordFormProps = {
+  errorMessage?: string;
+};
+
+export function ForgotPasswordForm({ errorMessage }: ForgotPasswordFormProps) {
   const [pending, setPending] = useState(false);
   const [sentEmail, setSentEmail] = useState<string | null>(null);
-  const [emailFieldError, setEmailFieldError] = useState<string>();
+  const [emailFieldError, setEmailFieldError] = useState<string | undefined>(errorMessage);
 
   async function sendResetEmail(email: string) {
     const supabase = createClient();
@@ -28,8 +32,12 @@ export function ForgotPasswordForm() {
       redirectTo: authRedirectTo("/reset-password"),
     });
 
-    if (error && isRateLimitError(error)) {
-      return fieldFromAuthError(error, "email").message;
+    if (error) {
+      if (isRateLimitError(error)) {
+        return fieldFromAuthError(error, "email").message;
+      }
+
+      return "Could not send the email. Please try again.";
     }
   }
 

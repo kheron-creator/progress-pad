@@ -131,6 +131,25 @@
     outline-offset: 2px;
   }
 
+  button:not(:disabled),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"],
+  a[href],
+  summary,
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     html:focus-within {
       scroll-behavior: auto;
@@ -305,6 +324,14 @@
     border-color: var(--pp-border-disabled);
     background-color: var(--pp-input-bg-disabled);
     color: var(--pp-fg-disabled);
+    opacity: 1;
+    -webkit-text-fill-color: var(--pp-fg-disabled);
+  }
+
+  .pp-control:disabled::placeholder {
+    color: var(--pp-fg-disabled);
+    opacity: 1;
+    -webkit-text-fill-color: var(--pp-fg-disabled);
   }
 
   .pp-spin {
@@ -338,6 +365,46 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+@keyframes pp-ready-check-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pp-ready-check-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.pp-ready-check {
+  transform-origin: center;
+  animation: pp-ready-check-pop 1s cubic-bezier(0.22, 1.15, 0.36, 1) both;
+}
+
+.pp-ready-check-circle {
+  stroke-dasharray: 453;
+  stroke-dashoffset: 453;
+  animation: pp-ready-check-draw 0.9s ease-out both;
+}
+
+.pp-ready-check-tick {
+  stroke-dasharray: 110;
+  stroke-dashoffset: 110;
+  animation: pp-ready-check-draw 0.65s ease-out 0.7s both;
 }
 
 ::backdrop {

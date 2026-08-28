@@ -25,6 +25,7 @@ export { IconMark } from "./icon-mark";
 export {
   BarbellIcon,
   BellIcon,
+  ChartLineIcon,
   ChatIcon,
   CheckCircleIcon,
   CheckIcon,
@@ -47,7 +48,9 @@ export {
   SendIcon,
   SparkleIcon,
   StarIcon,
+  SunHorizonIcon,
   SunIcon,
+  TargetIcon,
   TrashIcon,
   UploadIcon,
   UserIcon,

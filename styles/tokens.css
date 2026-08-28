@@ -197,7 +197,7 @@
   --pp-fg-link: var(--pp-bondi-blue-600);
   --pp-fg-accent: var(--pp-magenta-700);
 
-  --pp-bg-page: var(--pp-grey-25);
+  --pp-bg-page: var(--pp-grey-0);
   --pp-bg-subtle: var(--pp-grey-50);
   --pp-bg-surface: var(--pp-grey-0);
   --pp-bg-elevated: var(--pp-grey-0);
@@ -415,6 +415,7 @@
   --pp-avatar-md: var(--pp-space-48);
   --pp-avatar-lg: var(--pp-space-64);
   --pp-avatar-xl: var(--pp-space-80);
+  --pp-avatar-2xl: var(--pp-space-128);
 
   --pp-checkbox-sm: 0.75rem;
   --pp-checkbox-md: 1rem;

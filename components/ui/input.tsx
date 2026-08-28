@@ -17,6 +17,7 @@ import {
 
 type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
   label?: string;
+  labelClassName?: string;
   hint?: string;
   size?: FieldSize;
   state?: FieldState;
@@ -41,6 +42,7 @@ const iconOffsetClass: Record<FieldSize, { left: string; right: string }> = {
 
 export function Input({
   label,
+  labelClassName,
   hint,
   size = "md",
   state = "default",
@@ -86,7 +88,11 @@ export function Input({
 
   return (
     <Field>
-      {label ? <FieldLabel htmlFor={inputId}>{label}</FieldLabel> : null}
+      {label ? (
+        <FieldLabel htmlFor={inputId} className={labelClassName}>
+          {label}
+        </FieldLabel>
+      ) : null}
       {leftIcon || rightIcon ? (
         <div className="relative">
           {leftIcon ? (

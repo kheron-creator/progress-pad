@@ -4,8 +4,8 @@ import { Text } from "@/components/ui/text";
 import { requireUser } from "@/lib/auth/user";
 
 export const metadata: Metadata = {
-  title: "Home · Progress Pad",
-  description: "Your Progress Pad home",
+  title: "Progress Today · Progress Pad",
+  description: "Your Progress Today homepage",
 };
 
 export default async function AppHomePage() {
@@ -14,10 +14,10 @@ export default async function AppHomePage() {
   return (
     <>
       <Text as="h1" variant="pageTitle">
-        Welcome, {user.name}
+        Progress Today
       </Text>
       <Text variant="description" className="mt-2">
-        You are signed in.
+        Welcome, {user.name}. Your Progress Pad is ready.
       </Text>
     </>
   );

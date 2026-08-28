@@ -2,12 +2,14 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import {
+  GATE_COOKIE,
+  GATE_MAX_AGE,
   isPersistentSession,
+  RECOVERY_COOKIE,
+  REDIRECTED_SEARCH,
   REMEMBER_COOKIE,
   withoutCookieLifetime,
 } from "@/lib/auth/remember";
-
-const guestOnlyPaths = new Set(["/login", "/signup", "/forgot-password"]);
 
 const publicPaths = new Set([
   "/",
@@ -19,9 +21,7 @@ const publicPaths = new Set([
   "/design-system",
 ]);
 
-function isGuestOnlyPath(pathname: string) {
-  return guestOnlyPaths.has(pathname);
-}
+const recoveryAllowedPaths = new Set(["/reset-password", "/password-reset-success"]);
 
 function isProtectedPath(pathname: string) {
   if (publicPaths.has(pathname) || pathname.startsWith("/auth/") || pathname.startsWith("/design-system")) {
@@ -31,10 +31,15 @@ function isProtectedPath(pathname: string) {
   return true;
 }
 
+function isRecoveryPath(pathname: string) {
+  return recoveryAllowedPaths.has(pathname) || pathname.startsWith("/auth/");
+}
+
 export async function updateSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   const pathname = request.nextUrl.pathname;
+  const secure = request.nextUrl.protocol === "https:";
 
   if (!url || !key) {
     if (isProtectedPath(pathname)) {
@@ -77,6 +82,17 @@ export async function updateSession(request: NextRequest) {
     if (!persistSession) {
       writeSessionAuthCookies(request, response);
     }
+
+    if (pathname === "/password-reset-success") {
+      response.cookies.set(RECOVERY_COOKIE, "", {
+        path: "/",
+        maxAge: 0,
+        sameSite: "lax",
+        httpOnly: true,
+        secure,
+      });
+    }
+
     return response;
   }
 
@@ -86,7 +102,28 @@ export async function updateSession(request: NextRequest) {
     return finish(redirectResponse);
   }
 
-  if (isSignedIn && (isGuestOnlyPath(pathname) || pathname === "/")) {
+  if (request.nextUrl.searchParams.get(REDIRECTED_SEARCH) === "1") {
+    const cleanUrl = request.nextUrl.clone();
+    cleanUrl.searchParams.delete(REDIRECTED_SEARCH);
+    const redirectResponse = NextResponse.redirect(cleanUrl);
+    copySetCookies(supabaseResponse, redirectResponse);
+    redirectResponse.cookies.set(GATE_COOKIE, "1", {
+      path: "/",
+      maxAge: GATE_MAX_AGE,
+      sameSite: "lax",
+      httpOnly: true,
+      secure,
+    });
+    return finish(redirectResponse);
+  }
+
+  const inRecovery = request.cookies.get(RECOVERY_COOKIE)?.value === "1";
+
+  if (isSignedIn && inRecovery && !isRecoveryPath(pathname)) {
+    return redirectTo("/reset-password");
+  }
+
+  if (isSignedIn && pathname === "/") {
     return redirectTo("/home");
   }
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { LoginForm } from "@/components/auth/login-form";
+import { redirectSignedInUser } from "@/lib/auth/routing";
 import { expiredLinkMessage } from "@/lib/auth/validation";
 
 export const metadata: Metadata = {
@@ -24,6 +25,7 @@ function loginErrorMessage(error?: string) {
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
+  await redirectSignedInUser();
   const { error } = await searchParams;
 
   return (

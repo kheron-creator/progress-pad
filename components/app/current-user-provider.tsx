@@ -35,12 +35,13 @@ export function CurrentUserProvider({
       }
     });
 
-    function onVisible() {
+    async function onVisible() {
       if (document.visibilityState !== "visible") {
         return;
       }
 
-      if (!hasBrowserAuthCookie()) {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
         leaveApp();
       }
     }
@@ -67,9 +68,3 @@ export function useCurrentUser() {
   return user;
 }
 
-function hasBrowserAuthCookie() {
-  return document.cookie.split(";").some((part) => {
-    const name = part.trim().split("=")[0];
-    return name.startsWith("sb-") && name.includes("auth-token");
-  });
-}

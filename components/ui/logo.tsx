@@ -41,8 +41,7 @@ function LogoMark({
       alt={alt}
       width={asset.width}
       height={asset.height}
-      className={cn("h-full w-auto max-w-none", className)}
-      style={{ width: "auto", height: "100%" }}
+      className={cn("w-auto max-w-full object-contain object-left", className)}
       quality={100}
     />
   );
@@ -54,22 +53,20 @@ export function Logo({
   className,
   alt = "Progress Today",
 }: LogoProps) {
+  const frameClass = cn(sizeClass[size], className);
+
   if (variant !== "auto") {
     return (
-      <span className={cn("inline-flex overflow-hidden", sizeClass[size], className)}>
-        <LogoMark variant={variant} alt={alt} />
+      <span className={cn("inline-flex items-center overflow-hidden", frameClass)}>
+        <LogoMark variant={variant} alt={alt} className={frameClass} />
       </span>
     );
   }
 
   return (
-    <span
-      className={cn("pp-logo-auto inline-flex overflow-hidden", sizeClass[size], className)}
-      role="img"
-      aria-label={alt}
-    >
-      <LogoMark variant="light" className="pp-logo-light" alt="" />
-      <LogoMark variant="dark" className="pp-logo-dark" alt="" />
+    <span className={cn("pp-logo-auto inline-flex items-center overflow-hidden", frameClass)} role="img" aria-label={alt}>
+      <LogoMark variant="light" className={cn("pp-logo-light", frameClass)} alt="" />
+      <LogoMark variant="dark" className={cn("pp-logo-dark", frameClass)} alt="" />
     </span>
   );
 }
