@@ -29,41 +29,58 @@ import { cn } from "@/lib/utils/cn";
 import { optionIcon } from "./option-icons";
 import { ReadyConfetti } from "./ready-confetti";
 
-const STEP_BODY_MIN_HEIGHT =
-  "sm:min-h-[calc(4*4.5rem+3*0.75rem)]";
-
 const SCROLL_HIDE =
   "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
 
-function StepLayout({ heading, children }: { heading: ReactNode; children: ReactNode }) {
+function StepLayout({
+  heading,
+  children,
+  footer,
+}: {
+  heading: ReactNode;
+  children: ReactNode;
+  footer?: ReactNode;
+}) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-(--pp-space-24) lg:gap-5">
+    <div className="flex min-h-0 flex-1 flex-col gap-(--pp-space-16) lg:gap-4">
       <div className="shrink-0">{heading}</div>
-      <div
-        className={cn(
-          "min-h-0 flex-1 overflow-y-auto overscroll-y-contain sm:overflow-hidden",
-          SCROLL_HIDE,
-        )}
-      >
-        <div className="flex min-h-full flex-col justify-start pb-1 sm:justify-center">{children}</div>
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div
+          className={cn(
+            "min-h-0 flex-1 overflow-y-auto overscroll-y-contain",
+            SCROLL_HIDE,
+          )}
+        >
+          <div
+            className={cn(
+              "flex flex-col",
+              footer ? "min-h-0 sm:h-full" : "min-h-full",
+            )}
+          >
+            <div className={cn("flex min-h-0 flex-col", footer ? "sm:h-full" : "my-auto")}>
+              {children}
+            </div>
+          </div>
+        </div>
+        {footer ? <div className="shrink-0 pt-2">{footer}</div> : null}
       </div>
     </div>
   );
 }
 
 function StepBody({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("w-full", STEP_BODY_MIN_HEIGHT, className)}>{children}</div>;
+  return <div className={cn("w-full min-h-0", className)}>{children}</div>;
 }
 
 export function OnboardingHeading({ title, description }: { title: string; description: string }) {
   return (
-    <div className="mx-auto flex w-full max-w-2xl shrink-0 flex-col text-center md:min-h-[calc(2*var(--pp-text-page-title-leading)+0.25rem+2*var(--pp-text-body-leading))]">
+    <div className="mx-auto flex w-full max-w-2xl shrink-0 flex-col text-center">
       <Text as="h1" variant="pageTitle" className="m-0 text-balance">
         {title}
       </Text>
       <Text
         variant="description"
-        className="m-0 mt-(--pp-space-2) text-pretty text-[length:var(--pp-font-size-12)] leading-(--pp-leading-16) lg:mt-2 lg:text-[length:var(--pp-text-body-size)] lg:leading-(--pp-text-body-leading)"
+        className="m-0 mt-(--pp-space-2) text-pretty text-(length:--pp-font-size-12) leading-(--pp-leading-16) lg:mt-2 lg:text-(length:--pp-text-body-size) lg:leading-(--pp-text-body-leading)"
       >
         {description}
       </Text>
@@ -76,18 +93,22 @@ export function ChoiceGrid({
   selected,
   onToggle,
   columns = 2,
+  fill = false,
 }: {
   options: ReadonlyArray<{ id: string; label: string }>;
   selected: string[];
   onToggle: (id: string) => void;
   columns?: 2 | 4;
+  fill?: boolean;
 }) {
   return (
     <div
       className={
-        columns === 4
-          ? "grid w-full grid-cols-1 content-start justify-items-stretch gap-2 sm:grid-cols-2 sm:content-center sm:gap-3 lg:grid-cols-3"
-          : "grid w-full grid-cols-1 content-start justify-items-stretch gap-2 sm:grid-cols-2 sm:content-center sm:gap-3"
+        fill
+          ? "grid min-h-0 w-full grid-cols-1 content-start justify-items-stretch gap-2 sm:h-full sm:grid-cols-2 sm:grid-rows-6 sm:content-stretch sm:gap-2 sm:max-h-[calc(6*4.5rem+5*0.5rem)] lg:grid-cols-3 lg:grid-rows-4 lg:max-h-[calc(4*4.5rem+3*0.5rem)]"
+          : columns === 4
+            ? "grid w-full grid-cols-1 content-start justify-items-stretch gap-2 sm:grid-cols-2 sm:content-center sm:gap-2 lg:grid-cols-3"
+            : "grid w-full grid-cols-1 content-start justify-items-stretch gap-2 sm:grid-cols-2 sm:content-center sm:gap-3"
       }
     >
       {options.map((option) => (
@@ -96,6 +117,7 @@ export function ChoiceGrid({
           label={option.label}
           icon={optionIcon(option.id)}
           selected={selected.includes(option.id)}
+          fill={fill}
           onClick={() => onToggle(option.id)}
         />
       ))}
@@ -228,17 +250,20 @@ export function TriggersStep({
           description="Add at least 1 trigger to get started."
         />
       }
+      footer={
+        <Text variant="caption" className="m-0 text-right text-primary">
+          {draft.triggerIds.length}/{ONBOARDING_MAX_TRIGGERS} selected
+        </Text>
+      }
     >
-      <StepBody className="relative">
+      <StepBody className="sm:h-full">
         <ChoiceGrid
           options={triggerOptions}
           selected={draft.triggerIds}
           onToggle={onToggle}
           columns={4}
+          fill
         />
-        <Text variant="caption" className="mt-2 text-right text-primary sm:absolute sm:right-0 sm:top-full sm:mt-1">
-          {draft.triggerIds.length}/{ONBOARDING_MAX_TRIGGERS} selected
-        </Text>
       </StepBody>
     </StepLayout>
   );

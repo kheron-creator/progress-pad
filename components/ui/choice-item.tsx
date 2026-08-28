@@ -15,6 +15,7 @@ type ChoiceItemProps = {
   label: string;
   selected?: boolean;
   size?: ChoiceItemSize;
+  fill?: boolean;
   icon?: ReactNode;
   disabled?: boolean;
   className?: string;
@@ -26,10 +27,13 @@ const sizeClass: Record<ChoiceItemSize, string> = {
   lg: "min-h-14 w-full px-3 py-2.5 sm:min-h-[72px] sm:max-w-[420px] sm:px-4 sm:py-4",
 };
 
+const fillClass = "h-full min-h-12 w-full px-3 py-2 sm:min-h-0 sm:max-w-none sm:px-4 sm:py-2.5";
+
 export function ChoiceItem({
   label,
   selected = false,
   size = "lg",
+  fill = false,
   icon,
   disabled = false,
   className,
@@ -41,7 +45,7 @@ export function ChoiceItem({
     <label
       className={cn(
         "flex items-center gap-(--pp-space-16) rounded-sm border text-left",
-        sizeClass[size],
+        fill ? fillClass : sizeClass[size],
         selected
           ? "border-(--pp-spring-green-600) bg-(--pp-spring-green-10)"
           : "border-(--pp-grey-50) bg-(--pp-grey-25)",

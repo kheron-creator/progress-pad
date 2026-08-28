@@ -116,7 +116,7 @@ export function OnboardingWizard({ step, initialDraft }: OnboardingWizardProps) 
     <div className="pp-onboarding flex h-dvh max-h-dvh flex-col overflow-hidden bg-background px-(--pp-space-40) pt-[max(var(--pp-space-36),env(safe-area-inset-top))] pb-[max(var(--pp-space-36),env(safe-area-inset-bottom))] lg:px-10 lg:pt-12 lg:pb-4">
       <header
         className={cn(
-          "flex shrink-0 flex-col items-center gap-(--pp-space-36) pb-(--pp-space-24)",
+          "flex shrink-0 flex-col items-center gap-(--pp-space-36) pb-(--pp-space-20)",
           "lg:gap-6 lg:pb-8",
         )}
       >
