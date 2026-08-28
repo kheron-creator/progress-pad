@@ -3,6 +3,7 @@
 import {
   BarbellIcon as PhosphorBarbellIcon,
   BellIcon as PhosphorBellIcon,
+  CameraIcon as PhosphorCameraIcon,
   CaretLeftIcon,
   CaretRightIcon,
   CaretDownIcon,
@@ -178,6 +179,12 @@ export function ChatIcon({ className, ...props }: IconProps) {
 export function UploadIcon({ className, ...props }: IconProps) {
   return (
     <UploadSimpleIcon aria-hidden size={16} weight="regular" className={iconClass(className)} {...props} />
+  );
+}
+
+export function CameraIcon({ className, ...props }: IconProps) {
+  return (
+    <PhosphorCameraIcon aria-hidden size={16} weight="regular" className={iconClass(className)} {...props} />
   );
 }
 

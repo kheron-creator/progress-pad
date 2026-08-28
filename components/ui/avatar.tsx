@@ -1,8 +1,8 @@
-import type { HTMLAttributes } from "react";
+"use client";
+
+import { useState, type HTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils/cn";
-
-import { UserIcon } from "./icon";
 
 export type AvatarSize = "sm" | "md" | "lg" | "xl" | "2xl";
 
@@ -11,6 +11,8 @@ type AvatarProps = HTMLAttributes<HTMLSpanElement> & {
   alt?: string;
   initials?: string;
   size?: AvatarSize;
+  onImageError?: () => void;
+  onImageLoad?: () => void;
 };
 
 const sizeClass: Record<AvatarSize, string> = {
@@ -35,8 +37,15 @@ export function Avatar({
   initials,
   size = "md",
   className,
+  onImageError,
+  onImageLoad,
   ...props
 }: AvatarProps) {
+  const [failedSrc, setFailedSrc] = useState<string>();
+  const photo = src?.trim();
+  const showPhoto = Boolean(photo) && photo !== failedSrc;
+  const label = initials?.trim() || "PP";
+
   return (
     <span
       className={cn(
@@ -46,15 +55,24 @@ export function Avatar({
       )}
       {...props}
     >
-      {src ? (
+      {showPhoto ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt={alt} className="size-full object-cover" />
-      ) : initials ? (
-        <span className={cn("font-(--pp-font-weight-medium) leading-none", initialsClass[size])}>
-          {initials}
-        </span>
+        <img
+          src={photo}
+          alt={alt}
+          className="size-full object-cover"
+          onLoad={() => onImageLoad?.()}
+          onError={() => {
+            if (photo) {
+              setFailedSrc(photo);
+            }
+            onImageError?.();
+          }}
+        />
       ) : (
-        <UserIcon />
+        <span className={cn("font-(--pp-font-weight-medium) leading-none", initialsClass[size])}>
+          {label}
+        </span>
       )}
     </span>
   );

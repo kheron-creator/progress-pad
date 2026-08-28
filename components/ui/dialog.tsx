@@ -14,10 +14,11 @@ type DialogProps = {
   onOpenChange: (open: boolean) => void;
   title: string;
   description?: string;
+  className?: string;
   children?: ReactNode;
 };
 
-export function Dialog({ open, onOpenChange, title, description, children }: DialogProps) {
+export function Dialog({ open, onOpenChange, title, description, className, children }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();
@@ -45,6 +46,7 @@ export function Dialog({ open, onOpenChange, title, description, children }: Dia
       className={cn(
         "m-auto w-[min(100%-2rem,27.5rem)] max-h-[90dvh] overflow-auto rounded-lg border border-border bg-surface p-card shadow-lg",
         "text-foreground backdrop:bg-overlay",
+        className,
       )}
       onClose={() => onOpenChange(false)}
     >
@@ -82,6 +84,7 @@ type ConfirmActionsProps = {
   onConfirm: () => void;
   onCancel: () => void;
   danger?: boolean;
+  pending?: boolean;
 };
 
 export function DialogConfirmActions({
@@ -90,13 +93,14 @@ export function DialogConfirmActions({
   onConfirm,
   onCancel,
   danger = false,
+  pending = false,
 }: ConfirmActionsProps) {
   return (
     <DialogActions>
-      <Button variant="secondary" look="outline" onClick={onCancel}>
+      <Button variant="secondary" look="outline" disabled={pending} onClick={onCancel}>
         {cancelLabel}
       </Button>
-      <Button variant={danger ? "danger" : "primary"} onClick={onConfirm}>
+      <Button variant={danger ? "danger" : "primary"} loading={pending} onClick={onConfirm}>
         {confirmLabel}
       </Button>
     </DialogActions>

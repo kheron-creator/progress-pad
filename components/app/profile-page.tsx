@@ -1,18 +1,28 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent, type SubmitEvent } from "react";
+import { useRef, useState, type ChangeEvent, type SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 
-import { AuthError } from "@/components/auth/auth-error";
+import { AvatarCropDialog } from "@/components/app/avatar-crop-dialog";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogConfirmActions } from "@/components/ui/dialog";
-import { ChevronRightIcon, UserIcon } from "@/components/ui/icon";
+import { CameraIcon, ChevronRightIcon, UserIcon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
+import { ToastRegion, useToasts } from "@/components/ui/toast-region";
+import { deleteOwnAccount } from "@/lib/auth/account";
+import {
+  AVATAR_ACCEPT,
+  avatarActionError,
+  avatarFileError,
+  removeAvatar,
+  uploadAvatar,
+} from "@/lib/auth/avatar";
 import {
   fieldFromAuthError,
   formString,
@@ -48,29 +58,138 @@ export function ProfilePage({
   memberSince?: string;
 }) {
   const router = useRouter();
+  const { toasts, showToast } = useToasts();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
+  const [clearPending, setClearPending] = useState(false);
   const [fullName, setFullName] = useState(name);
+  const [savedName, setSavedName] = useState(name);
+  const [previewUrl, setPreviewUrl] = useState<string>();
+  const [cropSource, setCropSource] = useState<{ url: string; revoke: boolean }>();
+  const [brokenPhotoUrl, setBrokenPhotoUrl] = useState<string>();
+  const [avatarPending, setAvatarPending] = useState(false);
   const [namePending, setNamePending] = useState(false);
   const [nameHint, setNameHint] = useState<string>();
-  const [nameSuccess, setNameSuccess] = useState<string>();
   const [passwordPending, setPasswordPending] = useState(false);
-  const [passwordSuccess, setPasswordSuccess] = useState<string>();
-  const [passwordFormError, setPasswordFormError] = useState<string>();
   const [passwordErrors, setPasswordErrors] = useState<{
     currentPassword?: string;
     newPassword?: string;
   }>({});
-  const initials = initialsFromUser(name, email);
-
-  useEffect(() => {
+  if (name !== savedName) {
+    setSavedName(name);
     setFullName(name);
-  }, [name]);
+  }
+  const initials = initialsFromUser(name, email);
+  const displayedAvatarUrl = previewUrl !== undefined ? previewUrl : avatarUrl;
+  const photoUrl = displayedAvatarUrl?.trim() || undefined;
+  const hasPhoto = Boolean(photoUrl) && photoUrl !== brokenPhotoUrl;
+
+  function openAvatarPicker() {
+    avatarInputRef.current?.click();
+  }
+
+  function closeCrop() {
+    if (cropSource?.revoke) {
+      URL.revokeObjectURL(cropSource.url);
+    }
+    setCropSource(undefined);
+  }
+
+  function openAvatarEditor() {
+    if (!hasPhoto || !photoUrl) {
+      openAvatarPicker();
+      return;
+    }
+
+    setCropSource({ url: photoUrl, revoke: false });
+  }
+
+  function handleCropMediaError() {
+    closeCrop();
+  }
+
+  function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    const nextError = avatarFileError(file);
+    if (nextError) {
+      showToast(nextError, "error");
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    if (cropSource?.revoke) {
+      URL.revokeObjectURL(cropSource.url);
+    }
+    setCropSource({ url, revoke: true });
+  }
+
+  async function handleCropSave(blob: Blob) {
+    setAvatarPending(true);
+
+    try {
+      const supabase = createClient();
+      const nextUrl = await uploadAvatar(supabase, blob);
+      if (cropSource?.revoke) {
+        URL.revokeObjectURL(cropSource.url);
+      }
+      setCropSource(undefined);
+      setPreviewUrl(nextUrl);
+      showToast("Photo updated.");
+      router.refresh();
+    } catch (error) {
+      throw new Error(avatarActionError(error, "Couldn't update photo. Please try again."));
+    } finally {
+      setAvatarPending(false);
+    }
+  }
+
+  async function handleAvatarRemove() {
+    if (!hasPhoto) {
+      closeCrop();
+      return;
+    }
+
+    setAvatarPending(true);
+
+    try {
+      const supabase = createClient();
+      await removeAvatar(supabase);
+      closeCrop();
+      setPreviewUrl("");
+      showToast("Photo removed.");
+      router.refresh();
+    } catch (error) {
+      showToast(avatarActionError(error, "Couldn't remove photo. Please try again."), "error");
+    } finally {
+      setAvatarPending(false);
+    }
+  }
+
+  async function handleClearData() {
+    setClearPending(true);
+
+    try {
+      const supabase = createClient();
+      await deleteOwnAccount(supabase);
+      router.replace("/login");
+      router.refresh();
+    } catch {
+      showToast("Couldn't clear data. Please try again.", "error");
+    } finally {
+      setClearPending(false);
+    }
+  }
 
   function handleNameChange(event: ChangeEvent<HTMLInputElement>) {
     setFullName(event.currentTarget.value);
     setNameHint(undefined);
-    setNameSuccess(undefined);
   }
 
   function cancelEditing() {
@@ -84,7 +203,6 @@ export function ProfilePage({
     const nextName = fullName.trim();
     const nextError = nameError(nextName);
     setNameHint(nextError);
-    setNameSuccess(undefined);
 
     if (nextError) {
       return;
@@ -108,10 +226,10 @@ export function ProfilePage({
       }
 
       setEditing(false);
-      setNameSuccess("Name updated.");
+      showToast("Name updated.");
       router.refresh();
     } catch {
-      setNameHint("Something went wrong. Please try again.");
+      showToast("Something went wrong. Please try again.", "error");
     } finally {
       setNamePending(false);
     }
@@ -123,8 +241,6 @@ export function ProfilePage({
       return;
     }
 
-    setPasswordFormError(undefined);
-    setPasswordSuccess(undefined);
     setPasswordErrors((current) => ({ ...current, [target.name]: undefined }));
   }
 
@@ -145,15 +261,13 @@ export function ProfilePage({
     }
 
     setPasswordErrors(nextErrors);
-    setPasswordFormError(undefined);
-    setPasswordSuccess(undefined);
 
     if (Object.values(nextErrors).some(Boolean)) {
       return;
     }
 
     if (!email) {
-      setPasswordFormError("Password can't be changed for this account.");
+      showToast("Password can't be changed for this account.", "error");
       return;
     }
 
@@ -180,9 +294,9 @@ export function ProfilePage({
       }
 
       form.reset();
-      setPasswordSuccess("Password updated.");
+      showToast("Password updated.");
     } catch {
-      setPasswordFormError("Something went wrong. Please try again.");
+      showToast("Something went wrong. Please try again.", "error");
     } finally {
       setPasswordPending(false);
     }
@@ -201,13 +315,43 @@ export function ProfilePage({
 
       <div className="grid gap-6 lg:grid-cols-[minmax(16rem,20rem)_1fr]">
         <Card className="flex h-full flex-col items-center text-center">
-          <Avatar
-            src={avatarUrl}
-            alt=""
-            initials={initials}
-            size="2xl"
-            className="ring-2 ring-primary ring-offset-2 ring-offset-surface"
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept={AVATAR_ACCEPT}
+            tabIndex={-1}
+            aria-hidden
+            className="sr-only"
+            disabled={avatarPending}
+            onChange={handleAvatarChange}
           />
+          <button
+            type="button"
+            aria-label={hasPhoto ? "Edit profile photo" : "Upload profile photo"}
+            disabled={avatarPending}
+            className="relative rounded-full outline-offset-4 disabled:cursor-not-allowed"
+            onClick={openAvatarEditor}
+          >
+            <Avatar
+              src={hasPhoto ? photoUrl : undefined}
+              alt=""
+              initials={initials}
+              size="2xl"
+              className="ring-2 ring-primary ring-offset-2 ring-offset-surface"
+              onImageLoad={() => setBrokenPhotoUrl(undefined)}
+              onImageError={() => {
+                if (photoUrl) {
+                  setBrokenPhotoUrl(photoUrl);
+                }
+              }}
+            />
+            <span
+              aria-hidden
+              className="absolute right-0 bottom-0 flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm ring-2 ring-surface"
+            >
+              {avatarPending ? <Spinner size={14} label="Updating photo" /> : <CameraIcon size={14} />}
+            </span>
+          </button>
           <Text as="h2" variant="cardTitle" className="mt-4">
             {name}
           </Text>
@@ -275,11 +419,6 @@ export function ProfilePage({
               disabled
               autoComplete="email"
             />
-            {nameSuccess ? (
-              <Text variant="caption" className="text-success-foreground" role="status">
-                {nameSuccess}
-              </Text>
-            ) : null}
           </form>
         </Card>
       </div>
@@ -312,12 +451,6 @@ export function ProfilePage({
             state={passwordErrors.newPassword ? "error" : "default"}
             hint={passwordErrors.newPassword}
           />
-          <AuthError message={passwordFormError} />
-          {passwordSuccess ? (
-            <Text variant="caption" className="text-success-foreground" role="status">
-              {passwordSuccess}
-            </Text>
-          ) : null}
           <div>
             <Button type="submit" loading={passwordPending}>
               Update Password
@@ -340,7 +473,7 @@ export function ProfilePage({
               Clear data
             </Text>
             <Text variant="caption">
-              Permanently delete all logs, streaks, and account configurations. This cannot be undone.
+              Permanently delete all triggers, data, and account configurations. This cannot be undone.
             </Text>
           </span>
           <ChevronRightIcon className="shrink-0 text-foreground-muted" />
@@ -349,17 +482,37 @@ export function ProfilePage({
 
       <Dialog
         open={clearOpen}
-        onOpenChange={setClearOpen}
+        onOpenChange={(open) => {
+          if (!clearPending) {
+            setClearOpen(open);
+          }
+        }}
         title="Clear data?"
-        description="Permanently delete all logs, streaks, and account configurations. This cannot be undone."
+        description="Permanently delete all triggers, data, and account configurations. This cannot be undone."
       >
         <DialogConfirmActions
           danger
+          pending={clearPending}
           confirmLabel="Clear data"
           onCancel={() => setClearOpen(false)}
-          onConfirm={() => setClearOpen(false)}
+          onConfirm={handleClearData}
         />
       </Dialog>
+      <AvatarCropDialog
+        imageSrc={cropSource?.url}
+        pending={avatarPending}
+        canManagePhoto={hasPhoto}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeCrop();
+          }
+        }}
+        onReplace={openAvatarPicker}
+        onMediaError={handleCropMediaError}
+        onRemove={handleAvatarRemove}
+        onSave={handleCropSave}
+      />
+      <ToastRegion toasts={toasts} />
     </div>
   );
 }

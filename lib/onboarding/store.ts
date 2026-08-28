@@ -9,6 +9,25 @@ import { isOnboardingComplete, parseOnboardingDraft, type OnboardingDraft } from
 type Client = SupabaseClient<Database>;
 
 export async function loadOnboarding(supabase: Client, userId: string) {
+  const withAvatar = await supabase
+    .from("user_data")
+    .select("full_name, avatar_url, onboarding, onboarding_completed_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!withAvatar.error) {
+    return {
+      fullName: parseFullName(withAvatar.data?.full_name),
+      avatar: parseAvatar(withAvatar.data?.avatar_url),
+      onboarding: parseOnboardingDraft(withAvatar.data?.onboarding),
+      onboardingComplete: isOnboardingComplete(withAvatar.data?.onboarding_completed_at),
+    };
+  }
+
+  if (!isMissingAvatarColumn(withAvatar.error)) {
+    throw withAvatar.error;
+  }
+
   const { data, error } = await supabase
     .from("user_data")
     .select("full_name, onboarding, onboarding_completed_at")
@@ -21,6 +40,7 @@ export async function loadOnboarding(supabase: Client, userId: string) {
 
   return {
     fullName: parseFullName(data?.full_name),
+    avatar: parseAvatar(undefined),
     onboarding: parseOnboardingDraft(data?.onboarding),
     onboardingComplete: isOnboardingComplete(data?.onboarding_completed_at),
   };
@@ -96,6 +116,25 @@ export async function saveFullName(supabase: Client, fullName: string) {
   if (error) {
     throw error;
   }
+}
+
+export type StoredAvatar = {
+  explicit: boolean;
+  url?: string;
+};
+
+function parseAvatar(value: string | null | undefined): StoredAvatar {
+  if (value == null) {
+    return { explicit: false };
+  }
+
+  const trimmed = value.trim();
+  return { explicit: true, url: trimmed || undefined };
+}
+
+function isMissingAvatarColumn(error: { message?: string }) {
+  const message = error.message?.toLowerCase() ?? "";
+  return message.includes("avatar_url") && (message.includes("schema cache") || message.includes("column"));
 }
 
 function parseFullName(value: string | null | undefined) {

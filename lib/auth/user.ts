@@ -4,7 +4,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 
-import { loadOnboarding } from "@/lib/onboarding/store";
+import { loadOnboarding, type StoredAvatar } from "@/lib/onboarding/store";
 import type { OnboardingDraft } from "@/lib/onboarding/draft";
 import { createClient } from "@/lib/supabase/server";
 
@@ -29,9 +29,17 @@ function displayName(user: User, storedName?: string) {
   return storedName || nameFromMetadata(user) || user.email || "there";
 }
 
-function avatarUrl(user: User) {
+function metadataAvatarUrl(user: User) {
   const value = user.user_metadata?.avatar_url ?? user.user_metadata?.picture;
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function resolveAvatarUrl(stored: StoredAvatar, metadataUrl?: string) {
+  if (stored.explicit) {
+    return stored.url;
+  }
+
+  return metadataUrl;
 }
 
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
@@ -63,7 +71,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     id: user.id,
     email: user.email ?? null,
     name: displayName(user, storedName),
-    avatarUrl: avatarUrl(user),
+    avatarUrl: resolveAvatarUrl(loaded.avatar, metadataAvatarUrl(user)),
     createdAt: user.created_at,
     onboardingComplete: loaded.onboardingComplete,
     onboarding: loaded.onboarding,

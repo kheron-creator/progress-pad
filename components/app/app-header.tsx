@@ -144,13 +144,13 @@ export function AppHeader() {
       theme={theme}
       onThemeToggle={toggleTheme}
       initials={initials}
-      avatarSrc={user.avatarUrl}
+      avatarSrc={user.avatarUrl?.trim() || undefined}
       account={
         <AccountMenu
           name={user.name}
           email={user.email}
           initials={initials}
-          avatarSrc={user.avatarUrl}
+          avatarSrc={user.avatarUrl?.trim() || undefined}
         />
       }
     />

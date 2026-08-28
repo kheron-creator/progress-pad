@@ -25,6 +25,7 @@ export { IconMark } from "./icon-mark";
 export {
   BarbellIcon,
   BellIcon,
+  CameraIcon,
   ChartLineIcon,
   ChatIcon,
   CheckCircleIcon,
@@ -71,6 +72,7 @@ export { Tag } from "./tag";
 export { Text } from "./text";
 export { Textarea } from "./textarea";
 export { Toast } from "./toast";
+export { ToastRegion, useToasts } from "./toast-region";
 export { Toggle } from "./toggle";
 export { Tooltip } from "./tooltip";
 export { TriggerCard } from "./trigger-card";

@@ -218,36 +218,35 @@ export function OnboardingWizard({ step, initialDraft }: OnboardingWizardProps) 
                 look="outline"
                 size="lg"
                 disabled={pending}
-                className="min-w-0 flex-1 px-4 sm:flex-none sm:px-12"
+                className="min-w-0 px-4 sm:px-12"
                 onClick={handleBack}
               >
                 <ChevronLeftIcon />
                 Back
               </Button>
             ) : null}
-            {step === 6 ? (
+            <div className={cn("flex items-center gap-3", current > 1 ? "" : "w-full sm:w-auto")}>
+              {step === 6 ? (
+                <Button
+                  look="clear"
+                  size="lg"
+                  disabled={pending}
+                  className="min-w-0 px-4 sm:px-12"
+                  onClick={handleSkip}
+                >
+                  Skip
+                </Button>
+              ) : null}
               <Button
-                look="clear"
                 size="lg"
-                disabled={pending}
-                className="min-w-0 flex-1 px-4 sm:flex-none sm:px-12"
-                onClick={handleSkip}
+                loading={pending}
+                disabled={!continueEnabled}
+                className={cn("min-w-0 px-4 sm:px-12", current > 1 ? "" : "w-full sm:w-auto")}
+                onClick={handleContinue}
               >
-                Skip
+                Continue
               </Button>
-            ) : null}
-            <Button
-              size="lg"
-              loading={pending}
-              disabled={!continueEnabled}
-              className={cn(
-                "min-w-0 px-4 sm:flex-none sm:px-12",
-                current > 1 ? "flex-1" : "w-full sm:w-auto",
-              )}
-              onClick={handleContinue}
-            >
-              Continue
-            </Button>
+            </div>
           </div>
         )}
       </div>
