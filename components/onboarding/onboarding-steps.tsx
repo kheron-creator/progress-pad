@@ -41,7 +41,7 @@ function StepLayout({ heading, children }: { heading: ReactNode; children: React
       <div className="shrink-0">{heading}</div>
       <div
         className={cn(
-          "min-h-0 flex-1 overflow-y-auto overscroll-y-contain",
+          "min-h-0 flex-1 overflow-y-auto overscroll-y-contain sm:overflow-hidden",
           SCROLL_HIDE,
         )}
       >

@@ -6,11 +6,15 @@
 create table if not exists public.user_data (
   user_id uuid primary key references auth.users (id) on delete cascade,
   full_name text,
+  avatar_url text,
   onboarding jsonb not null default '{}'::jsonb,
   onboarding_completed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.user_data
+  add column if not exists avatar_url text;
 
 create index if not exists user_data_onboarding_completed_at_idx
   on public.user_data (onboarding_completed_at);
@@ -64,7 +68,7 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.user_data (user_id, full_name)
+  insert into public.user_data (user_id, full_name, avatar_url)
   values (
     new.id,
     nullif(
@@ -76,10 +80,22 @@ begin
         )
       ),
       ''
+    ),
+    nullif(
+      trim(
+        coalesce(
+          new.raw_user_meta_data ->> 'avatar_url',
+          new.raw_user_meta_data ->> 'picture',
+          ''
+        )
+      ),
+      ''
     )
   )
   on conflict (user_id) do update
-    set full_name = coalesce(public.user_data.full_name, excluded.full_name);
+    set
+      full_name = coalesce(public.user_data.full_name, excluded.full_name),
+      avatar_url = coalesce(public.user_data.avatar_url, excluded.avatar_url);
   return new;
 end;
 $$;
@@ -90,8 +106,8 @@ create trigger on_auth_user_created
   for each row
   execute procedure public.handle_new_user();
 
--- Copy answers and name out of auth metadata only when user_data is still empty.
-insert into public.user_data (user_id, full_name, onboarding, onboarding_completed_at)
+-- Copy answers, name, and avatar out of auth metadata only when user_data is still empty.
+insert into public.user_data (user_id, full_name, avatar_url, onboarding, onboarding_completed_at)
 select
   id,
   nullif(
@@ -99,6 +115,16 @@ select
       coalesce(
         raw_user_meta_data ->> 'full_name',
         raw_user_meta_data ->> 'name',
+        ''
+      )
+    ),
+    ''
+  ),
+  nullif(
+    trim(
+      coalesce(
+        raw_user_meta_data ->> 'avatar_url',
+        raw_user_meta_data ->> 'picture',
         ''
       )
     ),
@@ -117,6 +143,7 @@ from auth.users
 on conflict (user_id) do update
   set
     full_name = coalesce(public.user_data.full_name, excluded.full_name),
+    avatar_url = coalesce(public.user_data.avatar_url, excluded.avatar_url),
     onboarding = case
       when public.user_data.onboarding = '{}'::jsonb
         then excluded.onboarding
@@ -126,3 +153,84 @@ on conflict (user_id) do update
       public.user_data.onboarding_completed_at,
       excluded.onboarding_completed_at
     );
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'avatars',
+  'avatars',
+  true,
+  2097152,
+  array['image/jpeg', 'image/png', 'image/webp']::text[]
+)
+on conflict (id) do update
+set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Avatars are publicly readable" on storage.objects;
+create policy "Avatars are publicly readable"
+  on storage.objects
+  for select
+  using (bucket_id = 'avatars');
+
+drop policy if exists "Users can upload own avatar" on storage.objects;
+create policy "Users can upload own avatar"
+  on storage.objects
+  for insert
+  to authenticated
+  with check (
+    bucket_id = 'avatars'
+    and split_part(name, '/', 1) = auth.uid()::text
+  );
+
+drop policy if exists "Users can update own avatar" on storage.objects;
+create policy "Users can update own avatar"
+  on storage.objects
+  for update
+  to authenticated
+  using (
+    bucket_id = 'avatars'
+    and split_part(name, '/', 1) = auth.uid()::text
+  )
+  with check (
+    bucket_id = 'avatars'
+    and split_part(name, '/', 1) = auth.uid()::text
+  );
+
+drop policy if exists "Users can delete own avatar" on storage.objects;
+create policy "Users can delete own avatar"
+  on storage.objects
+  for delete
+  to authenticated
+  using (
+    bucket_id = 'avatars'
+    and split_part(name, '/', 1) = auth.uid()::text
+  );
+
+create or replace function public.delete_own_account()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+begin
+  if uid is null then
+    raise exception 'Not signed in';
+  end if;
+
+  delete from storage.objects
+  where split_part(name, '/', 1) = uid::text;
+
+  delete from public.user_data
+  where user_id = uid;
+
+  delete from auth.users
+  where id = uid;
+end;
+$$;
+
+revoke all on function public.delete_own_account() from public;
+grant execute on function public.delete_own_account() to authenticated;

@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           user_id: string;
           full_name: string | null;
+          avatar_url: string | null;
           onboarding: Json;
           onboarding_completed_at: string | null;
           created_at: string;
@@ -21,6 +22,7 @@ export type Database = {
         Insert: {
           user_id: string;
           full_name?: string | null;
+          avatar_url?: string | null;
           onboarding?: Json;
           onboarding_completed_at?: string | null;
           created_at?: string;
@@ -29,6 +31,7 @@ export type Database = {
         Update: {
           user_id?: string;
           full_name?: string | null;
+          avatar_url?: string | null;
           onboarding?: Json;
           onboarding_completed_at?: string | null;
           created_at?: string;
@@ -38,7 +41,12 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      delete_own_account: {
+        Args: Record<PropertyKey, never>;
+        Returns: undefined;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
