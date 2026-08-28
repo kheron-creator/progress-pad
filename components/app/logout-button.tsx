@@ -3,17 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { Text } from "@/components/ui/text";
 import { clearRememberPreference } from "@/lib/auth/remember";
 import { createClient } from "@/lib/supabase/client";
 
-export function LogoutButton() {
+export function useSignOut() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
 
-  async function handleLogout() {
+  async function signOut() {
     setPending(true);
     setError(undefined);
 
@@ -36,16 +34,5 @@ export function LogoutButton() {
     }
   }
 
-  return (
-    <div className="flex shrink-0 flex-col items-end gap-1">
-      <Button look="outline" size="md" loading={pending} onClick={handleLogout}>
-        Log out
-      </Button>
-      {error ? (
-        <Text variant="caption" className="text-error" role="alert">
-          {error}
-        </Text>
-      ) : null}
-    </div>
-  );
+  return { signOut, pending, error };
 }
