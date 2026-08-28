@@ -113,91 +113,78 @@ export function OnboardingWizard({ step, initialDraft }: OnboardingWizardProps) 
   }
 
   return (
-    <div className="pp-onboarding relative flex min-h-dvh flex-col bg-background">
+    <div className="pp-onboarding flex h-dvh max-h-dvh flex-col overflow-hidden bg-background px-(--pp-space-40) pt-[max(var(--pp-space-36),env(safe-area-inset-top))] pb-[max(var(--pp-space-36),env(safe-area-inset-bottom))] lg:px-10 lg:pt-12 lg:pb-4">
       <header
         className={cn(
-          "flex shrink-0 items-center justify-between gap-3",
-          "px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-2",
-          "sm:px-6 md:px-10 md:pt-8 lg:px-14",
+          "flex shrink-0 flex-col items-center gap-(--pp-space-36) pb-(--pp-space-24)",
+          "lg:gap-6 lg:pb-8",
         )}
       >
-        <Logo size="sm" className="h-7 w-auto shrink-0 sm:h-8" />
-        {step !== "ready" ? (
-          <div className="min-w-0 md:hidden">
-            <OnboardingProgress current={current} />
-          </div>
-        ) : null}
+        <Logo size="sm" className="h-7 w-auto sm:h-8" />
+        {step !== "ready" ? <OnboardingProgress current={current} /> : null}
       </header>
 
-      <div className="mx-auto flex min-h-0 w-full max-w-[calc(2*26.25rem+0.75rem)] flex-1 flex-col px-4 sm:px-6">
-        {step !== "ready" ? (
-          <div className="hidden shrink-0 justify-center pb-6 md:flex lg:pb-8">
-            <OnboardingProgress current={current} />
-          </div>
-        ) : null}
-
-        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
-          <div className="my-auto flex flex-col gap-6 py-3 sm:gap-10 lg:gap-16">
-            <div className="flex min-h-0 flex-col">
-              {step === 1 ? (
-                <IntentStep
-                  draft={draft}
-                  onToggle={(id) =>
-                    setDraft((currentDraft) => ({
-                      ...currentDraft,
-                      reasons: toggleLimited(currentDraft.reasons, id, ONBOARDING_MAX_MULTI),
-                    }))
-                  }
-                />
-              ) : null}
-              {step === 2 ? (
-                <SpaceStep
-                  draft={draft}
-                  onToggle={(id) =>
-                    setDraft((currentDraft) => ({
-                      ...currentDraft,
-                      spaceFor: toggleLimited(currentDraft.spaceFor, id, ONBOARDING_MAX_MULTI),
-                    }))
-                  }
-                />
-              ) : null}
-              {step === 3 ? (
-                <RoutineStep
-                  draft={draft}
-                  onToggle={(id) =>
-                    setDraft((currentDraft) => ({
-                      ...currentDraft,
-                      routine: toggleLimited(currentDraft.routine, id, ONBOARDING_MAX_ROUTINE),
-                    }))
-                  }
-                />
-              ) : null}
-              {step === 4 ? <MeetPadStep /> : null}
-              {step === 5 ? (
-                <TriggersStep
-                  draft={draft}
-                  onToggle={(id) =>
-                    setDraft((currentDraft) => ({
-                      ...currentDraft,
-                      triggerIds: toggleLimited(currentDraft.triggerIds, id, ONBOARDING_MAX_TRIGGERS),
-                    }))
-                  }
-                />
-              ) : null}
-              {step === 6 ? (
-                <CheckInStep
-                  draft={draft}
-                  onSelect={(id: CheckInTime) =>
-                    setDraft((currentDraft) => ({
-                      ...currentDraft,
-                      checkIn: id,
-                      checkInSkipped: false,
-                    }))
-                  }
-                />
-              ) : null}
-              {step === "ready" ? <ReadyStep /> : null}
-            </div>
+      <div className="mx-auto flex min-h-0 w-full max-w-[calc(2*26.25rem+0.75rem)] flex-1 flex-col overflow-hidden lg:px-6">
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden lg:py-3">
+          <div className="flex min-h-0 flex-1 flex-col">
+            {step === 1 ? (
+              <IntentStep
+                draft={draft}
+                onToggle={(id) =>
+                  setDraft((currentDraft) => ({
+                    ...currentDraft,
+                    reasons: toggleLimited(currentDraft.reasons, id, ONBOARDING_MAX_MULTI),
+                  }))
+                }
+              />
+            ) : null}
+            {step === 2 ? (
+              <SpaceStep
+                draft={draft}
+                onToggle={(id) =>
+                  setDraft((currentDraft) => ({
+                    ...currentDraft,
+                    spaceFor: toggleLimited(currentDraft.spaceFor, id, ONBOARDING_MAX_MULTI),
+                  }))
+                }
+              />
+            ) : null}
+            {step === 3 ? (
+              <RoutineStep
+                draft={draft}
+                onToggle={(id) =>
+                  setDraft((currentDraft) => ({
+                    ...currentDraft,
+                    routine: toggleLimited(currentDraft.routine, id, ONBOARDING_MAX_ROUTINE),
+                  }))
+                }
+              />
+            ) : null}
+            {step === 4 ? <MeetPadStep /> : null}
+            {step === 5 ? (
+              <TriggersStep
+                draft={draft}
+                onToggle={(id) =>
+                  setDraft((currentDraft) => ({
+                    ...currentDraft,
+                    triggerIds: toggleLimited(currentDraft.triggerIds, id, ONBOARDING_MAX_TRIGGERS),
+                  }))
+                }
+              />
+            ) : null}
+            {step === 6 ? (
+              <CheckInStep
+                draft={draft}
+                onSelect={(id: CheckInTime) =>
+                  setDraft((currentDraft) => ({
+                    ...currentDraft,
+                    checkIn: id,
+                    checkInSkipped: false,
+                  }))
+                }
+              />
+            ) : null}
+            {step === "ready" ? <ReadyStep /> : null}
 
             {error ? (
               <Text variant="caption" className="shrink-0 text-center text-error" role="alert">
@@ -208,7 +195,7 @@ export function OnboardingWizard({ step, initialDraft }: OnboardingWizardProps) 
         </main>
 
         {step === "ready" ? (
-          <div className="flex shrink-0 justify-center py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="flex shrink-0 justify-center bg-background pt-4 lg:py-4">
             <Button
               size="lg"
               loading={pending}
@@ -222,10 +209,8 @@ export function OnboardingWizard({ step, initialDraft }: OnboardingWizardProps) 
         ) : (
           <div
             className={cn(
-              "flex shrink-0 gap-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]",
-              current > 1
-                ? "flex-col sm:flex-row sm:items-center sm:justify-between"
-                : "flex-col sm:flex-row sm:items-center sm:justify-end",
+              "flex shrink-0 flex-row items-center gap-3 bg-background pt-4 lg:py-4",
+              current > 1 ? "justify-between" : "justify-end",
             )}
           >
             {current > 1 ? (
@@ -233,35 +218,36 @@ export function OnboardingWizard({ step, initialDraft }: OnboardingWizardProps) 
                 look="outline"
                 size="lg"
                 disabled={pending}
-                className="w-full px-6 sm:w-auto sm:px-12"
+                className="min-w-0 flex-1 px-4 sm:flex-none sm:px-12"
                 onClick={handleBack}
               >
                 <ChevronLeftIcon />
                 Back
               </Button>
             ) : null}
-            <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
-              {step === 6 ? (
-                <Button
-                  look="clear"
-                  size="lg"
-                  disabled={pending}
-                  className="w-full px-6 sm:w-auto sm:px-12"
-                  onClick={handleSkip}
-                >
-                  Skip
-                </Button>
-              ) : null}
+            {step === 6 ? (
               <Button
+                look="clear"
                 size="lg"
-                loading={pending}
-                disabled={!continueEnabled}
-                className="w-full px-6 sm:w-auto sm:px-12"
-                onClick={handleContinue}
+                disabled={pending}
+                className="min-w-0 flex-1 px-4 sm:flex-none sm:px-12"
+                onClick={handleSkip}
               >
-                Continue
+                Skip
               </Button>
-            </div>
+            ) : null}
+            <Button
+              size="lg"
+              loading={pending}
+              disabled={!continueEnabled}
+              className={cn(
+                "min-w-0 px-4 sm:flex-none sm:px-12",
+                current > 1 ? "flex-1" : "w-full sm:w-auto",
+              )}
+              onClick={handleContinue}
+            >
+              Continue
+            </Button>
           </div>
         )}
       </div>

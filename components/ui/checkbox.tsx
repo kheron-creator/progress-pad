@@ -64,12 +64,12 @@ export function Checkbox({
         className={cn(
           "flex size-full items-center justify-center rounded-xs border",
           boxClassName ??
-            cn(
-              invalid ? "border-border-error" : "border-border",
-              tone === "accent"
-                ? "text-accent-foreground peer-checked:border-accent peer-checked:bg-accent"
-                : "text-primary-foreground peer-checked:border-primary peer-checked:bg-primary",
-            ),
+          cn(
+            invalid ? "border-border-error" : "border-border",
+            tone === "accent"
+              ? "text-accent-foreground peer-checked:border-accent peer-checked:bg-accent"
+              : "text-primary-foreground peer-checked:border-primary peer-checked:bg-primary",
+          ),
           "peer-checked:[&_svg]:opacity-100",
           "peer-disabled:border-border-disabled peer-disabled:bg-background-subtle",
           "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus-ring",

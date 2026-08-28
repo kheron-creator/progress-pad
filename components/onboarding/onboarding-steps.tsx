@@ -32,8 +32,23 @@ import { ReadyConfetti } from "./ready-confetti";
 const STEP_BODY_MIN_HEIGHT =
   "sm:min-h-[calc(4*4.5rem+3*0.75rem)]";
 
-function StepLayout({ children }: { children: ReactNode }) {
-  return <div className="flex flex-col gap-4 lg:gap-5">{children}</div>;
+const SCROLL_HIDE =
+  "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
+
+function StepLayout({ heading, children }: { heading: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-(--pp-space-24) lg:gap-5">
+      <div className="shrink-0">{heading}</div>
+      <div
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto overscroll-y-contain",
+          SCROLL_HIDE,
+        )}
+      >
+        <div className="flex min-h-full flex-col justify-start pb-1 sm:justify-center">{children}</div>
+      </div>
+    </div>
+  );
 }
 
 function StepBody({ children, className }: { children: ReactNode; className?: string }) {
@@ -46,7 +61,10 @@ export function OnboardingHeading({ title, description }: { title: string; descr
       <Text as="h1" variant="pageTitle" className="m-0 text-balance">
         {title}
       </Text>
-      <Text variant="description" className="m-0 mt-2 text-pretty">
+      <Text
+        variant="description"
+        className="m-0 mt-(--pp-space-2) text-pretty text-[length:var(--pp-font-size-12)] leading-(--pp-leading-16) lg:mt-2 lg:text-[length:var(--pp-text-body-size)] lg:leading-(--pp-text-body-leading)"
+      >
         {description}
       </Text>
     </div>
@@ -68,8 +86,8 @@ export function ChoiceGrid({
     <div
       className={
         columns === 4
-          ? cn("grid w-full grid-cols-1 content-start justify-items-stretch gap-2 sm:grid-cols-2 sm:content-center sm:gap-3 lg:grid-cols-3", STEP_BODY_MIN_HEIGHT)
-          : cn("grid w-full grid-cols-1 content-start justify-items-stretch gap-2 sm:grid-cols-2 sm:content-center sm:gap-3", STEP_BODY_MIN_HEIGHT)
+          ? "grid w-full grid-cols-1 content-start justify-items-stretch gap-2 sm:grid-cols-2 sm:content-center sm:gap-3 lg:grid-cols-3"
+          : "grid w-full grid-cols-1 content-start justify-items-stretch gap-2 sm:grid-cols-2 sm:content-center sm:gap-3"
       }
     >
       {options.map((option) => (
@@ -93,8 +111,7 @@ export function IntentStep({
   onToggle: (id: string) => void;
 }) {
   return (
-    <StepLayout>
-      <OnboardingHeading title="What brings you here?" description="Select up to three" />
+    <StepLayout heading={<OnboardingHeading title="What brings you here?" description="Select up to three" />}>
       <ChoiceGrid options={intentOptions} selected={draft.reasons} onToggle={onToggle} />
     </StepLayout>
   );
@@ -108,11 +125,14 @@ export function SpaceStep({
   onToggle: (id: string) => void;
 }) {
   return (
-    <StepLayout>
-      <OnboardingHeading
-        title="What would you like to make more space for?"
-        description="Select up to three"
-      />
+    <StepLayout
+      heading={
+        <OnboardingHeading
+          title="What would you like to make more space for?"
+          description="Select up to three"
+        />
+      }
+    >
       <ChoiceGrid options={spaceOptions} selected={draft.spaceFor} onToggle={onToggle} />
     </StepLayout>
   );
@@ -126,11 +146,14 @@ export function RoutineStep({
   onToggle: (id: string) => void;
 }) {
   return (
-    <StepLayout>
-      <OnboardingHeading
-        title="What does your day-to-day look like?"
-        description="Select up to two"
-      />
+    <StepLayout
+      heading={
+        <OnboardingHeading
+          title="What does your day-to-day look like?"
+          description="Select up to two"
+        />
+      }
+    >
       <ChoiceGrid options={routineOptions} selected={draft.routine} onToggle={onToggle} />
     </StepLayout>
   );
@@ -138,13 +161,16 @@ export function RoutineStep({
 
 export function MeetPadStep() {
   return (
-    <StepLayout>
-      <OnboardingHeading
-        title="Meet your Progress Pad"
-        description="Your space to check in, clear your head, and move forward"
-      />
-      <StepBody className="flex flex-col justify-center gap-8 sm:gap-16">
-        <div className="grid grid-cols-1 content-center gap-6 sm:grid-cols-3 sm:gap-3">
+    <StepLayout
+      heading={
+        <OnboardingHeading
+          title="Meet your Progress Pad"
+          description="Your space to check in, clear your head, and move forward"
+        />
+      }
+    >
+      <StepBody className="flex flex-col justify-center gap-5 lg:gap-16">
+        <div className="grid grid-cols-1 content-center gap-6 sm:grid-cols-3 sm:gap-5">
           <IntroColumn
             icon={
               <TargetIcon
@@ -195,11 +221,14 @@ export function TriggersStep({
   onToggle: (id: string) => void;
 }) {
   return (
-    <StepLayout>
-      <OnboardingHeading
-        title="Let's set up a few things that help you make progress."
-        description="Add at least 1 trigger to get started."
-      />
+    <StepLayout
+      heading={
+        <OnboardingHeading
+          title="Let's set up a few things that help you make progress."
+          description="Add at least 1 trigger to get started."
+        />
+      }
+    >
       <StepBody className="relative">
         <ChoiceGrid
           options={triggerOptions}
@@ -223,12 +252,15 @@ export function CheckInStep({
   onSelect: (id: CheckInTime) => void;
 }) {
   return (
-    <StepLayout>
-      <OnboardingHeading
-        title="When would you like to check in with yourself?"
-        description="You can change this anytime later"
-      />
-      <StepBody className="grid grid-cols-1 content-center gap-3 sm:grid-cols-3">
+    <StepLayout
+      heading={
+        <OnboardingHeading
+          title="When would you like to check in with yourself?"
+          description="You can change this anytime later"
+        />
+      }
+    >
+      <StepBody className="grid grid-cols-1 content-center gap-2 sm:grid-cols-3 sm:gap-3">
         {checkInOptions.map((option) => (
           <button
             key={option.id}
@@ -236,23 +268,31 @@ export function CheckInStep({
             aria-pressed={draft.checkIn === option.id}
             onClick={() => onSelect(option.id)}
             className={cn(
-              "flex flex-col items-center gap-2 rounded-md border px-4 py-6 text-center sm:gap-3 sm:py-14 md:py-16",
+              "flex flex-col items-center gap-1.5 rounded-md border px-3 py-4 text-center sm:gap-3 sm:px-4 sm:py-14 md:py-16",
               draft.checkIn === option.id
                 ? "border-(--pp-spring-green-600) bg-(--pp-spring-green-10)"
                 : "border-(--pp-grey-50) bg-surface",
             )}
           >
             {option.id === "morning" ? (
-              <SunIcon size={56} weight="bold" className="size-10 text-(--pp-spring-green-600) sm:size-14" />
+              <SunIcon size={56} weight="bold" className="size-8 text-(--pp-spring-green-600) sm:size-14" />
             ) : option.id === "afternoon" ? (
-              <SunHorizonIcon size={56} weight="bold" className="size-10 text-(--pp-magenta-500) sm:size-14" />
+              <SunHorizonIcon size={56} weight="bold" className="size-8 text-(--pp-magenta-500) sm:size-14" />
             ) : (
-              <MoonIcon size={56} weight="bold" className="size-10 text-(--pp-bondi-blue-500) sm:size-14" />
+              <MoonIcon size={56} weight="bold" className="size-8 text-(--pp-bondi-blue-500) sm:size-14" />
             )}
-            <Text variant="cardTitle" className="font-semibold">
+            <Text
+              variant="cardTitle"
+              className="font-semibold text-[length:var(--pp-font-size-14)] leading-(--pp-leading-20) lg:text-[length:var(--pp-text-card-title-size)] lg:leading-(--pp-text-card-title-leading)"
+            >
               {option.title}
             </Text>
-            <Text variant="description">{option.description}</Text>
+            <Text
+              variant="description"
+              className="text-[length:var(--pp-font-size-12)] leading-(--pp-leading-16) lg:text-[length:var(--pp-text-body-size)] lg:leading-(--pp-text-body-leading)"
+            >
+              {option.description}
+            </Text>
           </button>
         ))}
       </StepBody>
@@ -277,9 +317,13 @@ export function ReadyStep() {
 
 function NextUpBanner() {
   return (
-    <div className="flex items-start justify-center gap-3 rounded-md border border-(--pp-grey-50) bg-(--pp-spring-green-10) px-4 py-3 sm:items-center sm:px-5">
-      <SparkleIcon size={20} weight="fill" className="mt-0.5 shrink-0 text-(--pp-spring-green-600) sm:mt-0" />
-      <Text as="p" variant="bodySmall" className="m-0 text-pretty">
+    <div className="flex items-start justify-center gap-2 rounded-md border border-(--pp-grey-50) bg-(--pp-spring-green-10) px-3 py-2.5 sm:items-center sm:gap-3 sm:px-5 sm:py-3">
+      <SparkleIcon size={14} weight="fill" className="mt-0.5 shrink-0 text-(--pp-spring-green-600) sm:mt-0" />
+      <Text
+        as="p"
+        variant="caption"
+        className="m-0 text-pretty text-(length:--pp-font-size-10) leading-(--pp-leading-16) lg:text-(length:--pp-text-body-small-size) lg:leading-(--pp-text-body-small-leading)"
+      >
         <span className="font-semibold text-(--pp-spring-green-600)">Next up: </span>
         We&apos;ll help you choose a few small triggers for your day.
       </Text>
@@ -300,13 +344,21 @@ function IntroColumn({
 }) {
   return (
     <div
-      className={`flex flex-col items-center gap-2 px-2 text-center sm:gap-3 sm:px-6 ${divider ? "sm:border-l sm:border-border" : ""}`}
+      className={`flex flex-col items-center gap-1 px-2 text-center sm:gap-3 sm:px-6 ${divider ? "sm:border-l sm:border-border" : ""}`}
     >
       {icon}
-      <Text variant="cardTitle" className="font-semibold">
+      <Text
+        variant="cardTitle"
+        className="font-semibold text-[length:var(--pp-font-size-14)] leading-(--pp-leading-20) lg:text-[length:var(--pp-text-card-title-size)] lg:leading-(--pp-text-card-title-leading)"
+      >
         {title}
       </Text>
-      <Text variant="description">{description}</Text>
+      <Text
+        variant="description"
+        className="text-[length:var(--pp-font-size-12)] leading-(--pp-leading-16) lg:text-[length:var(--pp-text-body-size)] lg:leading-(--pp-text-body-leading)"
+      >
+        {description}
+      </Text>
     </div>
   );
 }

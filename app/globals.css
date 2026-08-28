@@ -168,8 +168,20 @@
 
 @layer components {
   @media (width < 64rem) {
-    .pp-auth,
     .pp-onboarding {
+      --pp-text-page-title-size: var(--pp-font-size-18);
+      --pp-text-page-title-leading: var(--pp-leading-24);
+      --pp-text-body-size: var(--pp-font-size-14);
+      --pp-text-body-leading: var(--pp-leading-20);
+      --pp-text-label-size: var(--pp-font-size-12);
+      --pp-text-label-leading: var(--pp-leading-16);
+      --pp-text-button-size: var(--pp-font-size-14);
+      --pp-text-button-leading: var(--pp-leading-20);
+      --pp-text-control-lg-size: var(--pp-font-size-14);
+      --pp-control-height-lg: var(--pp-control-40);
+    }
+
+    .pp-auth {
       --pp-text-page-title-size: var(--pp-font-size-22);
       --pp-text-page-title-leading: var(--pp-leading-28);
       --pp-text-body-size: var(--pp-font-size-14);
