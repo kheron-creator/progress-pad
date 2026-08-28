@@ -120,22 +120,18 @@ export function SpaceStep({
 
 export function RoutineStep({
   draft,
-  onSelect,
+  onToggle,
 }: {
   draft: OnboardingDraft;
-  onSelect: (id: string) => void;
+  onToggle: (id: string) => void;
 }) {
   return (
     <StepLayout>
       <OnboardingHeading
         title="What does your day-to-day look like?"
-        description="This helps us tailor your experience to your current routine."
+        description="Select up to two"
       />
-      <ChoiceGrid
-        options={routineOptions}
-        selected={draft.routine ? [draft.routine] : []}
-        onToggle={onSelect}
-      />
+      <ChoiceGrid options={routineOptions} selected={draft.routine} onToggle={onToggle} />
     </StepLayout>
   );
 }

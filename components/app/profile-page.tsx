@@ -38,13 +38,13 @@ export function ProfilePage({
   name,
   email,
   avatarUrl,
-  roleLabel,
+  roleLabels,
   memberSince,
 }: {
   name: string;
   email: string | null;
   avatarUrl?: string;
-  roleLabel?: string;
+  roleLabels?: string[];
   memberSince?: string;
 }) {
   const router = useRouter();
@@ -216,10 +216,14 @@ export function ProfilePage({
               {email}
             </Text>
           ) : null}
-          {roleLabel ? (
-            <Badge tone="primary" look="outline" size="md" className="mt-3 bg-background-subtle">
-              {roleLabel}
-            </Badge>
+          {roleLabels && roleLabels.length > 0 ? (
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+              {roleLabels.map((label) => (
+                <Badge key={label} tone="primary" look="outline" size="md" className="bg-background-subtle">
+                  {label}
+                </Badge>
+              ))}
+            </div>
           ) : null}
           <div className="mt-auto flex w-full flex-col gap-2 pt-8 text-left">
             {memberSince ? (

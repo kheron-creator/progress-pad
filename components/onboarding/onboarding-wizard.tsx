@@ -9,6 +9,7 @@ import { Logo } from "@/components/ui/logo";
 import { Text } from "@/components/ui/text";
 import {
   ONBOARDING_MAX_MULTI,
+  ONBOARDING_MAX_ROUTINE,
   ONBOARDING_MAX_TRIGGERS,
   ONBOARDING_READY_STEP,
   canContinue,
@@ -151,10 +152,10 @@ export function OnboardingWizard({ step, initialDraft }: OnboardingWizardProps) 
               {step === 3 ? (
                 <RoutineStep
                   draft={draft}
-                  onSelect={(id) =>
+                  onToggle={(id) =>
                     setDraft((currentDraft) => ({
                       ...currentDraft,
-                      routine: currentDraft.routine === id ? null : id,
+                      routine: toggleLimited(currentDraft.routine, id, ONBOARDING_MAX_ROUTINE),
                     }))
                   }
                 />
