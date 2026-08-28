@@ -2,7 +2,7 @@ export const ONBOARDING_STEP_COUNT = 6;
 export const ONBOARDING_READY_STEP = 7;
 export const ONBOARDING_MAX_MULTI = 3;
 export const ONBOARDING_MAX_ROUTINE = 2;
-export const ONBOARDING_MAX_TRIGGERS = 5;
+export const ONBOARDING_MAX_TRIGGERS = 6;
 export const ONBOARDING_SCHEMA_VERSION = 1;
 
 export type CheckInTime = "morning" | "afternoon" | "evening";
