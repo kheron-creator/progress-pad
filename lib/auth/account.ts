@@ -6,10 +6,10 @@ import type { Database } from "@/lib/supabase/database";
 type Client = SupabaseClient<Database>;
 
 export async function deleteOwnAccount(supabase: Client) {
-  const { error } = await supabase.rpc("delete_own_account");
+  const response = await fetch("/api/account", { method: "DELETE" });
 
-  if (error) {
-    throw error;
+  if (!response.ok) {
+    throw new Error("Couldn't clear data. Please try again.");
   }
 
   try {

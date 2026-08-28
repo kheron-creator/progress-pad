@@ -208,29 +208,4 @@ create policy "Users can delete own avatar"
     and split_part(name, '/', 1) = auth.uid()::text
   );
 
-create or replace function public.delete_own_account()
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  uid uuid := auth.uid();
-begin
-  if uid is null then
-    raise exception 'Not signed in';
-  end if;
-
-  delete from storage.objects
-  where split_part(name, '/', 1) = uid::text;
-
-  delete from public.user_data
-  where user_id = uid;
-
-  delete from auth.users
-  where id = uid;
-end;
-$$;
-
-revoke all on function public.delete_own_account() from public;
-grant execute on function public.delete_own_account() to authenticated;
+drop function if exists public.delete_own_account();

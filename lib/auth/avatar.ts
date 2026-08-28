@@ -14,7 +14,7 @@ const OUTPUT_SIZE = 512;
 const OUTPUT_TYPE = "image/jpeg";
 const OUTPUT_QUALITY = 0.86;
 
-function avatarObjectPath(userId: string) {
+export function avatarObjectPath(userId: string) {
   return `${userId}/${AVATAR_OBJECT}`;
 }
 

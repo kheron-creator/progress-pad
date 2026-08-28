@@ -41,12 +41,7 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: {
-      delete_own_account: {
-        Args: Record<PropertyKey, never>;
-        Returns: undefined;
-      };
-    };
+    Functions: Record<string, never>;
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
