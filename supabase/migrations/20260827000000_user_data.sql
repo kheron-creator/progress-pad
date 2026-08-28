@@ -5,6 +5,7 @@
 
 create table if not exists public.user_data (
   user_id uuid primary key references auth.users (id) on delete cascade,
+  full_name text,
   onboarding jsonb not null default '{}'::jsonb,
   onboarding_completed_at timestamptz,
   created_at timestamptz not null default now(),
@@ -63,9 +64,22 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.user_data (user_id)
-  values (new.id)
-  on conflict (user_id) do nothing;
+  insert into public.user_data (user_id, full_name)
+  values (
+    new.id,
+    nullif(
+      trim(
+        coalesce(
+          new.raw_user_meta_data ->> 'full_name',
+          new.raw_user_meta_data ->> 'name',
+          ''
+        )
+      ),
+      ''
+    )
+  )
+  on conflict (user_id) do update
+    set full_name = coalesce(public.user_data.full_name, excluded.full_name);
   return new;
 end;
 $$;
@@ -76,10 +90,20 @@ create trigger on_auth_user_created
   for each row
   execute procedure public.handle_new_user();
 
--- Copy answers out of auth metadata only when user_data is still empty.
-insert into public.user_data (user_id, onboarding, onboarding_completed_at)
+-- Copy answers and name out of auth metadata only when user_data is still empty.
+insert into public.user_data (user_id, full_name, onboarding, onboarding_completed_at)
 select
   id,
+  nullif(
+    trim(
+      coalesce(
+        raw_user_meta_data ->> 'full_name',
+        raw_user_meta_data ->> 'name',
+        ''
+      )
+    ),
+    ''
+  ),
   coalesce(raw_user_meta_data -> 'onboarding', '{}'::jsonb),
   case
     when nullif(raw_user_meta_data ->> 'onboarding_completed_at', '') is not null
@@ -92,6 +116,7 @@ select
 from auth.users
 on conflict (user_id) do update
   set
+    full_name = coalesce(public.user_data.full_name, excluded.full_name),
     onboarding = case
       when public.user_data.onboarding = '{}'::jsonb
         then excluded.onboarding

@@ -12,6 +12,7 @@ export type Database = {
       user_data: {
         Row: {
           user_id: string;
+          full_name: string | null;
           onboarding: Json;
           onboarding_completed_at: string | null;
           created_at: string;
@@ -19,6 +20,7 @@ export type Database = {
         };
         Insert: {
           user_id: string;
+          full_name?: string | null;
           onboarding?: Json;
           onboarding_completed_at?: string | null;
           created_at?: string;
@@ -26,6 +28,7 @@ export type Database = {
         };
         Update: {
           user_id?: string;
+          full_name?: string | null;
           onboarding?: Json;
           onboarding_completed_at?: string | null;
           created_at?: string;

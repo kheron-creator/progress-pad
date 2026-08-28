@@ -26,6 +26,7 @@ import {
   nameError,
   passwordError,
 } from "@/lib/auth/validation";
+import { saveFullName } from "@/lib/onboarding/store";
 import { createClient } from "@/lib/supabase/client";
 
 import { AuthCheckInbox } from "./auth-check-inbox";
@@ -110,6 +111,11 @@ export function SignupForm() {
       }
 
       if (data.session) {
+        try {
+          await saveFullName(supabase, name);
+        } catch {
+          // Trigger still copies full_name into user_data on user insert.
+        }
         router.push("/onboarding");
         router.refresh();
         return;

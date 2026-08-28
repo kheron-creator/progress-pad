@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import Link from "next/link";
 
 import { Avatar } from "@/components/ui/avatar";
 import { Header } from "@/components/ui/header";
@@ -86,7 +87,12 @@ function AccountMenu({
           role="menu"
           className="absolute right-0 top-full z-30 mt-2 w-56 overflow-hidden rounded-md border border-border bg-surface py-1 shadow-md"
         >
-          <div className="border-b border-border px-3 py-2">
+          <Link
+            href="/profile"
+            role="menuitem"
+            className="block border-b border-border px-3 py-2 hover:bg-background-subtle"
+            onClick={() => setOpen(false)}
+          >
             <Text variant="label" className="truncate">
               {name}
             </Text>
@@ -95,7 +101,7 @@ function AccountMenu({
                 {email}
               </Text>
             ) : null}
-          </div>
+          </Link>
           <button
             type="button"
             role="menuitem"

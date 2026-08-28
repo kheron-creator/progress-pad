@@ -82,8 +82,8 @@ export function Button({
       disabled={isDisabled}
       aria-busy={loading || undefined}
       className={cn(
-        "type-button inline-flex items-center justify-center rounded-sm transition-colors",
-        "disabled:pointer-events-none disabled:border-border-disabled disabled:bg-background-subtle disabled:text-foreground-disabled",
+        "type-button inline-flex cursor-pointer items-center justify-center rounded-sm transition-colors",
+        "disabled:pointer-events-none disabled:cursor-not-allowed disabled:border-border-disabled disabled:bg-background-subtle disabled:text-foreground-disabled",
         iconOnly ? iconSizeClass[size] : sizeClass[size],
         fullWidth && "w-full",
         lookClass[`${variant}-${resolvedLook}`],

@@ -13,17 +13,20 @@ export type CurrentUser = {
   email: string | null;
   name: string;
   avatarUrl?: string;
+  createdAt: string;
   onboardingComplete: boolean;
   onboarding: OnboardingDraft;
 };
 
-function displayName(user: User) {
+function nameFromMetadata(user: User) {
   const fullName = user.user_metadata?.full_name ?? user.user_metadata?.name;
   if (typeof fullName === "string" && fullName.trim()) {
     return fullName.trim();
   }
+}
 
-  return user.email ?? "there";
+function displayName(user: User, storedName?: string) {
+  return storedName || nameFromMetadata(user) || user.email || "there";
 }
 
 function avatarUrl(user: User) {
@@ -42,12 +45,26 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   }
 
   const loaded = await loadOnboarding(supabase, user.id);
+  let storedName = loaded.fullName;
+  if (!storedName) {
+    const fromAuth = nameFromMetadata(user);
+    if (fromAuth) {
+      const { error } = await supabase.from("user_data").upsert({
+        user_id: user.id,
+        full_name: fromAuth,
+      });
+      if (!error) {
+        storedName = fromAuth;
+      }
+    }
+  }
 
   return {
     id: user.id,
     email: user.email ?? null,
-    name: displayName(user),
+    name: displayName(user, storedName),
     avatarUrl: avatarUrl(user),
+    createdAt: user.created_at,
     onboardingComplete: loaded.onboardingComplete,
     onboarding: loaded.onboarding,
   };

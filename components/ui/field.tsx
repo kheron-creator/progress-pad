@@ -9,11 +9,18 @@ export type FieldState = FieldStatus | "filled" | "focus" | "disabled";
 
 export const controlSizes: ControlSize[] = ["sm", "md", "lg", "xl"];
 
+export const fieldTextClass: Record<FieldSize, string> = {
+  sm: "text-[length:var(--pp-text-control-sm-size)]",
+  md: "text-[length:var(--pp-text-control-md-size)]",
+  lg: "text-[length:var(--pp-text-control-lg-size)]",
+  xl: "text-[length:var(--pp-text-control-xl-size)]",
+};
+
 export const fieldSizeClass: Record<FieldSize, string> = {
-  sm: "h-[var(--pp-control-height-sm)] text-[length:var(--pp-text-control-sm-size)]",
-  md: "h-[var(--pp-control-height-md)] text-[length:var(--pp-text-control-md-size)]",
-  lg: "h-[var(--pp-control-height-lg)] text-[length:var(--pp-text-control-lg-size)]",
-  xl: "h-[var(--pp-control-height-xl)] text-[length:var(--pp-text-control-xl-size)]",
+  sm: `h-[var(--pp-control-height-sm)] ${fieldTextClass.sm}`,
+  md: `h-[var(--pp-control-height-md)] ${fieldTextClass.md}`,
+  lg: `h-[var(--pp-control-height-lg)] ${fieldTextClass.lg}`,
+  xl: `h-[var(--pp-control-height-xl)] ${fieldTextClass.xl}`,
 };
 
 export const fieldPaddingClass: Record<FieldSize, string> = {

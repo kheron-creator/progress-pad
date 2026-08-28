@@ -11,7 +11,7 @@ type Client = SupabaseClient<Database>;
 export async function loadOnboarding(supabase: Client, userId: string) {
   const { data, error } = await supabase
     .from("user_data")
-    .select("onboarding, onboarding_completed_at")
+    .select("full_name, onboarding, onboarding_completed_at")
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -20,6 +20,7 @@ export async function loadOnboarding(supabase: Client, userId: string) {
   }
 
   return {
+    fullName: parseFullName(data?.full_name),
     onboarding: parseOnboardingDraft(data?.onboarding),
     onboardingComplete: isOnboardingComplete(data?.onboarding_completed_at),
   };
@@ -76,6 +77,34 @@ export async function saveOnboarding(
   if (error) {
     throw error;
   }
+}
+
+export async function saveFullName(supabase: Client, fullName: string) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Not signed in");
+  }
+
+  const { error } = await supabase.from("user_data").upsert({
+    user_id: user.id,
+    full_name: fullName,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+function parseFullName(value: string | null | undefined) {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
 }
 
 function asObject(value: Json | null | undefined) {

@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app/app-header";
 import { enforceAppGate } from "@/lib/auth/routing";
 import { requireUser } from "@/lib/auth/user";
 
-export default async function HomeLayout({ children }: { children: ReactNode }) {
+export async function AppShell({ children }: { children: ReactNode }) {
   const user = await requireUser();
   await enforceAppGate(user, "home");
 

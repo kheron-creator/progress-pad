@@ -131,6 +131,25 @@
     outline-offset: 2px;
   }
 
+  button:not(:disabled),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"],
+  a[href],
+  summary,
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     html:focus-within {
       scroll-behavior: auto;
@@ -305,6 +324,14 @@
     border-color: var(--pp-border-disabled);
     background-color: var(--pp-input-bg-disabled);
     color: var(--pp-fg-disabled);
+    opacity: 1;
+    -webkit-text-fill-color: var(--pp-fg-disabled);
+  }
+
+  .pp-control:disabled::placeholder {
+    color: var(--pp-fg-disabled);
+    opacity: 1;
+    -webkit-text-fill-color: var(--pp-fg-disabled);
   }
 
   .pp-spin {
