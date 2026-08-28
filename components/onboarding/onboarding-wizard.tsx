@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icon";
 import { Logo } from "@/components/ui/logo";
 import { Text } from "@/components/ui/text";
+import { cn } from "@/lib/utils/cn";
 import {
   ONBOARDING_MAX_MULTI,
   ONBOARDING_MAX_ROUTINE,
@@ -112,20 +113,31 @@ export function OnboardingWizard({ step, initialDraft }: OnboardingWizardProps) 
   }
 
   return (
-    <div className="relative h-dvh overflow-hidden bg-background">
-      <header className="absolute left-10 top-10 z-10 lg:left-14">
-        <Logo size="sm" />
+    <div className="pp-onboarding relative flex min-h-dvh flex-col bg-background">
+      <header
+        className={cn(
+          "flex shrink-0 items-center justify-between gap-3",
+          "px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-2",
+          "sm:px-6 md:px-10 md:pt-8 lg:px-14",
+        )}
+      >
+        <Logo size="sm" className="h-7 w-auto shrink-0 sm:h-8" />
+        {step !== "ready" ? (
+          <div className="min-w-0 md:hidden">
+            <OnboardingProgress current={current} />
+          </div>
+        ) : null}
       </header>
 
-      <div className="flex h-full flex-col items-center justify-center px-6">
-        <div className="flex w-[calc(2*26.25rem+0.75rem)] max-w-full flex-col gap-12">
-          {step !== "ready" ? (
-            <div className="flex shrink-0 justify-center">
-              <OnboardingProgress current={current} />
-            </div>
-          ) : null}
+      <div className="mx-auto flex min-h-0 w-full max-w-[calc(2*26.25rem+0.75rem)] flex-1 flex-col px-4 sm:px-6">
+        {step !== "ready" ? (
+          <div className="hidden shrink-0 justify-center pb-6 md:flex lg:pb-8">
+            <OnboardingProgress current={current} />
+          </div>
+        ) : null}
 
-          <main className="flex min-h-0 w-full flex-col gap-16">
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+          <div className="my-auto flex flex-col gap-6 py-3 sm:gap-10 lg:gap-16">
             <div className="flex min-h-0 flex-col">
               {step === 1 ? (
                 <IntentStep
@@ -188,47 +200,70 @@ export function OnboardingWizard({ step, initialDraft }: OnboardingWizardProps) 
             </div>
 
             {error ? (
-              <Text variant="caption" className="mt-2 shrink-0 text-center text-error" role="alert">
+              <Text variant="caption" className="shrink-0 text-center text-error" role="alert">
                 {error}
               </Text>
             ) : null}
+          </div>
+        </main>
 
-            {step === "ready" ? (
-              <div className="flex shrink-0 justify-center">
-                <Button size="lg" loading={pending} onClick={() => void handleFinish()}>
-                  Go to my Progress Pad
-                  <ChevronRightIcon />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex shrink-0 items-center justify-between gap-3">
-                {current > 1 ? (
-                  <Button look="outline" size="lg" disabled={pending} onClick={handleBack}>
-                    <ChevronLeftIcon />
-                    Back
-                  </Button>
-                ) : (
-                  <span />
-                )}
-                <div className="flex items-center gap-4">
-                  {step === 6 ? (
-                    <Button look="clear" size="lg" disabled={pending} onClick={handleSkip}>
-                      Skip
-                    </Button>
-                  ) : null}
-                  <Button
-                    size="lg"
-                    loading={pending}
-                    disabled={!continueEnabled}
-                    onClick={handleContinue}
-                  >
-                    Continue
-                  </Button>
-                </div>
-              </div>
+        {step === "ready" ? (
+          <div className="flex shrink-0 justify-center py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <Button
+              size="lg"
+              loading={pending}
+              className="w-full px-6 sm:w-auto sm:px-12"
+              onClick={() => void handleFinish()}
+            >
+              Go to my Progress Pad
+              <ChevronRightIcon />
+            </Button>
+          </div>
+        ) : (
+          <div
+            className={cn(
+              "flex shrink-0 gap-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]",
+              current > 1
+                ? "flex-col sm:flex-row sm:items-center sm:justify-between"
+                : "flex-col sm:flex-row sm:items-center sm:justify-end",
             )}
-          </main>
-        </div>
+          >
+            {current > 1 ? (
+              <Button
+                look="outline"
+                size="lg"
+                disabled={pending}
+                className="w-full px-6 sm:w-auto sm:px-12"
+                onClick={handleBack}
+              >
+                <ChevronLeftIcon />
+                Back
+              </Button>
+            ) : null}
+            <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
+              {step === 6 ? (
+                <Button
+                  look="clear"
+                  size="lg"
+                  disabled={pending}
+                  className="w-full px-6 sm:w-auto sm:px-12"
+                  onClick={handleSkip}
+                >
+                  Skip
+                </Button>
+              ) : null}
+              <Button
+                size="lg"
+                loading={pending}
+                disabled={!continueEnabled}
+                className="w-full px-6 sm:w-auto sm:px-12"
+                onClick={handleContinue}
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

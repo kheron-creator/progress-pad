@@ -168,7 +168,8 @@
 
 @layer components {
   @media (width < 64rem) {
-    .pp-auth {
+    .pp-auth,
+    .pp-onboarding {
       --pp-text-page-title-size: var(--pp-font-size-22);
       --pp-text-page-title-leading: var(--pp-leading-28);
       --pp-text-body-size: var(--pp-font-size-14);
@@ -354,7 +355,9 @@
 @layer utilities {
   @media (width < 64rem) {
     .pp-auth .type-button,
-    .pp-auth .pp-control {
+    .pp-auth .pp-control,
+    .pp-onboarding .type-button,
+    .pp-onboarding .pp-control {
       font-size: var(--pp-font-size-14);
       line-height: var(--pp-leading-20);
     }

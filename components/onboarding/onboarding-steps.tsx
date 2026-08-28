@@ -30,7 +30,7 @@ import { optionIcon } from "./option-icons";
 import { ReadyConfetti } from "./ready-confetti";
 
 const STEP_BODY_MIN_HEIGHT =
-  "min-h-[calc(4*3.5rem+3*0.75rem)] sm:min-h-[calc(4*4.5rem+3*0.75rem)]";
+  "sm:min-h-[calc(4*4.5rem+3*0.75rem)]";
 
 function StepLayout({ children }: { children: ReactNode }) {
   return <div className="flex flex-col gap-4 lg:gap-5">{children}</div>;
@@ -42,7 +42,7 @@ function StepBody({ children, className }: { children: ReactNode; className?: st
 
 export function OnboardingHeading({ title, description }: { title: string; description: string }) {
   return (
-    <div className="mx-auto flex h-[calc(2*var(--pp-text-page-title-leading)+0.25rem+2*var(--pp-text-body-leading))] w-full max-w-2xl shrink-0 flex-col text-center">
+    <div className="mx-auto flex w-full max-w-2xl shrink-0 flex-col text-center md:min-h-[calc(2*var(--pp-text-page-title-leading)+0.25rem+2*var(--pp-text-body-leading))]">
       <Text as="h1" variant="pageTitle" className="m-0 text-balance">
         {title}
       </Text>
@@ -68,8 +68,8 @@ export function ChoiceGrid({
     <div
       className={
         columns === 4
-          ? cn("grid w-full grid-cols-2 content-center gap-3 lg:grid-cols-3", STEP_BODY_MIN_HEIGHT)
-          : cn("grid w-full grid-cols-2 content-center gap-3", STEP_BODY_MIN_HEIGHT)
+          ? cn("grid w-full grid-cols-1 content-start justify-items-stretch gap-2 sm:grid-cols-2 sm:content-center sm:gap-3 lg:grid-cols-3", STEP_BODY_MIN_HEIGHT)
+          : cn("grid w-full grid-cols-1 content-start justify-items-stretch gap-2 sm:grid-cols-2 sm:content-center sm:gap-3", STEP_BODY_MIN_HEIGHT)
       }
     >
       {options.map((option) => (
@@ -143,14 +143,14 @@ export function MeetPadStep() {
         title="Meet your Progress Pad"
         description="Your space to check in, clear your head, and move forward"
       />
-      <StepBody className="flex flex-col justify-center gap-16">
-        <div className="grid grid-cols-3 content-center gap-3 sm:gap-0">
+      <StepBody className="flex flex-col justify-center gap-8 sm:gap-16">
+        <div className="grid grid-cols-1 content-center gap-6 sm:grid-cols-3 sm:gap-3">
           <IntroColumn
             icon={
               <TargetIcon
                 size={56}
                 weight="bold"
-                className="text-(--pp-magenta-500)"
+                className="size-10 text-(--pp-magenta-500) sm:size-14"
               />
             }
             title="Mind Sweep"
@@ -161,7 +161,7 @@ export function MeetPadStep() {
               <LightningIcon
                 size={56}
                 weight="bold"
-                className="text-(--pp-spring-green-600)"
+                className="size-10 text-(--pp-spring-green-600) sm:size-14"
               />
             }
             title="Triggers"
@@ -173,7 +173,7 @@ export function MeetPadStep() {
               <ChartLineIcon
                 size={56}
                 weight="bold"
-                className="text-(--pp-bondi-blue-500)"
+                className="size-10 text-(--pp-bondi-blue-500) sm:size-14"
               />
             }
             title="Progress"
@@ -207,7 +207,7 @@ export function TriggersStep({
           onToggle={onToggle}
           columns={4}
         />
-        <Text variant="caption" className="absolute right-0 top-full mt-1 text-primary">
+        <Text variant="caption" className="mt-2 text-right text-primary sm:absolute sm:right-0 sm:top-full sm:mt-1">
           {draft.triggerIds.length}/{ONBOARDING_MAX_TRIGGERS} selected
         </Text>
       </StepBody>
@@ -228,7 +228,7 @@ export function CheckInStep({
         title="When would you like to check in with yourself?"
         description="You can change this anytime later"
       />
-      <StepBody className="grid grid-cols-3 content-center gap-3">
+      <StepBody className="grid grid-cols-1 content-center gap-3 sm:grid-cols-3">
         {checkInOptions.map((option) => (
           <button
             key={option.id}
@@ -236,18 +236,18 @@ export function CheckInStep({
             aria-pressed={draft.checkIn === option.id}
             onClick={() => onSelect(option.id)}
             className={cn(
-              "flex flex-col items-center gap-2 rounded-md border px-4 py-14 text-center sm:gap-3 sm:py-16",
+              "flex flex-col items-center gap-2 rounded-md border px-4 py-6 text-center sm:gap-3 sm:py-14 md:py-16",
               draft.checkIn === option.id
                 ? "border-(--pp-spring-green-600) bg-(--pp-spring-green-10)"
                 : "border-(--pp-grey-50) bg-surface",
             )}
           >
             {option.id === "morning" ? (
-              <SunIcon size={56} weight="bold" className="text-(--pp-spring-green-600)" />
+              <SunIcon size={56} weight="bold" className="size-10 text-(--pp-spring-green-600) sm:size-14" />
             ) : option.id === "afternoon" ? (
-              <SunHorizonIcon size={56} weight="bold" className="text-(--pp-magenta-500)" />
+              <SunHorizonIcon size={56} weight="bold" className="size-10 text-(--pp-magenta-500) sm:size-14" />
             ) : (
-              <MoonIcon size={56} weight="bold" className="text-(--pp-bondi-blue-500)" />
+              <MoonIcon size={56} weight="bold" className="size-10 text-(--pp-bondi-blue-500) sm:size-14" />
             )}
             <Text variant="cardTitle" className="font-semibold">
               {option.title}
@@ -263,7 +263,7 @@ export function CheckInStep({
 export function ReadyStep() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center text-center">
-      <ReadyConfetti className="relative mb-16 inline-flex size-48 items-center justify-center" />
+      <ReadyConfetti className="relative mb-8 inline-flex size-32 items-center justify-center sm:mb-16 sm:size-48" />
       <Text as="h1" variant="pageTitle" className="text-balance">
         Your Progress Pad is ready
       </Text>
@@ -277,8 +277,8 @@ export function ReadyStep() {
 
 function NextUpBanner() {
   return (
-    <div className="flex items-center justify-center gap-3 rounded-md border border-(--pp-grey-50) bg-(--pp-spring-green-10) px-5 py-3">
-      <SparkleIcon size={20} weight="fill" className="text-(--pp-spring-green-600)" />
+    <div className="flex items-start justify-center gap-3 rounded-md border border-(--pp-grey-50) bg-(--pp-spring-green-10) px-4 py-3 sm:items-center sm:px-5">
+      <SparkleIcon size={20} weight="fill" className="mt-0.5 shrink-0 text-(--pp-spring-green-600) sm:mt-0" />
       <Text as="p" variant="bodySmall" className="m-0 text-pretty">
         <span className="font-semibold text-(--pp-spring-green-600)">Next up: </span>
         We&apos;ll help you choose a few small triggers for your day.
