@@ -69,14 +69,14 @@ function AccountMenu({
   }, [open]);
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative flex items-center">
       <button
         type="button"
         aria-label="Account menu"
         aria-expanded={open}
         aria-haspopup="menu"
         aria-controls={menuId}
-        className="rounded-full outline-offset-2"
+        className="inline-flex size-(--pp-avatar-sm) shrink-0 items-center justify-center rounded-full p-0 leading-none outline-offset-2"
         onClick={() => setOpen((current) => !current)}
       >
         <Avatar src={avatarSrc} alt="" initials={initials} size="sm" />

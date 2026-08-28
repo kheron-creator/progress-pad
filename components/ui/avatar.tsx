@@ -40,7 +40,7 @@ export function Avatar({
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center overflow-hidden rounded-full bg-primary-muted text-primary",
+        "inline-flex items-center justify-center overflow-hidden rounded-full bg-primary-muted leading-none text-primary",
         sizeClass[size],
         className,
       )}
@@ -50,7 +50,7 @@ export function Avatar({
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt={alt} className="size-full object-cover" />
       ) : initials ? (
-        <span className={cn("font-[var(--pp-font-weight-medium)] leading-none", initialsClass[size])}>
+        <span className={cn("font-(--pp-font-weight-medium) leading-none", initialsClass[size])}>
           {initials}
         </span>
       ) : (
