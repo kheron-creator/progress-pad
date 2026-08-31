@@ -15,6 +15,7 @@ export type TriggerListStatus = "active" | "inactive";
 type TriggerListItemProps = Omit<HTMLAttributes<HTMLElement>, "title"> & {
   title: string;
   description?: string;
+  meta?: string;
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
   checkbox?: boolean;
@@ -22,6 +23,7 @@ type TriggerListItemProps = Omit<HTMLAttributes<HTMLElement>, "title"> & {
   status?: TriggerListStatus | false;
   onDelete?: () => void;
   draggable?: boolean;
+  look?: "default" | "library";
 };
 
 function DefaultEmoji() {
@@ -35,6 +37,7 @@ function DefaultEmoji() {
 export function TriggerListItem({
   title,
   description,
+  meta,
   checked = false,
   onCheckedChange,
   checkbox = true,
@@ -42,16 +45,23 @@ export function TriggerListItem({
   status = false,
   onDelete,
   draggable = false,
+  look = "default",
   className,
   ...props
 }: TriggerListItemProps) {
   const emoji =
     leftEmoji === false ? null : leftEmoji === true ? <DefaultEmoji /> : leftEmoji;
+  const library = look === "library";
 
   return (
     <article
+      draggable={draggable}
       className={cn(
-        "flex w-full items-center gap-3 rounded-md border border-border bg-surface px-3 py-2",
+        "flex w-full items-center gap-3 overflow-hidden rounded-md",
+        draggable && "cursor-grab select-none active:cursor-grabbing",
+        library
+          ? "min-h-(--pp-trigger-item-height) border border-border bg-(--pp-grey-25) px-(--pp-space-16) py-(--pp-space-12) in-data-[theme=dark]:bg-background-subtle"
+          : "border border-border bg-surface px-(--pp-space-16) py-(--pp-space-12)",
         className,
       )}
       {...props}
@@ -66,12 +76,20 @@ export function TriggerListItem({
       ) : null}
       {emoji}
       <div className="min-w-0 flex-1">
-        <Text variant="label" className="truncate">
+        <Text
+          variant="bodySmall"
+          className="truncate font-(--pp-font-weight-medium) text-foreground"
+        >
           {title}
         </Text>
         {description ? (
-          <Text variant="caption" className="truncate text-foreground-muted">
+          <Text variant="bodySmall" className="truncate text-foreground-muted">
             {description}
+          </Text>
+        ) : null}
+        {meta ? (
+          <Text variant="caption" className="truncate text-foreground-muted">
+            {meta}
           </Text>
         ) : null}
       </div>
@@ -86,7 +104,13 @@ export function TriggerListItem({
         </Tag>
       ) : null}
       {onDelete ? (
-        <IconButton label={`Delete ${title}`} variant="danger" look="clear" size="md" onClick={onDelete}>
+        <IconButton
+          label={`Delete ${title}`}
+          variant="danger"
+          look="clear"
+          size="md"
+          onClick={onDelete}
+        >
           <TrashIcon />
         </IconButton>
       ) : null}
