@@ -94,6 +94,12 @@
   --pp-blue-800: #002f68;
   --pp-blue-900: #001638;
 
+  --pp-purple-500: #6C3BAA;
+
+  --pp-pink-500: #b9467e;
+
+  --pp-cobalt-500: #2e6cdc;
+
   --pp-grey-0: #ffffff;
   --pp-grey-25: #eeefef;
   --pp-grey-50: #dee0e0;
@@ -114,6 +120,7 @@
   --pp-space-0: 0rem;
   --pp-space-2: 0.125rem;
   --pp-space-4: 0.25rem;
+  --pp-space-6: 0.375rem;
   --pp-space-8: 0.5rem;
   --pp-space-12: 0.75rem;
   --pp-space-16: 1rem;
@@ -166,6 +173,7 @@
   --pp-tracking-wide: 0.08em;
 
   --pp-radius-4: 0.25rem;
+  --pp-radius-6: 0.375rem;
   --pp-radius-8: 0.5rem;
   --pp-radius-12: 0.75rem;
   --pp-radius-16: 1rem;
@@ -343,24 +351,36 @@
   --pp-font-heading: var(--font-heading-face), ui-sans-serif, system-ui, sans-serif;
   --pp-font-body: var(--font-body-face), ui-sans-serif, system-ui, sans-serif;
 
-  --pp-text-display-size: var(--pp-font-size-36);
-  --pp-text-display-leading: var(--pp-leading-44);
-  --pp-text-page-title-size: var(--pp-font-size-28);
-  --pp-text-page-title-leading: var(--pp-leading-36);
+  /* Desktop (1280) — mobile / below-lg overrides live in the media queries below. */
+  --pp-text-display-size: var(--pp-font-size-45);
+  --pp-text-display-leading: var(--pp-leading-52);
+  --pp-text-display-weight: var(--pp-font-weight-bold);
+  --pp-text-display-tracking: var(--pp-tracking-tight);
+  --pp-text-page-title-size: var(--pp-font-size-32);
+  --pp-text-page-title-leading: var(--pp-leading-40);
+  --pp-text-page-title-weight: var(--pp-font-weight-semibold);
+  --pp-text-page-title-tracking: var(--pp-tracking-snug);
   --pp-text-section-title-size: var(--pp-font-size-24);
   --pp-text-section-title-leading: var(--pp-leading-32);
+  --pp-text-section-title-weight: var(--pp-font-weight-semibold);
   --pp-text-card-title-size: var(--pp-font-size-20);
   --pp-text-card-title-leading: var(--pp-leading-28);
+  --pp-text-card-title-weight: var(--pp-font-weight-medium);
   --pp-text-subtitle-size: var(--pp-font-size-16);
   --pp-text-subtitle-leading: var(--pp-leading-24);
+  --pp-text-subtitle-weight: var(--pp-font-weight-medium);
   --pp-text-body-size: var(--pp-font-size-16);
   --pp-text-body-leading: var(--pp-leading-24);
+  --pp-text-body-weight: var(--pp-font-weight-regular);
   --pp-text-body-small-size: var(--pp-font-size-14);
   --pp-text-body-small-leading: var(--pp-leading-20);
+  --pp-text-body-small-weight: var(--pp-font-weight-regular);
   --pp-text-label-size: var(--pp-font-size-14);
   --pp-text-label-leading: var(--pp-leading-20);
+  --pp-text-label-weight: var(--pp-font-weight-medium);
   --pp-text-button-size: var(--pp-font-size-16);
   --pp-text-button-leading: var(--pp-leading-24);
+  --pp-text-button-weight: var(--pp-font-weight-medium);
   --pp-text-control-sm-size: var(--pp-font-size-12);
   --pp-text-control-md-size: var(--pp-font-size-14);
   --pp-text-control-lg-size: var(--pp-font-size-16);
@@ -368,14 +388,21 @@
   --pp-text-control-xs-size: var(--pp-text-control-sm-size);
   --pp-text-caption-size: var(--pp-font-size-12);
   --pp-text-caption-leading: var(--pp-leading-16);
+  --pp-text-caption-weight: var(--pp-font-weight-regular);
   --pp-text-overline-size: var(--pp-font-size-11);
   --pp-text-overline-leading: var(--pp-leading-16);
+  --pp-text-overline-weight: var(--pp-font-weight-medium);
+  --pp-text-overline-tracking: var(--pp-tracking-wide);
   --pp-text-quote-size: var(--pp-font-size-18);
   --pp-text-quote-leading: var(--pp-leading-28);
+  --pp-text-quote-weight: var(--pp-font-weight-regular);
+  --pp-text-status-size: var(--pp-text-caption-size);
+  --pp-text-status-leading: var(--pp-text-caption-leading);
+  --pp-text-status-weight: var(--pp-font-weight-medium);
 
-  --pp-space-page-x: var(--pp-space-16);
-  --pp-space-page-y: var(--pp-space-24);
-  --pp-space-section: var(--pp-space-24);
+  --pp-space-page-x: var(--pp-space-128);
+  --pp-space-page-y: var(--pp-space-32);
+  --pp-space-section: var(--pp-space-32);
   --pp-space-card: var(--pp-space-32);
   --pp-space-stack: var(--pp-space-12);
   --pp-space-field: var(--pp-space-16);
@@ -405,11 +432,16 @@
   --pp-input-height-lg: var(--pp-control-height-lg);
   --pp-input-height-xl: var(--pp-control-height-xl);
   --pp-input-height-xs: var(--pp-control-height-sm);
-  --pp-icon-button-sm: var(--pp-control-height-sm);
-  --pp-icon-button-md: var(--pp-control-height-md);
-  --pp-icon-button-lg: var(--pp-control-height-lg);
-  --pp-icon-button-xl: var(--pp-control-height-xl);
-  --pp-icon-button-xs: var(--pp-control-height-sm);
+  --pp-icon-xs: var(--pp-space-16);
+  --pp-icon-sm: var(--pp-space-20);
+  --pp-icon-md: 1.625rem;
+  --pp-icon-lg: var(--pp-space-36);
+
+  --pp-icon-button-sm: var(--pp-icon-xs);
+  --pp-icon-button-md: var(--pp-icon-sm);
+  --pp-icon-button-lg: var(--pp-icon-md);
+  --pp-icon-button-xl: var(--pp-icon-lg);
+  --pp-icon-button-xs: var(--pp-icon-xs);
   --pp-badge-height-sm: var(--pp-control-22);
   --pp-badge-height-md: var(--pp-control-24);
   --pp-badge-height-lg: var(--pp-control-28);
@@ -437,7 +469,7 @@
 
   --pp-progress-height-sm: var(--pp-space-4);
   --pp-progress-height-md: var(--pp-space-8);
-  --pp-progress-height: var(--pp-progress-height-sm);
+  --pp-progress-height: var(--pp-progress-height-md);
   --pp-banner-height-lg: 17.5rem;
   --pp-banner-height-sm: 12.5rem;
   --pp-banner-height-lg-mobile: 13.125rem;
@@ -471,16 +503,142 @@
   --pp-breakpoint-2xl: 96rem;
 }
 
-@media (min-width: 64rem) {
+/* Below desktop (1024) — keep current tablet / 957 values. */
+@media (width < 64rem) {
   :root {
-    --pp-text-display-size: var(--pp-font-size-45);
-    --pp-text-display-leading: var(--pp-leading-52);
-    --pp-text-page-title-size: var(--pp-font-size-32);
-    --pp-text-page-title-leading: var(--pp-leading-40);
-    --pp-space-page-x: var(--pp-space-128);
-    --pp-space-page-y: var(--pp-space-32);
-    --pp-space-section: var(--pp-space-32);
-    --pp-progress-height: var(--pp-progress-height-md);
+    --pp-text-display-size: var(--pp-font-size-36);
+    --pp-text-display-leading: var(--pp-leading-44);
+    --pp-text-page-title-size: var(--pp-font-size-28);
+    --pp-text-page-title-leading: var(--pp-leading-36);
+    --pp-space-page-x: var(--pp-space-16);
+    --pp-space-page-y: var(--pp-space-24);
+    --pp-space-section: var(--pp-space-24);
+    --pp-space-card: var(--pp-space-16);
+    --pp-progress-height: var(--pp-progress-height-sm);
+  }
+}
+
+/* Phone (393 frames; below Tailwind sm). */
+@media (width < 40rem) {
+  :root {
+    --pp-text-display-size: var(--pp-font-size-28);
+    --pp-text-display-leading: var(--pp-leading-36);
+    --pp-text-display-weight: var(--pp-font-weight-bold);
+    --pp-text-display-tracking: var(--pp-tracking-tight);
+    --pp-text-page-title-size: var(--pp-font-size-24);
+    --pp-text-page-title-leading: var(--pp-leading-32);
+    --pp-text-page-title-weight: var(--pp-font-weight-semibold);
+    --pp-text-page-title-tracking: var(--pp-tracking-snug);
+    --pp-text-section-title-size: var(--pp-font-size-20);
+    --pp-text-section-title-leading: var(--pp-leading-28);
+    --pp-text-section-title-weight: var(--pp-font-weight-semibold);
+    --pp-text-card-title-size: var(--pp-font-size-18);
+    --pp-text-card-title-leading: var(--pp-leading-24);
+    --pp-text-card-title-weight: var(--pp-font-weight-medium);
+    --pp-text-subtitle-size: var(--pp-font-size-14);
+    --pp-text-subtitle-leading: var(--pp-leading-20);
+    --pp-text-subtitle-weight: var(--pp-font-weight-medium);
+    --pp-text-body-size: var(--pp-font-size-14);
+    --pp-text-body-leading: var(--pp-leading-20);
+    --pp-text-body-weight: var(--pp-font-weight-regular);
+    --pp-text-body-small-size: var(--pp-font-size-12);
+    --pp-text-body-small-leading: var(--pp-leading-16);
+    --pp-text-body-small-weight: var(--pp-font-weight-regular);
+    --pp-text-label-size: var(--pp-font-size-12);
+    --pp-text-label-leading: var(--pp-leading-16);
+    --pp-text-label-weight: var(--pp-font-weight-medium);
+    --pp-text-button-size: var(--pp-font-size-14);
+    --pp-text-button-leading: var(--pp-leading-20);
+    --pp-text-button-weight: var(--pp-font-weight-medium);
+    --pp-text-control-sm-size: var(--pp-font-size-11);
+    --pp-text-control-md-size: var(--pp-font-size-12);
+    --pp-text-control-lg-size: var(--pp-font-size-14);
+    --pp-text-control-xl-size: var(--pp-font-size-16);
+    --pp-text-control-xs-size: var(--pp-text-control-sm-size);
+    --pp-text-caption-size: var(--pp-font-size-11);
+    --pp-text-caption-leading: var(--pp-leading-16);
+    --pp-text-caption-weight: var(--pp-font-weight-regular);
+    --pp-text-overline-size: var(--pp-font-size-10);
+    --pp-text-overline-leading: var(--pp-leading-16);
+    --pp-text-overline-weight: var(--pp-font-weight-medium);
+    --pp-text-overline-tracking: var(--pp-tracking-wide);
+    --pp-text-quote-size: var(--pp-font-size-16);
+    --pp-text-quote-leading: var(--pp-leading-24);
+    --pp-text-quote-weight: var(--pp-font-weight-regular);
+    --pp-text-status-size: var(--pp-text-caption-size);
+    --pp-text-status-leading: var(--pp-text-caption-leading);
+    --pp-text-status-weight: var(--pp-font-weight-medium);
+
+    --pp-space-page-x: var(--pp-space-12);
+    --pp-space-page-y: var(--pp-space-16);
+    --pp-space-section: var(--pp-space-16);
+    --pp-space-card: var(--pp-space-12);
+    --pp-space-stack: var(--pp-space-8);
+    --pp-space-field: var(--pp-space-12);
+    --pp-space-inline: var(--pp-space-6);
+    --pp-space-heading-to-body: var(--pp-space-8);
+
+    --pp-radius-xs: var(--pp-radius-4);
+    --pp-radius-sm: var(--pp-radius-6);
+    --pp-radius-md: var(--pp-radius-8);
+    --pp-radius-lg: var(--pp-radius-12);
+    --pp-radius-xl: var(--pp-radius-16);
+    --pp-radius-button: var(--pp-radius-sm);
+    --pp-radius-input: var(--pp-radius-sm);
+    --pp-radius-card: var(--pp-radius-md);
+    --pp-radius-modal: var(--pp-radius-lg);
+
+    --pp-control-height-sm: var(--pp-control-28);
+    --pp-control-height-md: var(--pp-control-36);
+    --pp-control-height-lg: var(--pp-control-44);
+    --pp-control-height-xl: var(--pp-control-48);
+    --pp-control-height-xs: var(--pp-control-height-sm);
+    --pp-input-height-sm: var(--pp-control-height-sm);
+    --pp-input-height-md: var(--pp-control-height-md);
+    --pp-input-height-lg: var(--pp-control-height-lg);
+    --pp-input-height-xl: var(--pp-control-height-xl);
+    --pp-input-height-xs: var(--pp-control-height-sm);
+    --pp-icon-xs: var(--pp-space-12);
+    --pp-icon-sm: var(--pp-space-16);
+    --pp-icon-md: var(--pp-space-20);
+    --pp-icon-lg: var(--pp-space-32);
+    --pp-icon-button-sm: var(--pp-icon-xs);
+    --pp-icon-button-md: var(--pp-icon-sm);
+    --pp-icon-button-lg: var(--pp-icon-md);
+    --pp-icon-button-xl: var(--pp-icon-lg);
+    --pp-icon-button-xs: var(--pp-icon-xs);
+    --pp-badge-height-sm: var(--pp-control-22);
+    --pp-badge-height-md: var(--pp-control-22);
+    --pp-badge-height-lg: var(--pp-control-24);
+
+    --pp-avatar-sm: var(--pp-control-32);
+    --pp-avatar-md: var(--pp-space-40);
+    --pp-avatar-lg: var(--pp-space-48);
+    --pp-avatar-xl: var(--pp-space-64);
+    --pp-avatar-2xl: var(--pp-space-96);
+
+    --pp-checkbox-sm: 0.8125rem;
+    --pp-checkbox-md: 0.90rem;
+    --pp-checkbox-lg: 1rem;
+    --pp-checkbox-xl: 1.125rem;
+    --pp-checkbox-xs: var(--pp-checkbox-sm);
+
+    --pp-chip-height-xs: 1.125rem;
+    --pp-chip-height-sm: var(--pp-control-22);
+    --pp-chip-height-md: 1.375rem;
+    --pp-chip-height-lg: var(--pp-control-28);
+
+    --pp-tag-height-xs: var(--pp-control-22);
+    --pp-tag-height-sm: 1.375rem;
+    --pp-tag-height-lg: 1.5rem;
+
+    --pp-progress-height: var(--pp-progress-height-sm);
+    --pp-banner-height-lg: var(--pp-banner-height-lg-mobile);
+    --pp-banner-height-sm: var(--pp-banner-height-sm-mobile);
+    --pp-trigger-item-height: 2.75rem;
+    --pp-toggle-track-width: 2.5rem;
+    --pp-toggle-track-height: var(--pp-control-24);
+    --pp-toggle-thumb: var(--pp-control-22);
   }
 }
 
@@ -502,7 +660,7 @@
   --pp-fg-accent: var(--pp-magenta-200);
 
   --pp-bg-page: var(--pp-grey-900);
-  --pp-bg-subtle: var(--pp-grey-800);
+  --pp-bg-subtle: var(--pp-grey-700);
   --pp-bg-surface: var(--pp-grey-800);
   --pp-bg-elevated: var(--pp-grey-700);
   --pp-bg-overlay: color-mix(in srgb, var(--pp-grey-900) 56%, transparent);
