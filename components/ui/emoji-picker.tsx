@@ -1,168 +1,166 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
-import {
-  CarIcon,
-  ClockIcon,
-  CoffeeIcon,
-  FlagIcon,
-  HashIcon,
-  LightbulbIcon,
-  PawPrintIcon,
-  SmileyIcon,
-  SoccerBallIcon,
-} from "@phosphor-icons/react";
+import { useEffect, useId, useRef, useState } from "react";
+import { EmojiPicker as Frimousse } from "frimousse";
 
 import { cn } from "@/lib/utils/cn";
 
-import { Input } from "./input";
+import { Field, FieldLabel, fieldSizeClass, fieldStateClass } from "./field";
 import { SearchIcon } from "./icon";
 import { Text } from "./text";
-
-export type EmojiCategoryId =
-  | "recent"
-  | "smileys"
-  | "animals"
-  | "food"
-  | "activities"
-  | "travel"
-  | "objects"
-  | "symbols"
-  | "flags";
-
-const CATEGORIES: { id: EmojiCategoryId; label: string; icon: typeof SmileyIcon }[] = [
-  { id: "recent", label: "Recent", icon: ClockIcon },
-  { id: "smileys", label: "Smileys & People", icon: SmileyIcon },
-  { id: "animals", label: "Animals & Nature", icon: PawPrintIcon },
-  { id: "food", label: "Food & Drink", icon: CoffeeIcon },
-  { id: "activities", label: "Activities", icon: SoccerBallIcon },
-  { id: "travel", label: "Travel & Places", icon: CarIcon },
-  { id: "objects", label: "Objects", icon: LightbulbIcon },
-  { id: "symbols", label: "Symbols", icon: HashIcon },
-  { id: "flags", label: "Flags", icon: FlagIcon },
-];
-
-const EMOJIS: Record<EmojiCategoryId, string[]> = {
-  recent: ["😀", "🔥", "💧", "📝", "⭐"],
-  smileys: [
-    "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣",
-    "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰",
-    "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜",
-    "🤪", "🤨", "🧐", "🤓", "😎", "🥸", "🤩", "🥳",
-    "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️",
-  ],
-  animals: ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🐔"],
-  food: ["🍏", "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍈", "🍒", "🍑", "🥭", "🍍", "🥥"],
-  activities: ["⚽", "🏀", "🏈", "⚾", "🎾", "🏐", "🏉", "🥏", "🎱", "🪀", "🏓", "🏸", "🏒", "🥅", "⛳", "🪁"],
-  travel: ["🚗", "🚕", "🚙", "🚌", "🚎", "🏎️", "🚓", "🚑", "🚒", "🚐", "🛻", "🚚", "🚛", "🚜", "🛵", "🏍️"],
-  objects: ["💡", "🔦", "🕯️", "🪔", "📱", "💻", "⌨️", "🖥️", "🖨️", "🖱️", "🕹️", "🗜️", "💾", "💿", "📷", "📹"],
-  symbols: ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "💯", "💢", "💥", "💫", "💦", "💨", "✅", "❌"],
-  flags: ["🏳️", "🏴", "🏁", "🚩", "🏳️‍🌈", "🏳️‍⚧️", "🇺🇳", "🇺🇸", "🇨🇦", "🇬🇧", "🇫🇷", "🇩🇪", "🇯🇵", "🇰🇷", "🇮🇳", "🇧🇷"],
-};
 
 type EmojiPickerProps = {
   open?: boolean;
   label?: string;
   placeholder?: string;
-  query?: string;
-  onQueryChange?: (value: string) => void;
-  category?: EmojiCategoryId;
-  onCategoryChange?: (id: EmojiCategoryId) => void;
+  selected?: string;
   onSelect?: (emoji: string) => void;
   className?: string;
 };
 
 export function EmojiPicker({
-  open = true,
+  open,
   label = "Icon",
   placeholder = "Select an Icon",
-  query,
-  onQueryChange,
-  category: categoryProp,
-  onCategoryChange,
+  selected,
   onSelect,
   className,
 }: EmojiPickerProps) {
-  const [internalQuery, setInternalQuery] = useState("");
-  const [internalCategory, setInternalCategory] = useState<EmojiCategoryId>("smileys");
-  const search = query ?? internalQuery;
-  const category = categoryProp ?? internalCategory;
-  const CategoryIcon = CATEGORIES.find((item) => item.id === category)?.icon ?? SmileyIcon;
+  const searchId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const isControlled = open !== undefined;
+  const isOpen = open ?? internalOpen;
 
-  const emojis = useMemo(() => {
-    const source = EMOJIS[category];
-    const needle = search.trim().toLowerCase();
-    if (!needle) return source;
-    return Object.values(EMOJIS)
-      .flat()
-      .filter((emoji) => emoji.includes(needle) || needle.length === 0)
-      .slice(0, 40);
-  }, [category, search]);
-
-  function setCategory(id: EmojiCategoryId) {
-    onCategoryChange?.(id);
-    if (categoryProp === undefined) setInternalCategory(id);
+  function setOpenState(next: boolean) {
+    if (!isControlled) setInternalOpen(next);
   }
 
-  function setSearch(value: string) {
-    onQueryChange?.(value);
-    if (query === undefined) setInternalQuery(value);
-  }
+  useEffect(() => {
+    if (!isOpen || isControlled) return;
+
+    function onPointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setInternalOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [isOpen, isControlled]);
 
   return (
-    <div className={cn("flex w-full max-w-[27.5rem] flex-col gap-2", className)}>
-      <Input
-        label={label}
-        placeholder={placeholder}
-        value={search}
-        onChange={(event) => setSearch(event.currentTarget.value)}
-        rightIcon={<SearchIcon />}
-      />
-      {open ? (
-        <div className="overflow-hidden rounded-md border border-border bg-surface shadow-md">
-          <div className="flex items-center justify-between px-3 pt-3">
-            <Text variant="overline" className="text-foreground-muted">
-              {CATEGORIES.find((item) => item.id === category)?.label.toUpperCase()}
-            </Text>
-            <CategoryIcon size={14} className="text-foreground-muted" />
-          </div>
-          <div className="grid max-h-64 grid-cols-8 gap-1 overflow-y-auto p-3">
-            {emojis.map((emoji) => (
-              <button
-                key={`${category}-${emoji}`}
-                type="button"
-                className="inline-flex size-8 items-center justify-center rounded-sm text-lg hover:bg-background-subtle"
-                onClick={() => onSelect?.(emoji)}
+    <div ref={rootRef} className={cn("flex w-full min-w-0 flex-col", className)}>
+      <Frimousse.Root
+        columns={8}
+        className="flex w-full min-w-0 flex-col gap-2"
+        onEmojiSelect={({ emoji }) => {
+          onSelect?.(emoji);
+          setSearch("");
+          setOpenState(false);
+        }}
+      >
+        <Field>
+          {label ? <FieldLabel htmlFor={searchId}>{label}</FieldLabel> : null}
+          <div className="relative">
+            <Frimousse.Search
+              id={searchId}
+              type="text"
+              placeholder={selected && !search ? "" : placeholder}
+              value={search}
+              autoComplete="off"
+              aria-expanded={isOpen}
+              aria-haspopup="listbox"
+              onFocus={() => setOpenState(true)}
+              onChange={(event) => {
+                setSearch(event.currentTarget.value);
+                setOpenState(true);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  setOpenState(false);
+                  event.currentTarget.blur();
+                }
+              }}
+              className={cn(
+                "type-body pp-control pr-9 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden",
+                selected ? "pl-10" : "pl-3",
+                !search && "caret-transparent",
+                fieldSizeClass.md,
+                fieldStateClass.default,
+              )}
+            />
+            {selected ? (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-lg leading-none"
               >
-                {emoji}
-              </button>
-            ))}
+                {selected}
+              </span>
+            ) : null}
+            <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-foreground-muted">
+              <SearchIcon />
+            </span>
           </div>
-          <div className="flex items-center justify-between border-t border-border bg-background-subtle px-2 py-1.5">
-            {CATEGORIES.map((item) => {
-              const Icon = item.icon;
-              const active = item.id === category;
-
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  aria-label={item.label}
-                  aria-pressed={active}
-                  className={cn(
-                    "inline-flex size-8 items-center justify-center rounded-sm",
-                    active ? "bg-secondary-muted text-secondary" : "text-foreground-muted hover:bg-surface",
-                  )}
-                  onClick={() => setCategory(item.id)}
-                >
-                  <Icon size={16} />
-                </button>
-              );
-            })}
+        </Field>
+        {isOpen ? (
+          <div className="w-full overflow-hidden rounded-md border border-border bg-surface">
+            <Frimousse.Viewport className="relative h-72 w-full outline-hidden">
+              <Frimousse.Loading className="absolute inset-0 flex items-center justify-center">
+                <Text variant="caption" className="text-foreground-muted">
+                  Loading…
+                </Text>
+              </Frimousse.Loading>
+              <Frimousse.Empty className="absolute inset-0 flex items-center justify-center">
+                {({ search: needle }) => (
+                  <Text variant="caption" className="text-foreground-muted">
+                    {needle ? `No emoji found for “${needle}”` : "No emoji found."}
+                  </Text>
+                )}
+              </Frimousse.Empty>
+              <Frimousse.List
+                className="w-full select-none pb-1.5"
+                components={{
+                  CategoryHeader: ({ category, ...props }) => (
+                    <div className="w-full bg-surface px-3 pt-3 pb-2" {...props}>
+                      <Text variant="overline" className="text-foreground-muted">
+                        {category.label.toUpperCase()}
+                      </Text>
+                    </div>
+                  ),
+                  Row: ({ children, ...props }) => (
+                    <div className="flex w-full scroll-my-1.5 px-1.5 py-0.5" {...props}>
+                      {children}
+                    </div>
+                  ),
+                  Emoji: ({ emoji, ...props }) => (
+                    <button
+                      {...props}
+                      className={cn(
+                        "inline-flex min-h-8 min-w-0 flex-1 items-center justify-center rounded-sm border border-transparent text-lg hover:bg-background-subtle data-active:bg-background-subtle",
+                        selected === emoji.emoji && "border-border-focus bg-background-subtle",
+                      )}
+                    >
+                      {emoji.emoji}
+                    </button>
+                  ),
+                }}
+              />
+            </Frimousse.Viewport>
+            <Frimousse.ActiveEmoji>
+              {({ emoji }) => (
+                <div className="flex min-h-9 items-center gap-2 bg-background-subtle px-3 py-1.5">
+                  <Text variant="caption" className="truncate text-foreground-muted">
+                    {emoji ? `${emoji.emoji}  ${emoji.label}` : "Search by name"}
+                  </Text>
+                </div>
+              )}
+            </Frimousse.ActiveEmoji>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </Frimousse.Root>
     </div>
   );
 }
