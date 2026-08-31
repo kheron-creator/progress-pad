@@ -29,7 +29,7 @@ export function Progress({ value, label, size = "md", className }: ProgressProps
       )}
     >
       <div
-        className="h-full rounded-full bg-primary"
+        className="h-full rounded-full bg-(--pp-spring-green-600)"
         style={{ width: `${clamped}%` }}
       />
     </div>

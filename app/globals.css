@@ -199,65 +199,65 @@
   .type-display {
     font-family: var(--pp-font-heading);
     font-size: var(--pp-text-display-size);
-    font-weight: var(--pp-font-weight-bold);
+    font-weight: var(--pp-text-display-weight);
     line-height: var(--pp-text-display-leading);
-    letter-spacing: var(--pp-tracking-tight);
+    letter-spacing: var(--pp-text-display-tracking);
   }
 
   .type-page-title {
     font-family: var(--pp-font-heading);
     font-size: var(--pp-text-page-title-size);
-    font-weight: var(--pp-font-weight-semibold);
+    font-weight: var(--pp-text-page-title-weight);
     line-height: var(--pp-text-page-title-leading);
-    letter-spacing: var(--pp-tracking-snug);
+    letter-spacing: var(--pp-text-page-title-tracking);
   }
 
   .type-section-title {
     font-family: var(--pp-font-heading);
     font-size: var(--pp-text-section-title-size);
-    font-weight: var(--pp-font-weight-semibold);
+    font-weight: var(--pp-text-section-title-weight);
     line-height: var(--pp-text-section-title-leading);
   }
 
   .type-card-title {
     font-family: var(--pp-font-heading);
     font-size: var(--pp-text-card-title-size);
-    font-weight: var(--pp-font-weight-medium);
+    font-weight: var(--pp-text-card-title-weight);
     line-height: var(--pp-text-card-title-leading);
   }
 
   .type-subtitle {
     font-family: var(--pp-font-heading);
     font-size: var(--pp-text-subtitle-size);
-    font-weight: var(--pp-font-weight-medium);
+    font-weight: var(--pp-text-subtitle-weight);
     line-height: var(--pp-text-subtitle-leading);
   }
 
   .type-nav {
     font-family: var(--pp-font-heading);
     font-size: var(--pp-text-subtitle-size);
-    font-weight: var(--pp-font-weight-medium);
+    font-weight: var(--pp-text-subtitle-weight);
     line-height: var(--pp-text-subtitle-leading);
   }
 
   .type-body {
     font-family: var(--pp-font-body);
     font-size: var(--pp-text-body-size);
-    font-weight: var(--pp-font-weight-regular);
+    font-weight: var(--pp-text-body-weight);
     line-height: var(--pp-text-body-leading);
   }
 
   .type-body-small {
     font-family: var(--pp-font-body);
     font-size: var(--pp-text-body-small-size);
-    font-weight: var(--pp-font-weight-regular);
+    font-weight: var(--pp-text-body-small-weight);
     line-height: var(--pp-text-body-small-leading);
   }
 
   .type-description {
     font-family: var(--pp-font-body);
     font-size: var(--pp-text-body-size);
-    font-weight: var(--pp-font-weight-regular);
+    font-weight: var(--pp-text-body-weight);
     line-height: var(--pp-text-body-leading);
     color: var(--pp-color-text-secondary);
   }
@@ -265,30 +265,30 @@
   .type-label {
     font-family: var(--pp-font-body);
     font-size: var(--pp-text-label-size);
-    font-weight: var(--pp-font-weight-medium);
+    font-weight: var(--pp-text-label-weight);
     line-height: var(--pp-text-label-leading);
   }
 
   .type-button {
     font-family: var(--pp-font-body);
     font-size: var(--pp-text-button-size);
-    font-weight: var(--pp-font-weight-medium);
+    font-weight: var(--pp-text-button-weight);
     line-height: var(--pp-text-button-leading);
   }
 
   .type-caption {
     font-family: var(--pp-font-body);
     font-size: var(--pp-text-caption-size);
-    font-weight: var(--pp-font-weight-regular);
+    font-weight: var(--pp-text-caption-weight);
     line-height: var(--pp-text-caption-leading);
   }
 
   .type-overline {
     font-family: var(--pp-font-body);
     font-size: var(--pp-text-overline-size);
-    font-weight: var(--pp-font-weight-medium);
+    font-weight: var(--pp-text-overline-weight);
     line-height: var(--pp-text-overline-leading);
-    letter-spacing: var(--pp-tracking-wide);
+    letter-spacing: var(--pp-text-overline-tracking);
     text-transform: uppercase;
   }
 
@@ -296,15 +296,15 @@
     font-family: var(--pp-font-body);
     font-size: var(--pp-text-quote-size);
     font-style: italic;
-    font-weight: var(--pp-font-weight-regular);
+    font-weight: var(--pp-text-quote-weight);
     line-height: var(--pp-text-quote-leading);
   }
 
   .type-status {
     font-family: var(--pp-font-body);
-    font-size: var(--pp-text-caption-size);
-    font-weight: var(--pp-font-weight-medium);
-    line-height: var(--pp-text-caption-leading);
+    font-size: var(--pp-text-status-size);
+    font-weight: var(--pp-text-status-weight);
+    line-height: var(--pp-text-status-leading);
   }
 
   .pp-control {
@@ -366,6 +366,7 @@
 
 @layer utilities {
   @media (width < 64rem) {
+
     .pp-auth .type-button,
     .pp-auth .pp-control,
     .pp-onboarding .type-button,
