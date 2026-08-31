@@ -29,17 +29,17 @@ type TriggerCardProps = HTMLAttributes<HTMLElement> & {
 };
 
 function DefaultLeftIcon({ state }: { state: TriggerCardState }) {
-  if (state === "todo") {
+  if (state === "achieved") {
     return (
-      <IconMark size="xs">
-        <LightningIcon size={12} />
+      <IconMark size="sm" className="bg-(--pp-spring-green-600)! text-white">
+        <CheckIcon weight="bold" />
       </IconMark>
     );
   }
 
   return (
-    <IconMark size="xs" tone="success">
-      <CheckIcon size={12} weight="bold" />
+    <IconMark size="sm" tone="surface" className="text-(--pp-magenta-500)!">
+      <LightningIcon />
     </IconMark>
   );
 }
@@ -63,14 +63,18 @@ function DefaultStatus({ state }: { state: TriggerCardState }) {
 
   if (state === "achieved") {
     return (
-      <Tag variant="primary" size="xs" leftIcon={<CheckIcon size={12} weight="bold" />}>
+      <Tag
+        size="xs"
+        className="border-transparent! bg-(--pp-spring-green-600)! text-white!"
+        leftIcon={<CheckIcon size={8} weight="bold" />}
+      >
         ACHIEVED
       </Tag>
     );
   }
 
   return (
-    <Tag variant="secondary" look="outline" size="xs">
+    <Tag variant="secondary" look="outline" size="xs" className="bg-surface!">
       TO DO
     </Tag>
   );
@@ -113,23 +117,38 @@ export function TriggerCard({
   const statusSlot = isItem && status ? <DefaultStatus state={state} /> : tag;
   const deleteButton =
     isItem && state !== "select" ? (
-      <IconButton label={`Delete ${title}`} variant="danger" look="clear" size="md" onClick={onDelete}>
+      <IconButton
+        label={`Delete ${title}`}
+        variant="danger"
+        look="clear"
+        size="md"
+        onClick={(event) => {
+          event.stopPropagation();
+          onDelete?.();
+        }}
+      >
         <TrashIcon />
       </IconButton>
     ) : (
       action
     );
 
+  const Comp = isItem ? "article" : "header";
+
   return (
-    <article
+    <Comp
       className={cn(
-        "flex w-full items-center gap-3 rounded-md border bg-surface px-3",
-        isItem ? "min-h-[var(--pp-trigger-item-height)] py-2" : "py-2",
-        isItem && state === "select"
-          ? "border-accent"
-          : isItem && state === "achieved"
-            ? "border-border-success"
-            : "border-border",
+        "flex w-full items-center gap-3",
+        isItem
+          ? cn(
+            "min-h-(--pp-trigger-item-height) rounded-md border bg-(--pp-grey-25) px-(--pp-space-16) py-(--pp-space-12) in-data-[theme=dark]:bg-background-subtle",
+            state === "select"
+              ? "border-accent"
+              : state === "achieved"
+                ? "border-(--pp-spring-green-600)"
+                : "border-border",
+          )
+          : "py-2",
         className,
       )}
       {...props}
@@ -138,20 +157,31 @@ export function TriggerCard({
       {emoji}
       <div className="min-w-0 flex-1">
         <Text
-          variant={isItem ? "label" : "subtitle"}
-          className={cn("truncate", state === "achieved" && isItem && "text-success-foreground")}
+          as={isItem ? undefined : "h4"}
+          variant={isItem ? "bodySmall" : "cardTitle"}
+          className={cn(
+            "truncate",
+            isItem
+              ? state === "achieved"
+                ? "font-(--pp-font-weight-semibold) text-(--pp-spring-green-600) line-through"
+                : "font-(--pp-font-weight-medium) text-foreground"
+              : "font-(--pp-font-weight-semibold)",
+          )}
         >
           {title}
         </Text>
         {descriptionVisible ? (
-          <Text variant="caption" className="truncate text-foreground-muted">
+          <Text
+            variant={isItem ? "caption" : "bodySmall"}
+            className="truncate text-foreground-muted"
+          >
             {description}
           </Text>
         ) : null}
       </div>
-      {statusSlot}
+      {statusSlot ? <div className="shrink-0">{statusSlot}</div> : null}
       {secondaryAction}
       {deleteButton}
-    </article>
+    </Comp>
   );
 }
