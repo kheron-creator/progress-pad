@@ -6,7 +6,7 @@ import { type ControlSize } from "./field";
 import { Spinner } from "./spinner";
 
 export type ButtonVariant = "primary" | "secondary" | "danger";
-export type ButtonLook = "filled" | "outline" | "clear" | "ghost";
+export type ButtonLook = "filled" | "outline" | "clear" | "ghost" | "icon";
 export type ButtonSize = ControlSize;
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -26,11 +26,18 @@ const sizeClass: Record<ButtonSize, string> = {
   xl: "h-[var(--pp-control-height-xl)] min-h-[var(--pp-control-height-xl)] min-w-[var(--pp-control-height-xl)] gap-2 px-13 text-[length:var(--pp-text-control-xl-size)]",
 };
 
-const iconSizeClass: Record<ButtonSize, string> = {
-  sm: "h-[var(--pp-icon-button-sm)] w-[var(--pp-icon-button-sm)] p-0",
-  md: "h-[var(--pp-icon-button-md)] w-[var(--pp-icon-button-md)] p-0",
-  lg: "h-[var(--pp-icon-button-lg)] w-[var(--pp-icon-button-lg)] p-0",
-  xl: "h-[var(--pp-icon-button-xl)] w-[var(--pp-icon-button-xl)] p-0",
+const iconCompactClass: Record<ButtonSize, string> = {
+  sm: "size-(--pp-icon-button-sm) shrink-0 p-0",
+  md: "size-(--pp-icon-button-md) shrink-0 p-0",
+  lg: "size-(--pp-icon-button-lg) shrink-0 p-0",
+  xl: "size-(--pp-icon-button-xl) shrink-0 p-0",
+};
+
+const iconControlClass: Record<ButtonSize, string> = {
+  sm: "size-[var(--pp-control-height-sm)] min-w-[var(--pp-control-height-sm)] shrink-0 p-0",
+  md: "size-[var(--pp-control-height-md)] min-w-[var(--pp-control-height-md)] shrink-0 p-0",
+  lg: "size-[var(--pp-control-height-lg)] min-w-[var(--pp-control-height-lg)] shrink-0 p-0",
+  xl: "size-[var(--pp-control-height-xl)] min-w-[var(--pp-control-height-xl)] shrink-0 p-0",
 };
 
 const spinnerSize: Record<ButtonSize, number> = {
@@ -38,6 +45,12 @@ const spinnerSize: Record<ButtonSize, number> = {
   md: 14,
   lg: 16,
   xl: 18,
+};
+
+const iconClearClass: Record<ButtonVariant, string> = {
+  primary: "bg-transparent text-primary hover:bg-transparent",
+  secondary: "bg-transparent text-secondary hover:bg-transparent",
+  danger: "bg-transparent text-error hover:bg-transparent",
 };
 
 const lookClass: Record<`${ButtonVariant}-${"filled" | "outline" | "clear"}`, string> = {
@@ -57,7 +70,23 @@ const lookClass: Record<`${ButtonVariant}-${"filled" | "outline" | "clear"}`, st
 };
 
 function resolveLook(look: ButtonLook): "filled" | "outline" | "clear" {
-  return look === "ghost" ? "clear" : look;
+  if (look === "ghost") {
+    return "clear";
+  }
+
+  if (look === "icon") {
+    return "outline";
+  }
+
+  return look;
+}
+
+function iconSizeClass(size: ButtonSize, look: ButtonLook) {
+  if (look === "icon") {
+    return iconControlClass[size];
+  }
+
+  return iconCompactClass[size];
 }
 
 export function Button({
@@ -75,6 +104,7 @@ export function Button({
 }: ButtonProps) {
   const isDisabled = disabled || loading;
   const resolvedLook = resolveLook(look);
+  const isIcon = iconOnly || look === "icon";
 
   return (
     <button
@@ -82,17 +112,20 @@ export function Button({
       disabled={isDisabled}
       aria-busy={loading || undefined}
       className={cn(
-        "type-button inline-flex cursor-pointer items-center justify-center rounded-sm transition-colors",
+        "type-button inline-flex cursor-pointer items-center justify-center transition-colors",
         "disabled:pointer-events-none disabled:cursor-not-allowed disabled:border-border-disabled disabled:bg-background-subtle disabled:text-foreground-disabled",
-        iconOnly ? iconSizeClass[size] : sizeClass[size],
+        isIcon && resolvedLook === "clear" ? "rounded-none" : "rounded-sm",
+        isIcon ? iconSizeClass(size, look) : sizeClass[size],
         fullWidth && "w-full",
-        lookClass[`${variant}-${resolvedLook}`],
+        isIcon && resolvedLook === "clear"
+          ? iconClearClass[variant]
+          : lookClass[`${variant}-${resolvedLook}`],
         className,
       )}
       {...props}
     >
       {loading ? <Spinner size={spinnerSize[size]} /> : null}
-      {iconOnly && loading ? null : children}
+      {isIcon && loading ? null : children}
     </button>
   );
 }
