@@ -10,8 +10,10 @@ export { Checkbox } from "./checkbox";
 export { CalendarStrip } from "./calendar-strip";
 export { ChoiceItem } from "./choice-item";
 export { Chip } from "./chip";
+export { DayPlanDrawer } from "./day-plan-drawer";
 export { Dialog, DialogActions, DialogConfirmActions } from "./dialog";
 export { Divider } from "./divider";
+export { Drawer } from "./drawer";
 export { Dropdown } from "./dropdown";
 export { EmojiPicker } from "./emoji-picker";
 export { EmptyState } from "./empty-state";
@@ -25,11 +27,16 @@ export { IconMark } from "./icon-mark";
 export {
   BarbellIcon,
   BellIcon,
+  BookOpenIcon,
+  BrainIcon,
+  BriefcaseIcon,
+  CalendarBlankIcon,
   CameraIcon,
   ChartLineIcon,
   ChatIcon,
   CheckCircleIcon,
   CheckIcon,
+  ChecksIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -37,16 +44,23 @@ export {
   DragHandleIcon,
   EnvelopeIcon,
   GridIcon,
+  HeadCircuitIcon,
+  HeartIcon,
+  InfoIcon,
   LockIcon,
+  LightbulbIcon,
   LightningIcon,
   ListBulletsIcon,
   MenuIcon,
+  MicrophoneIcon,
   MoonIcon,
   NoteIcon,
   PencilIcon,
   PlusIcon,
+  QuotesIcon,
   SearchIcon,
   SendIcon,
+  SmileyIcon,
   SparkleIcon,
   StarIcon,
   SunHorizonIcon,
@@ -55,6 +69,7 @@ export {
   TrashIcon,
   UploadIcon,
   UserIcon,
+  UsersThreeIcon,
 } from "./icon";
 export { Input } from "./input";
 export { Logo } from "./logo";
@@ -79,4 +94,6 @@ export { TriggerCard } from "./trigger-card";
 export { TriggerDropzone } from "./trigger-dropzone";
 export { TriggerListItem } from "./trigger-list-item";
 export { TriggersLibrary } from "./triggers-library";
+export { PillarRow } from "./pillar-row";
 export { WrittenItem } from "./written-item";
+export { WritingSection } from "./writing-section";
