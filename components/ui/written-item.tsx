@@ -1,12 +1,12 @@
 "use client";
 
-import type { HTMLAttributes, ReactNode } from "react";
+import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
 import { Checkbox } from "./checkbox";
 import { IconButton } from "./icon-button";
-import { TrashIcon } from "./icon";
+import { CheckIcon, TrashIcon } from "./icon";
 import { Tag } from "./tag";
 import { Text } from "./text";
 
@@ -22,6 +22,8 @@ type WrittenItemProps = Omit<HTMLAttributes<HTMLElement>, "title"> & {
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
   onDelete?: () => void;
+  accent?: string;
+  checkboxLocked?: boolean;
 };
 
 export function WrittenItem({
@@ -34,48 +36,74 @@ export function WrittenItem({
   checked,
   onCheckedChange,
   onDelete,
+  accent,
+  checkboxLocked = false,
   className,
+  style,
   ...props
 }: WrittenItemProps) {
-  const striked = variant === "striked";
+  const isDone = Boolean(achieved || checked);
+  const striked = variant === "striked" || isDone;
+  const doneText = "font-(--pp-font-weight-semibold) text-(--pp-spring-green-600) line-through";
+  const itemStyle = {
+    ...(accent && !isDone ? { borderColor: accent, "--pp-item-accent": accent } : null),
+    ...style,
+  } as CSSProperties;
 
   return (
     <article
       className={cn(
-        "flex items-center gap-3 rounded-md border border-border bg-surface px-3 py-2",
+        "flex items-center gap-3 rounded-md border bg-surface px-(--pp-space-16) py-(--pp-space-12)",
+        isDone ? "border-(--pp-spring-green-600)" : accent ? undefined : "border-border",
         className,
       )}
+      style={itemStyle}
       {...props}
     >
       {checkbox ? (
         <Checkbox
-          size="sm"
+          size="xl"
           tone="accent"
-          checked={checked}
-          onChange={(event) => onCheckedChange?.(event.currentTarget.checked)}
+          checked={checked ?? achieved}
+          disabled={checkboxLocked}
+          onChange={
+            checkboxLocked ? undefined : (event) => onCheckedChange?.(event.currentTarget.checked)
+          }
           aria-label={title}
+          className="size-[1.625rem]!"
+          boxClassName={
+            accent || isDone
+              ? cn(
+                  "rounded-sm text-white",
+                  isDone
+                    ? "border-transparent! bg-(--pp-spring-green-600)! peer-checked:border-transparent peer-checked:bg-(--pp-spring-green-600) peer-disabled:border-transparent! peer-disabled:bg-(--pp-spring-green-600)!"
+                    : "border-(--pp-item-accent) peer-checked:border-transparent peer-checked:bg-(--pp-spring-green-600)",
+                )
+              : undefined
+          }
         />
       ) : null}
       {leftIcon}
       <div className="min-w-0 flex-1">
-        <Text
-          variant="label"
-          className={cn(striked && "text-success-foreground line-through")}
-        >
+        <Text variant="label" className={cn(striked && doneText)}>
           {title}
         </Text>
         {notes ? (
           <Text
             variant="caption"
-            className={cn(striked ? "text-success-foreground line-through" : "text-foreground-muted")}
+            className={cn(striked ? doneText : "text-foreground-muted")}
           >
             {notes}
           </Text>
         ) : null}
       </div>
-      {achieved ? (
-        <Tag variant="primary" size="xs">
-          Achieved
+      {isDone ? (
+        <Tag
+          size="xs"
+          className="border-transparent! bg-(--pp-spring-green-600)! text-white!"
+          leftIcon={<CheckIcon size={8} weight="bold" />}
+        >
+          ACHIEVED
         </Tag>
       ) : null}
       {onDelete ? (
