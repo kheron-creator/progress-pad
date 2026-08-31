@@ -101,11 +101,11 @@ export function Header({
         <div
           className={cn(
             "relative flex h-16 min-w-0 items-center justify-between border-b border-border px-4",
-            "md:h-auto md:px-6 md:py-2 min-[1000px]:px-8 lg:px-10",
+            "md:grid md:h-auto md:grid-cols-[1fr_auto_1fr] md:items-center md:px-6 md:py-2 min-[1000px]:px-8 lg:px-10",
             "gap-3 md:gap-4 min-[1000px]:gap-6 xl:gap-12 2xl:gap-20",
           )}
         >
-          <div className="relative z-20 flex w-max shrink-0 items-center self-center">
+          <div className="relative z-20 flex w-max shrink-0 items-center self-center md:justify-self-start">
             <button
               type="button"
               aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -129,15 +129,15 @@ export function Header({
             <span className="pointer-events-auto max-w-full">{brand}</span>
           </div>
 
-          <div className="hidden min-w-0 flex-1 self-center md:flex md:justify-center">
+          <div className="hidden min-w-0 md:flex md:justify-center">
             <NavLinks items={items} selected={selected} onSelect={onSelect} />
           </div>
 
-          <div className="relative z-20 flex w-max shrink-0 items-center self-center md:gap-2">
+          <div className="relative z-20 flex w-max shrink-0 items-center self-center md:justify-self-end md:gap-2">
             <button
               type="button"
               aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
-              className="hidden size-9 items-center justify-center rounded-full bg-background-subtle p-0 leading-none text-foreground hover:bg-border-subtle md:inline-flex"
+              className="hidden size-9 items-center justify-center rounded-full bg-background-subtle p-0 leading-none text-foreground hover:bg-border-strong md:inline-flex"
               onClick={onThemeToggle}
             >
               {theme === "dark" ? <SunIcon size={16} /> : <MoonIcon size={16} />}
