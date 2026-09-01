@@ -114,17 +114,18 @@ export function OnboardingWizard({ step, initialDraft }: OnboardingWizardProps) 
 
   return (
     <div className="pp-onboarding flex h-dvh max-h-dvh flex-col overflow-hidden bg-background px-(--pp-space-40) pt-[max(var(--pp-space-36),env(safe-area-inset-top))] pb-[max(var(--pp-space-36),env(safe-area-inset-bottom))] lg:px-10 lg:pt-12 lg:pb-4">
+      <Logo size="md" className="h-8 w-auto" />
+
       <header
         className={cn(
           "flex shrink-0 flex-col items-center gap-(--pp-space-36) pb-(--pp-space-24)",
-          "lg:gap-6 lg:pb-8",
+          "lg:gap-6 lg:pb-6",
         )}
       >
-        <Logo size="sm" className="h-7 w-auto sm:h-8" />
         {step !== "ready" ? <OnboardingProgress current={current} /> : null}
       </header>
 
-      <div className="mx-auto flex min-h-0 w-full max-w-[calc(2*26.25rem+0.75rem)] flex-1 flex-col overflow-hidden lg:px-6">
+      <div className="mx-auto flex min-h-0 w-full max-w-[calc(2*26.25rem+0.75rem)] flex-1 flex-col overflow-hidden">
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden lg:py-3">
           <div className="flex min-h-0 flex-1 flex-col">
             {step === 1 ? (

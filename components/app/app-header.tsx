@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { Avatar } from "@/components/ui/avatar";
 import { Header } from "@/components/ui/header";
@@ -13,9 +14,22 @@ import { useSignOut } from "./logout-button";
 
 type Theme = "light" | "dark";
 
-const appNavItems = defaultNavItems.map((item) =>
-  item.id === "progress-today" ? { ...item, href: "/home" } : item,
-);
+const appNavItems = defaultNavItems.map((item) => {
+  if (item.id === "progress-today") {
+    return { ...item, href: "/home" };
+  }
+  if (item.id === "triggers") {
+    return { ...item, href: "/triggers" };
+  }
+  return item;
+});
+
+function selectedNavId(pathname: string) {
+  if (pathname.startsWith("/triggers")) {
+    return "triggers";
+  }
+  return "progress-today";
+}
 
 function initialsFromUser(name: string, email: string | null) {
   const words = name.trim().split(/\s+/).filter((part) => part.length > 0);
@@ -126,6 +140,7 @@ function AccountMenu({
 
 export function AppHeader() {
   const user = useCurrentUser();
+  const pathname = usePathname();
   const [theme, setTheme] = useState<Theme>("light");
   const initials = initialsFromUser(user.name, user.email);
 
@@ -138,7 +153,7 @@ export function AppHeader() {
   return (
     <Header
       className="sticky top-0 z-20"
-      selected="progress-today"
+      selected={selectedNavId(pathname)}
       items={appNavItems}
       homeHref="/home"
       theme={theme}

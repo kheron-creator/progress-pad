@@ -13,12 +13,6 @@ type TagProps = HTMLAttributes<HTMLSpanElement> & {
   leftIcon?: ReactNode;
 };
 
-const sizeClass: Record<TagSize, string> = {
-  xs: "h-[var(--pp-tag-height-xs)] gap-1 px-1.5 text-[length:var(--pp-text-overline-size)]",
-  sm: "h-[var(--pp-tag-height-sm)] gap-1 px-2 text-[length:var(--pp-text-caption-size)]",
-  lg: "h-[var(--pp-tag-height-lg)] gap-1.5 px-2.5 text-[length:var(--pp-text-label-size)]",
-};
-
 const lookClass: Record<`${TagVariant}-${TagStyle}`, string> = {
   "default-default": "border-border bg-surface text-foreground",
   "default-outline": "border-border-strong bg-surface text-foreground",
@@ -35,7 +29,7 @@ const lookClass: Record<`${TagVariant}-${TagStyle}`, string> = {
 export function Tag({
   variant = "default",
   look = "default",
-  size = "sm",
+  size: _size = "sm",
   leftIcon,
   className,
   children,
@@ -44,8 +38,9 @@ export function Tag({
   return (
     <span
       className={cn(
-        "type-label inline-flex items-center rounded-full border",
-        sizeClass[size],
+        "inline-flex items-center rounded-(--pp-radius-6) border px-(--pp-space-8) py-(--pp-space-6)",
+        "gap-(--pp-space-4) text-(length:--pp-font-size-10) font-(--pp-font-weight-medium) leading-none",
+        "[&_svg]:size-2",
         lookClass[`${variant}-${look}`],
         className,
       )}
