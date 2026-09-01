@@ -19,8 +19,10 @@ type DropdownProps = {
   onChange: (value: string) => void;
   placeholder?: string;
   size?: FieldSize;
+  look?: "field" | "chip";
   disabled?: boolean;
   className?: string;
+  "aria-label"?: string;
 };
 
 export function Dropdown({
@@ -30,8 +32,10 @@ export function Dropdown({
   onChange,
   placeholder = "Select",
   size = "md",
+  look = "field",
   disabled = false,
   className,
+  "aria-label": ariaLabel,
 }: DropdownProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -61,7 +65,7 @@ export function Dropdown({
   }, []);
 
   return (
-    <Field className={className}>
+    <Field className={cn(look === "chip" && "w-auto!", className)}>
       {label ? <FieldLabel htmlFor={buttonId}>{label}</FieldLabel> : null}
       <div ref={rootRef} className="relative">
         <button
@@ -71,18 +75,27 @@ export function Dropdown({
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-controls={listId}
-          className={cn(
-            "type-body pp-control flex items-center justify-between gap-2 text-left",
-            fieldSizeClass[size],
-            fieldPaddingClass[size],
-            fieldStateClass[disabled ? "disabled" : open ? "focus" : "default"],
-          )}
+          aria-label={ariaLabel}
+          className={
+            look === "chip"
+              ? "inline-flex h-auto min-h-0 cursor-pointer items-center justify-between gap-(--pp-space-4) rounded-full border border-(--pp-bondi-blue-600) bg-(--pp-bondi-blue-50) px-(--pp-space-16) py-(--pp-space-4) text-(length:--pp-font-size-12) font-(--pp-font-weight-semibold) leading-none text-(--pp-bondi-blue-600) disabled:cursor-not-allowed disabled:opacity-50"
+              : cn(
+                  "type-body pp-control flex items-center justify-between gap-2 text-left",
+                  fieldSizeClass[size],
+                  fieldPaddingClass[size],
+                  fieldStateClass[disabled ? "disabled" : open ? "focus" : "default"],
+                )
+          }
           onClick={() => setOpen((current) => !current)}
         >
-          <span className={selected ? "text-foreground" : "text-foreground-muted"}>
+          <span
+            className={
+              look === "chip" ? undefined : selected ? "text-foreground" : "text-foreground-muted"
+            }
+          >
             {selected?.label ?? placeholder}
           </span>
-          <ChevronDownIcon />
+          <ChevronDownIcon size={look === "chip" ? 12 : undefined} />
         </button>
         {open ? (
           <ul
