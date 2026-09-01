@@ -37,6 +37,7 @@ import {
   ListBulletsIcon,
   MoonIcon,
   NoteIcon,
+  PlusIcon,
   SparkleIcon,
   StarIcon,
   SunIcon,
@@ -154,7 +155,8 @@ export function ComponentGallery() {
   const [flowQuery, setFlowQuery] = useState("");
   const [chatValue, setChatValue] = useState("");
   const [libraryQuery, setLibraryQuery] = useState("");
-  const [libraryName, setLibraryName] = useState("");
+  const [libraryName, setLibraryName] = useState("Fresh-air walk");
+  const [libraryIcon, setLibraryIcon] = useState<string>();
   const [sectionName, setSectionName] = useState("");
   const [sectionDetail, setSectionDetail] = useState("");
   const [choiceId, setChoiceId] = useState("deep-work");
@@ -178,6 +180,9 @@ export function ComponentGallery() {
                 </Button>
                 <Button variant={variant} look="ghost">
                   Ghost
+                </Button>
+                <Button variant={variant} look="icon" aria-label="Icon only">
+                  <PlusIcon size={20} />
                 </Button>
                 <Button variant={variant} size="sm">
                   SM
@@ -477,7 +482,7 @@ export function ComponentGallery() {
                   Progress Today
                 </Tag>
               }
-              media={<div className="h-full w-full bg-gradient-to-br from-secondary to-accent" />}
+              media={<div className="h-full w-full bg-linear-to-br from-secondary to-accent" />}
             />
             <Banner
               size="sm"
@@ -488,7 +493,7 @@ export function ComponentGallery() {
                   Mind Sweep
                 </Tag>
               }
-              media={<div className="h-full w-full bg-gradient-to-br from-accent to-primary" />}
+              media={<div className="h-full w-full bg-linear-to-br from-accent to-primary" />}
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -526,7 +531,10 @@ export function ComponentGallery() {
             state="add"
             name={libraryName}
             onNameChange={setLibraryName}
+            selectedIcon={libraryIcon}
+            onIconSelect={setLibraryIcon}
             onSave={() => undefined}
+            onCancel={() => undefined}
           />
         </div>
       </PreviewSection>
@@ -734,15 +742,17 @@ export function ComponentGallery() {
               <TriggerCard
                 kind="item"
                 state="todo"
-                title="Trigger Name"
-                description="description"
+                title="Daily Micro-Expense Log"
+                leftEmoji={false}
+                showDescription={false}
                 onDelete={() => undefined}
               />
               <TriggerCard
                 kind="item"
                 state="achieved"
-                title="Trigger Name"
-                description="description"
+                title="1 min of gratitude"
+                leftEmoji={false}
+                showDescription={false}
                 onDelete={() => undefined}
               />
               <TriggerCard kind="item" state="select" title="Trigger Name" description="description" />
@@ -850,7 +860,7 @@ export function ComponentGallery() {
             <Text variant="caption">Closed</Text>
             <EmojiPicker open={false} />
             <Text variant="caption">Opened</Text>
-            <EmojiPicker />
+            <EmojiPicker open />
           </div>
         </div>
       </PreviewSection>
