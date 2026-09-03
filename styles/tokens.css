@@ -337,6 +337,12 @@
   --pp-color-info-muted: var(--pp-bg-info-muted);
   --pp-color-info-foreground: var(--pp-fg-info);
 
+  --pp-toast-fg: var(--pp-grey-0);
+  --pp-toast-success-bg: var(--pp-green-500);
+  --pp-toast-warning-bg: var(--pp-yellow-600);
+  --pp-toast-error-bg: var(--pp-red-600);
+  --pp-toast-info-bg: var(--pp-blue-600);
+
   --pp-color-accent: var(--pp-bg-accent);
   --pp-color-accent-muted: var(--pp-bg-accent-muted);
   --pp-color-accent-foreground: var(--pp-fg-on-brand);
@@ -400,7 +406,7 @@
   --pp-text-status-leading: var(--pp-text-caption-leading);
   --pp-text-status-weight: var(--pp-font-weight-medium);
 
-  --pp-space-page-x: var(--pp-space-128);
+  --pp-space-page-x: var(--pp-space-48);
   --pp-space-page-y: var(--pp-space-32);
   --pp-space-section: var(--pp-space-32);
   --pp-space-card: var(--pp-space-32);
@@ -650,7 +656,7 @@
   --pp-fg-muted: var(--pp-grey-300);
   --pp-fg-disabled: var(--pp-grey-500);
   --pp-fg-inverse: var(--pp-grey-900);
-  --pp-fg-brand: var(--pp-spring-green-400);
+  --pp-fg-brand: var(--pp-spring-green-600);
   --pp-fg-on-brand: var(--pp-grey-900);
   --pp-fg-success: var(--pp-green-100);
   --pp-fg-warning: var(--pp-yellow-300);
@@ -665,7 +671,7 @@
   --pp-bg-elevated: var(--pp-grey-700);
   --pp-bg-overlay: color-mix(in srgb, var(--pp-grey-900) 56%, transparent);
   --pp-bg-inverse: var(--pp-grey-25);
-  --pp-bg-brand: var(--pp-spring-green-400);
+  --pp-bg-brand: var(--pp-spring-green-600);
   --pp-bg-brand-hover: var(--pp-spring-green-300);
   --pp-bg-brand-active: var(--pp-spring-green-200);
   --pp-bg-brand-muted: var(--pp-spring-green-900);
@@ -682,6 +688,11 @@
   --pp-bg-error-muted: var(--pp-red-900);
   --pp-bg-info: var(--pp-blue-300);
   --pp-bg-info-muted: var(--pp-blue-900);
+  --pp-toast-fg: var(--pp-grey-0);
+  --pp-toast-success-bg: var(--pp-green-600);
+  --pp-toast-warning-bg: var(--pp-yellow-700);
+  --pp-toast-error-bg: var(--pp-red-700);
+  --pp-toast-info-bg: var(--pp-blue-700);
   --pp-bg-disabled: var(--pp-grey-800);
   --pp-bg-accent: var(--pp-magenta-400);
   --pp-bg-accent-muted: var(--pp-magenta-900);
@@ -689,12 +700,12 @@
   --pp-border-default: var(--pp-grey-700);
   --pp-border-subtle: var(--pp-grey-800);
   --pp-border-strong: var(--pp-grey-500);
-  --pp-border-focus: var(--pp-spring-green-400);
-  --pp-border-selected: var(--pp-spring-green-400);
+  --pp-border-focus: var(--pp-spring-green-600);
+  --pp-border-selected: var(--pp-spring-green-600);
   --pp-border-error: var(--pp-red-300);
   --pp-border-success: var(--pp-green-300);
   --pp-border-disabled: var(--pp-grey-700);
-  --pp-border-brand: var(--pp-spring-green-400);
+  --pp-border-brand: var(--pp-spring-green-600);
 
   --pp-shadow-sm-alpha: 40%;
   --pp-shadow-md-alpha: 45%;

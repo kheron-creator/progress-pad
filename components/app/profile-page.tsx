@@ -58,7 +58,7 @@ export function ProfilePage({
   memberSince?: string;
 }) {
   const router = useRouter();
-  const { toasts, showToast } = useToasts();
+  const { toasts, showToast, dismissToast } = useToasts();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
@@ -512,7 +512,7 @@ export function ProfilePage({
         onRemove={handleAvatarRemove}
         onSave={handleCropSave}
       />
-      <ToastRegion toasts={toasts} />
+      <ToastRegion toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }
