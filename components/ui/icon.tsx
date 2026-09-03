@@ -33,6 +33,7 @@ import {
   QuotesIcon as PhosphorQuotesIcon,
   SmileyIcon as PhosphorSmileyIcon,
   SparkleIcon as PhosphorSparkleIcon,
+  StopIcon as PhosphorStopIcon,
   SquaresFourIcon,
   StarIcon as PhosphorStarIcon,
   SunHorizonIcon as PhosphorSunHorizonIcon,
@@ -40,9 +41,13 @@ import {
   TargetIcon as PhosphorTargetIcon,
   TrashIcon as PhosphorTrashIcon,
   EnvelopeSimpleIcon,
+  FilesIcon as PhosphorFilesIcon,
+  FolderIcon as PhosphorFolderIcon,
   EyeIcon as PhosphorEyeIcon,
   EyeSlashIcon as PhosphorEyeSlashIcon,
   Info as PhosphorInfoIcon,
+  WarningCircleIcon as PhosphorWarningCircleIcon,
+  XCircleIcon as PhosphorXCircleIcon,
   LockSimpleIcon,
   UploadSimpleIcon,
   PaperPlaneTiltIcon,
@@ -59,6 +64,7 @@ export const iconSize = {
   sm: 26,
   md: 36,
   lg: 40,
+  xl: 80
 } as const;
 
 export type IconSizeName = keyof typeof iconSize;
@@ -121,6 +127,7 @@ export const CalendarBlankIcon = withIcon(PhosphorCalendarBlankIcon);
 export const MenuIcon = withIcon(PhosphorListIcon);
 export const SearchIcon = withIcon(PhosphorMagnifyingGlassIcon);
 export const MicrophoneIcon = withIcon(PhosphorMicrophoneIcon);
+export const StopIcon = withIcon(PhosphorStopIcon);
 export const PlusIcon = withIcon(PhosphorPlusIcon);
 export const QuotesIcon = withIcon(PhosphorQuotesIcon);
 export const PencilIcon = withIcon(PencilSimpleIcon);
@@ -140,7 +147,11 @@ export const TargetIcon = withIcon(PhosphorTargetIcon);
 export const ChartLineIcon = withIcon(PhosphorChartLineUpIcon);
 export const SunHorizonIcon = withIcon(PhosphorSunHorizonIcon);
 export const EnvelopeIcon = withIcon(EnvelopeSimpleIcon);
+export const FilesIcon = withIcon(PhosphorFilesIcon);
+export const FolderIcon = withIcon(PhosphorFolderIcon);
 export const InfoIcon = withIcon(PhosphorInfoIcon);
+export const WarningCircleIcon = withIcon(PhosphorWarningCircleIcon);
+export const XCircleIcon = withIcon(PhosphorXCircleIcon);
 export const LockIcon = withIcon(LockSimpleIcon);
 export const EyeIcon = withIcon(PhosphorEyeIcon);
 export const EyeSlashIcon = withIcon(PhosphorEyeSlashIcon);
