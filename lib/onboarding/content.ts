@@ -34,18 +34,18 @@ export const routineOptions = [
 ] as const;
 
 export const triggerOptions = [
-  { id: "plan-tomorrow", label: "Plan tomorrow" },
-  { id: "check-calendar", label: "Check my calendar" },
-  { id: "review-unfinished", label: "Review what's unfinished" },
-  { id: "take-a-break", label: "Take a proper break" },
-  { id: "go-for-a-walk", label: "Go for a walk" },
-  { id: "drink-water", label: "Drink enough water" },
-  { id: "work-on-assignment", label: "Work on my assignment" },
-  { id: "study-30", label: "Study for 30 minutes" },
-  { id: "hardest-task-first", label: "Start my hardest task first" },
-  { id: "tidy-workspace", label: "Tidy my workspace" },
-  { id: "reflect-on-today", label: "Reflect on today" },
-  { id: "eat-healthy", label: "Eat healthy" },
+  { id: "plan-tomorrow", label: "Plan tomorrow", emoji: "🗓️" },
+  { id: "check-calendar", label: "Check my calendar", emoji: "📅" },
+  { id: "review-unfinished", label: "Review what's unfinished", emoji: "📋" },
+  { id: "take-a-break", label: "Take a proper break", emoji: "☕️" },
+  { id: "go-for-a-walk", label: "Go for a walk", emoji: "🚶" },
+  { id: "drink-water", label: "Drink enough water", emoji: "💧" },
+  { id: "work-on-assignment", label: "Work on my assignment", emoji: "📝" },
+  { id: "study-30", label: "Study for 30 minutes", emoji: "📚" },
+  { id: "hardest-task-first", label: "Start my hardest task first", emoji: "🚩" },
+  { id: "tidy-workspace", label: "Tidy my workspace", emoji: "🧹" },
+  { id: "reflect-on-today", label: "Reflect on today", emoji: "💡" },
+  { id: "eat-healthy", label: "Eat healthy", emoji: "🍎" },
 ] as const;
 
 export const checkInOptions: Array<{

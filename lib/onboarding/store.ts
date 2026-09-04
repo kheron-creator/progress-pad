@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/supabase/database";
 
 import { appPathForComplete } from "@/lib/auth/paths";
+import { ensureOnboardingTriggers } from "@/lib/triggers/store";
 
 import { isOnboardingComplete, parseOnboardingDraft, type OnboardingDraft } from "./draft";
 
@@ -96,6 +97,14 @@ export async function saveOnboarding(
 
   if (error) {
     throw error;
+  }
+
+  if (options?.complete) {
+    await ensureOnboardingTriggers(
+      supabase,
+      user.id,
+      parseOnboardingDraft({ ...previous, ...draft }).triggerIds,
+    );
   }
 }
 
