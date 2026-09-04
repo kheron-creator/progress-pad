@@ -29,8 +29,8 @@ export function Progress({ value, label, size = "md", className }: ProgressProps
       )}
     >
       <div
-        className="h-full rounded-full bg-(--pp-spring-green-600)"
-        style={{ width: `${clamped}%` }}
+        className="h-full w-full origin-left rounded-full bg-(--pp-spring-green-600) transition-transform duration-500 ease-out"
+        style={{ transform: `scaleX(${clamped / 100})` }}
       />
     </div>
   );

@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils/cn";
 
 import { Button } from "./button";
 import { Card } from "./card";
+import { DictateButton } from "./dictate-button";
 import { IconMark } from "./icon-mark";
 import { Input } from "./input";
-import { CheckIcon, MicrophoneIcon, NoteIcon, PlusIcon } from "./icon";
+import { CheckIcon, NoteIcon, PlusIcon } from "./icon";
 import { Progress } from "./progress";
 import { Textarea } from "./textarea";
 import { TriggerCard } from "./trigger-card";
@@ -38,10 +39,11 @@ type WritingSectionProps = {
   items?: WritingSectionItem[];
   onCheckedChange?: (id: string, checked: boolean) => void;
   onDelete?: (id: string) => void;
-  onAdd?: (value: string, notes?: string) => void;
+  onAdd?: (value: string, notes?: string) => void | Promise<void>;
   composer?: boolean;
   addLabel?: string;
   submitIcon?: boolean | "check";
+  saving?: boolean;
   itemCheckbox?: boolean;
   itemLocked?: boolean;
   progress?: number;
@@ -69,6 +71,7 @@ export function WritingSection({
   composer = false,
   addLabel = "Add Entry",
   submitIcon = true,
+  saving = false,
   itemCheckbox,
   itemLocked = false,
   progress,
@@ -82,11 +85,11 @@ export function WritingSection({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const next = value?.trim();
-    if (!next || !onAdd) {
+    if (!next || !onAdd || saving) {
       return;
     }
 
-    onAdd(next, notesValue?.trim() || undefined);
+    void onAdd(next, notesValue?.trim() || undefined);
   }
 
   return (
@@ -120,20 +123,17 @@ export function WritingSection({
                 onChange={(event) => onChange?.(event.currentTarget.value)}
                 placeholder={placeholder}
                 aria-label={placeholder}
+                disabled={saving}
               />
             </div>
-            <Button
-              type="button"
-              variant="secondary"
-              look="icon"
-              size="md"
-              aria-label="Dictate entry"
-              className="shrink-0"
+            <DictateButton
+              value={value}
+              onChange={onChange}
+              disabled={saving}
+              label="Dictate entry"
               style={{ borderColor: accent, color: accent }}
-            >
-              <MicrophoneIcon size={20} />
-            </Button>
-            <Button type="submit" size="md" disabled={!value?.trim()} className="max-sm:hidden">
+            />
+            <Button type="submit" size="md" disabled={!value?.trim() || saving} loading={saving} className="max-sm:hidden">
               {submitIcon === "check" ? (
                 <CheckIcon size={16} weight="bold" />
               ) : submitIcon ? (
@@ -148,9 +148,10 @@ export function WritingSection({
               onChange={(event) => onNotesChange?.(event.currentTarget.value)}
               placeholder={notesPlaceholder}
               aria-label={notesPlaceholder}
+              disabled={saving}
             />
           ) : null}
-          <Button type="submit" size="md" disabled={!value?.trim()} className="w-full sm:hidden">
+          <Button type="submit" size="md" disabled={!value?.trim() || saving} loading={saving} className="w-full sm:hidden">
             {submitIcon === "check" ? (
               <CheckIcon size={16} weight="bold" />
             ) : submitIcon ? (

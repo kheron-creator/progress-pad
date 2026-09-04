@@ -70,15 +70,15 @@ export function WrittenItem({
             checkboxLocked ? undefined : (event) => onCheckedChange?.(event.currentTarget.checked)
           }
           aria-label={title}
-          className="size-[1.625rem]!"
+          className="size-6.5!"
           boxClassName={
             accent || isDone
               ? cn(
-                  "rounded-sm text-white",
-                  isDone
-                    ? "border-transparent! bg-(--pp-spring-green-600)! peer-checked:border-transparent peer-checked:bg-(--pp-spring-green-600) peer-disabled:border-transparent! peer-disabled:bg-(--pp-spring-green-600)!"
-                    : "border-(--pp-item-accent) peer-checked:border-transparent peer-checked:bg-(--pp-spring-green-600)",
-                )
+                "rounded-sm text-white",
+                isDone
+                  ? "border-transparent! bg-(--pp-spring-green-600)! peer-checked:border-transparent peer-checked:bg-(--pp-spring-green-600) peer-disabled:border-transparent! peer-disabled:bg-(--pp-spring-green-600)!"
+                  : "border-(--pp-item-accent) peer-checked:border-transparent peer-checked:bg-(--pp-spring-green-600)",
+              )
               : undefined
           }
         />

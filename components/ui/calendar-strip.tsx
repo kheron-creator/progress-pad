@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from "react";
 
-import { readLibraryDragPayload, type LibraryDragPayload } from "@/lib/triggers/drag";
+import { TRIGGERS_PICK_COPY } from "@/lib/triggers/content";
+import { readLibraryDragItems, type LibraryDragPayload } from "@/lib/triggers/drag";
 import { cn } from "@/lib/utils/cn";
 
 import { Button } from "./button";
@@ -30,10 +31,12 @@ type CalendarStripProps = {
   look?: "horizon" | "intention";
   assigning?: boolean;
   canSaveAssign?: boolean;
+  assignSaving?: boolean;
   onAssign?: () => void;
   onCancelAssign?: () => void;
   onSaveAssign?: () => void;
-  onDropOnDate?: (date: Date, item: LibraryDragPayload) => void;
+  onDropOnDate?: (date: Date, items: LibraryDragPayload[]) => void;
+  selectionCount?: number;
   onDayClick?: (date: Date) => void;
   onClear?: () => void;
   className?: string;
@@ -97,10 +100,12 @@ export function CalendarStrip({
   look = "horizon",
   assigning = false,
   canSaveAssign = false,
+  assignSaving = false,
   onAssign,
   onCancelAssign,
   onSaveAssign,
   onDropOnDate,
+  selectionCount = 0,
   onDayClick,
   onClear,
   className,
@@ -110,6 +115,7 @@ export function CalendarStrip({
   const weekdayLabels = weekStartsOn === 1 ? WEEKDAYS_MON : WEEKDAYS_SUN;
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const canDrop = assigning && Boolean(onDropOnDate);
+  const canAssignOnTap = canDrop && selectionCount > 0;
 
   useEffect(() => {
     if (!canDrop) return;
@@ -156,9 +162,9 @@ export function CalendarStrip({
     if (!canDrop || !onDropOnDate) return;
     event.preventDefault();
     setDropTarget(null);
-    const item = readLibraryDragPayload(event);
-    if (!item) return;
-    onDropOnDate(day, item);
+    const items = readLibraryDragItems(event);
+    if (items.length === 0) return;
+    onDropOnDate(day, items);
     onChange(day);
   }
 
@@ -213,7 +219,6 @@ export function CalendarStrip({
           if (look === "intention") {
             const over = dropTarget === isoDate(day);
             const assigned = marker?.icons?.filter(Boolean) ?? [];
-            const extra = Math.max(0, (marker?.count ?? assigned.length) - 4);
 
             return (
               <button
@@ -230,7 +235,9 @@ export function CalendarStrip({
                   inMonth
                     ? over && canDrop
                       ? "bg-primary-muted"
-                      : "bg-background-subtle hover:bg-primary-muted"
+                      : canAssignOnTap
+                        ? "bg-background-subtle ring-1 ring-primary/30 ring-inset hover:bg-primary-muted"
+                        : "bg-background-subtle hover:bg-primary-muted"
                     : "bg-transparent",
                 )}
               >
@@ -249,17 +256,15 @@ export function CalendarStrip({
                   </span>
                 )}
                 {assigned.length > 0 ? (
-                  <span className="flex w-full flex-wrap items-center gap-0.5">
-                    {assigned.slice(0, 4).map((icon, index) => (
-                      <span key={index} className="inline-flex size-5 shrink-0 items-center justify-center overflow-hidden *:size-5">
+                  <span className="grid w-full min-w-0 grid-cols-3 justify-items-start gap-px lg:flex lg:flex-wrap lg:items-center lg:gap-0.5">
+                    {assigned.map((icon, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex size-2.5 shrink-0 items-center justify-center leading-none *:size-full *:min-h-0 *:min-w-0 *:bg-transparent *:leading-none **:text-[7px] **:leading-none lg:size-5 lg:overflow-hidden lg:**:text-(length:--pp-font-size-14)"
+                      >
                         {icon}
                       </span>
                     ))}
-                    {extra > 0 ? (
-                      <span className="type-caption leading-none text-foreground-muted ml-1">
-                        +{extra}
-                      </span>
-                    ) : null}
                   </span>
                 ) : null}
               </button>
@@ -271,6 +276,7 @@ export function CalendarStrip({
               key={day.toISOString()}
               type="button"
               aria-pressed={active}
+              aria-current={isToday ? "date" : undefined}
               onClick={() => onChange(day)}
               className={cn(
                 "relative flex h-(--pp-control-height-md) w-full items-center justify-center rounded-md type-label max-sm:h-8",
@@ -281,19 +287,13 @@ export function CalendarStrip({
                     : "bg-transparent text-foreground-muted",
               )}
             >
-              {day.getDate()}
-              {marker?.count != null ? (
-                <span className="absolute top-0.5 right-1 text-[0.625rem] leading-none">
-                  {marker.count}
+              {isToday && !active ? (
+                <span className="inline-flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                  {day.getDate()}
                 </span>
-              ) : marker?.dot ? (
-                <span
-                  className={cn(
-                    "absolute bottom-1 size-1 rounded-full",
-                    active ? "bg-primary-foreground" : "bg-foreground-muted",
-                  )}
-                />
-              ) : null}
+              ) : (
+                day.getDate()
+              )}
             </button>
           );
         })}
@@ -331,20 +331,28 @@ export function CalendarStrip({
             <div className="flex shrink-0 items-center gap-2">
               {assigning ? (
                 <>
-                  <Button size="md" variant="primary" look="outline" onClick={onCancelAssign}>
+                  <Button size="md" variant="primary" look="outline" onClick={onCancelAssign} disabled={assignSaving}>
                     Cancel
                   </Button>
-                  <Button size="md" onClick={onSaveAssign} disabled={!canSaveAssign}>
+                  <Button size="md" onClick={onSaveAssign} disabled={!canSaveAssign} loading={assignSaving}>
                     Save
                   </Button>
                 </>
               ) : (
-                <Button size="md" onClick={onAssign}>
-                  Assign Triggers
+                <Button size="md" onClick={onAssign} disabled={assignSaving}>
+                  Assign Triggers / Scenarios
                 </Button>
               )}
             </div>
           </div>
+          {assigning ? (
+            <Text variant="caption" className="text-foreground">
+              {selectionCount > 0
+                ? TRIGGERS_PICK_COPY.assignSelected(selectionCount)
+                : TRIGGERS_PICK_COPY.assignEmpty}
+              <span className="hidden pointer-fine:inline">{TRIGGERS_PICK_COPY.assignDragHint}</span>
+            </Text>
+          ) : null}
           {monthGrid}
         </>
       ) : (
@@ -399,13 +407,14 @@ export function CalendarStrip({
               <div className="grid min-w-0 flex-1 grid-cols-7 gap-(--pp-space-8) max-sm:gap-0.5">
                 {weekDays.map((day) => {
                   const active = isSameDay(day, selected);
-                  const marker = markers?.[isoDate(day)];
+                  const isToday = isSameDay(day, today);
 
                   return (
                     <button
                       key={day.toISOString()}
                       type="button"
                       aria-pressed={active}
+                      aria-current={isToday ? "date" : undefined}
                       onClick={() => onChange(day)}
                       className={cn(
                         "flex min-w-0 flex-col items-center justify-center gap-(--pp-space-4) rounded-md border px-(--pp-space-8) py-(--pp-space-12)",
@@ -430,8 +439,10 @@ export function CalendarStrip({
                           "type-section-title leading-none",
                           "max-sm:inline-flex max-sm:size-8 max-sm:items-center max-sm:justify-center max-sm:rounded-full max-sm:text-(length:--pp-font-size-16)",
                           active
-                            ? "text-primary-foreground max-sm:bg-primary max-sm:text-primary-foreground"
-                            : "text-foreground",
+                            ? "inline-flex size-9 items-center justify-center rounded-full max-sm:size-7 text-primary-foreground max-sm:bg-primary max-sm:text-primary-foreground"
+                            : isToday
+                              ? "inline-flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground max-sm:size-7"
+                              : "inline-flex size-9 items-center justify-center rounded-full text-foreground max-sm:size-7",
                         )}
                       >
                         {day.getDate()}
@@ -445,27 +456,6 @@ export function CalendarStrip({
                       >
                         {monthName(day)}
                       </Text>
-                      {marker?.count != null ? (
-                        <span
-                          className={cn(
-                            "type-overline",
-                            active ? "text-primary-foreground" : "text-foreground-muted",
-                          )}
-                        >
-                          {marker.count}
-                        </span>
-                      ) : marker?.icon ? (
-                        <span className={active ? "text-primary-foreground" : "text-foreground-muted"}>
-                          {marker.icon}
-                        </span>
-                      ) : marker?.dot ? (
-                        <span
-                          className={cn(
-                            "size-1 rounded-full",
-                            active ? "bg-primary-foreground" : "bg-foreground-muted",
-                          )}
-                        />
-                      ) : null}
                     </button>
                   );
                 })}
