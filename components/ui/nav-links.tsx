@@ -31,7 +31,6 @@ export const defaultNavItems: NavLinkItem[] = [
     id: "progress-today",
     label: "PROGRESS TODAY",
     icon: <CheckCircleIcon size={16} />,
-    badge: 3,
     featured: true,
   },
   { id: "triggers", label: "Triggers", icon: <LightningIcon size={14} weight="regular" /> },
@@ -71,11 +70,11 @@ export function NavLinks({
         const itemClassName = stacked
           ? "flex h-9 w-full items-center gap-2.5 px-1 py-2 text-left text-foreground hover:bg-background-subtle"
           : cn(
-            "flex shrink-0 items-center justify-center gap-1.5 px-2.5 py-2 transition-colors min-[1000px]:gap-2 min-[1000px]:px-4 lg:px-5 xl:gap-2.5 xl:px-6 xl:py-3",
-            isSelected
-              ? "rounded-md bg-surface text-primary"
-              : featured
-                ? "rounded-md bg-primary-hover text-foreground-on-brand"
+            "flex shrink-0 items-center justify-center gap-1.5 rounded-md px-2.5 py-2 transition-colors min-[1000px]:gap-2 min-[1000px]:px-4 lg:px-5 xl:gap-2.5 xl:px-6 xl:py-3",
+            featured
+              ? "bg-white text-primary in-data-[theme=dark]:bg-(--pp-grey-800) in-data-[theme=dark]:text-primary"
+              : isSelected
+                ? "bg-(--pp-grey-800)/30 text-white"
                 : "text-foreground-on-brand hover:bg-white/10",
           );
         const label = stacked
@@ -110,7 +109,13 @@ export function NavLinks({
             {stacked ? (
               <span className="inline-flex shrink-0 items-center gap-2">
                 {item.badge != null ? (
-                  <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-(length:--pp-font-size-11) font-medium text-foreground-on-brand">
+                  <span
+                    className={cn(
+                      "inline-flex size-5 items-center justify-center rounded-full bg-primary text-(length:--pp-font-size-11) font-medium text-foreground-on-brand",
+                      item.badge === 0 && "invisible",
+                    )}
+                    aria-hidden={item.badge === 0 || undefined}
+                  >
                     {item.badge}
                   </span>
                 ) : null}
@@ -119,9 +124,15 @@ export function NavLinks({
             ) : item.badge != null ? (
               <span
                 className={cn(
-                  "inline-flex size-4 shrink-0 items-center justify-center rounded-full text-(length:--pp-font-size-11) font-medium text-foreground-on-brand",
-                  isSelected ? "bg-primary" : "bg-primary-active",
+                  "inline-flex size-4 shrink-0 items-center justify-center rounded-full text-(length:--pp-font-size-11) font-medium",
+                  featured
+                    ? "bg-primary text-primary-foreground"
+                    : isSelected
+                      ? "bg-white text-(--pp-spring-green-700)"
+                      : "bg-primary-active text-foreground-on-brand",
+                  item.badge === 0 && "invisible",
                 )}
+                aria-hidden={item.badge === 0 || undefined}
               >
                 {item.badge}
               </span>

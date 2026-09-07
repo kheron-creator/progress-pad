@@ -1,32 +1,46 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Avatar } from "@/components/ui/avatar";
+import { isoDate } from "@/components/ui/calendar-strip";
 import { Header } from "@/components/ui/header";
+import { MoonIcon, SunIcon, UserIcon } from "@/components/ui/icon";
 import { defaultNavItems } from "@/components/ui/nav-links";
 import { Text } from "@/components/ui/text";
+import { flattenDayTriggers } from "@/lib/triggers/store";
 
 import { useCurrentUser } from "./current-user-provider";
 import { useSignOut } from "./logout-button";
+import { useSessionStore } from "./session-store-provider";
 
 type Theme = "light" | "dark";
 
-const appNavItems = defaultNavItems.map((item) => {
-  if (item.id === "progress-today") {
-    return { ...item, href: "/home" };
-  }
-  if (item.id === "triggers") {
-    return { ...item, href: "/triggers" };
-  }
-  return item;
-});
+const navHrefs: Record<string, string> = {
+  dashboard: "/dashboard",
+  "habit-sweep": "/habit-sweep",
+  "progress-today": "/home",
+  triggers: "/triggers",
+  assistant: "/assistant",
+};
 
 function selectedNavId(pathname: string) {
   if (pathname.startsWith("/triggers")) {
     return "triggers";
+  }
+  if (pathname.startsWith("/dashboard")) {
+    return "dashboard";
+  }
+  if (pathname.startsWith("/habit-sweep")) {
+    return "habit-sweep";
+  }
+  if (pathname.startsWith("/assistant")) {
+    return "assistant";
+  }
+  if (pathname.startsWith("/coming-soon")) {
+    return "";
   }
   return "progress-today";
 }
@@ -46,11 +60,15 @@ function AccountMenu({
   email,
   initials,
   avatarSrc,
+  theme,
+  onThemeToggle,
 }: {
   name: string;
   email: string | null;
   initials: string;
   avatarSrc?: string;
+  theme: Theme;
+  onThemeToggle: () => void;
 }) {
   const { signOut, pending, error } = useSignOut();
   const [open, setOpen] = useState(false);
@@ -104,18 +122,30 @@ function AccountMenu({
           <Link
             href="/profile"
             role="menuitem"
-            className="block border-b border-border px-3 py-2 hover:bg-background-subtle"
+            className="flex items-start gap-2 border-b border-border px-3 py-2 hover:bg-background-subtle"
             onClick={() => setOpen(false)}
           >
-            <Text variant="label" className="truncate">
-              {name}
-            </Text>
-            {email ? (
-              <Text variant="caption" className="truncate">
-                {email}
+            <UserIcon size={16} className="mt-0.5 shrink-0 text-foreground" />
+            <span className="min-w-0 flex-1">
+              <Text variant="label" className="truncate">
+                {name}
               </Text>
-            ) : null}
+              {email ? (
+                <Text variant="caption" className="truncate">
+                  {email}
+                </Text>
+              ) : null}
+            </span>
           </Link>
+          <button
+            type="button"
+            role="menuitem"
+            className="type-label flex w-full items-center gap-2 border-b border-border px-3 py-2 text-left text-foreground hover:bg-background-subtle md:hidden"
+            onClick={onThemeToggle}
+          >
+            {theme === "dark" ? <SunIcon size={16} /> : <MoonIcon size={16} />}
+            {theme === "light" ? "Dark mode" : "Light mode"}
+          </button>
           <button
             type="button"
             role="menuitem"
@@ -143,6 +173,27 @@ export function AppHeader() {
   const pathname = usePathname();
   const [theme, setTheme] = useState<Theme>("light");
   const initials = initialsFromUser(user.name, user.email);
+  const remainingToday = useSessionStore((state) => {
+    const today = isoDate(new Date());
+    return flattenDayTriggers(
+      state.assignments[today] ?? [],
+      state.planTriggers,
+      state.planScenarios,
+      state.states[today],
+    ).filter((trigger) => trigger.status !== "achieved").length;
+  });
+  const items = useMemo(
+    () =>
+      defaultNavItems.map((item) => {
+        const href = navHrefs[item.id];
+        const withHref = href ? { ...item, href } : item;
+        if (item.id !== "progress-today") {
+          return withHref;
+        }
+        return { ...withHref, badge: remainingToday };
+      }),
+    [remainingToday],
+  );
 
   function toggleTheme() {
     const next: Theme = theme === "light" ? "dark" : "light";
@@ -154,7 +205,7 @@ export function AppHeader() {
     <Header
       className="sticky top-0 z-20"
       selected={selectedNavId(pathname)}
-      items={appNavItems}
+      items={items}
       homeHref="/home"
       theme={theme}
       onThemeToggle={toggleTheme}
@@ -166,6 +217,8 @@ export function AppHeader() {
           email={user.email}
           initials={initials}
           avatarSrc={user.avatarUrl?.trim() || undefined}
+          theme={theme}
+          onThemeToggle={toggleTheme}
         />
       }
     />
