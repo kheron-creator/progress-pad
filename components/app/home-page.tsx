@@ -1,14 +1,16 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
-import { CalendarStrip } from "@/components/ui/calendar-strip";
+import { CalendarStrip, isoDate, type CalendarMarker } from "@/components/ui/calendar-strip";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { Dialog, DialogConfirmActions } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   BarbellIcon,
   BookOpenIcon,
@@ -17,10 +19,12 @@ import {
   CalendarBlankIcon,
   ChartLineIcon,
   ChecksIcon,
+  FilesIcon,
   HeadCircuitIcon,
   HeartIcon,
   LightbulbIcon,
   LightningIcon,
+  PlusIcon,
   QuotesIcon,
   SmileyIcon,
   SparkleIcon,
@@ -31,18 +35,39 @@ import { PillarRow } from "@/components/ui/pillar-row";
 import { Progress } from "@/components/ui/progress";
 import { Text } from "@/components/ui/text";
 import { ToastRegion, useToasts } from "@/components/ui/toast-region";
-import { TriggerCard, type TriggerCardState } from "@/components/ui/trigger-card";
+import { TriggerCard } from "@/components/ui/trigger-card";
 import { WritingSection, type WritingSectionItem } from "@/components/ui/writing-section";
+import { useSessionStore } from "@/components/app/session-store-provider";
+import { createClient } from "@/lib/supabase/client";
 import {
   HOME_BANNERS,
   HOME_HEADING,
   HOME_HERO,
   HOME_PILLARS,
   HOME_PILLAR_SECTION,
-  HOME_TRIGGERS,
   HOME_TRIGGER_SECTION,
   HOME_WRITING_SECTIONS,
 } from "@/lib/home/content";
+import {
+  addMindSweepItem,
+  addWritingEntry,
+  deleteMindSweepItem,
+  deleteWritingEntry,
+  emptyWritingDay,
+  emptyPillarDay,
+  savePillarEntries,
+  setMindSweepStatus,
+  writingKindForSection,
+  type PillarId,
+  type StoredMindSweepItem,
+  type StoredWritingEntry,
+} from "@/lib/home/store";
+import {
+  flattenDayTriggers,
+  setDateTriggerStatus,
+  type DateTriggerStatus,
+} from "@/lib/triggers/store";
+import { burstConfetti } from "@/lib/ui/burst-confetti";
 import { cn } from "@/lib/utils/cn";
 
 const HOME_BANNER_IMAGES = {
@@ -62,36 +87,9 @@ const PILLAR_ICONS = {
   romantically: <HeartIcon />,
 } as const;
 
-type HomeTrigger = {
-  id: string;
-  title: string;
-  state: TriggerCardState;
-};
-
-type HomeWritingItems = Record<string, WritingSectionItem[]>;
-
-const WRITING_DRAFTS: Record<string, string> = Object.fromEntries(
-  HOME_WRITING_SECTIONS.map((section) => [section.id, ""]),
-);
-
-const WRITING_NOTE_DRAFTS: Record<string, string> = Object.fromEntries(
-  HOME_WRITING_SECTIONS.map((section) => [section.id, ""]),
-);
-
-const WRITING_ITEMS: HomeWritingItems = Object.fromEntries(
-  HOME_WRITING_SECTIONS.map((section) => [
-    section.id,
-    (section.items as readonly WritingSectionItem[]).map((item) => ({ ...item })),
-  ]),
-);
-
-const PILLAR_RATINGS: Record<string, number> = Object.fromEntries(
-  HOME_PILLARS.map((pillar) => [pillar.id, 5]),
-);
-
-const PILLAR_NOTES: Record<string, string> = Object.fromEntries(
-  HOME_PILLARS.map((pillar) => [pillar.id, ""]),
-);
+function emptyWritingDrafts(): Record<string, string> {
+  return Object.fromEntries(HOME_WRITING_SECTIONS.map((section) => [section.id, ""]));
+}
 
 function formatChipDate(date: Date) {
   return date.toLocaleDateString("en-US", {
@@ -107,6 +105,28 @@ function formatChipDateShort(date: Date) {
     weekday: "long",
     day: "numeric",
     month: "long",
+  });
+}
+
+function writingItemsFromEntries(entries: StoredWritingEntry[]): WritingSectionItem[] {
+  return entries.map((entry) => ({
+    id: entry.id,
+    title: entry.title,
+    notes: entry.notes ?? undefined,
+  }));
+}
+
+function writingItemsFromMindSweep(items: StoredMindSweepItem[]): WritingSectionItem[] {
+  return items.map((item) => {
+    const achieved = item.status === "achieved";
+    return {
+      id: item.id,
+      title: item.title,
+      notes: item.notes ?? undefined,
+      checked: achieved,
+      achieved,
+      variant: achieved ? ("striked" as const) : ("default" as const),
+    };
   });
 }
 
@@ -181,96 +201,308 @@ function ItemIcon({ children }: { children: ReactNode }) {
 }
 
 export function HomePage() {
+  const router = useRouter();
   const [date, setDate] = useState(() => new Date());
   const [calendarView, setCalendarView] = useState<"week" | "month">("week");
-  const [triggers, setTriggers] = useState<HomeTrigger[]>(() =>
-    HOME_TRIGGERS.map((trigger) => ({ ...trigger })),
+  const assignments = useSessionStore((state) => state.assignments);
+  const planTriggers = useSessionStore((state) => state.planTriggers);
+  const planScenarios = useSessionStore((state) => state.planScenarios);
+  const states = useSessionStore((state) => state.states);
+  const setStates = useSessionStore((state) => state.setStates);
+  const writingByDate = useSessionStore((state) => state.writingByDate);
+  const setWritingByDate = useSessionStore((state) => state.setWritingByDate);
+  const mindSweepByDate = useSessionStore((state) => state.mindSweepByDate);
+  const setMindSweepByDate = useSessionStore((state) => state.setMindSweepByDate);
+  const pillarsByDate = useSessionStore((state) => state.pillarsByDate);
+  const setPillarsByDate = useSessionStore((state) => state.setPillarsByDate);
+  const plan = useMemo(
+    () => ({ assignments, triggers: planTriggers, scenarios: planScenarios }),
+    [assignments, planTriggers, planScenarios],
   );
   const [showAllTriggers, setShowAllTriggers] = useState(false);
-  const [drafts, setDrafts] = useState(WRITING_DRAFTS);
-  const [noteDrafts, setNoteDrafts] = useState(WRITING_NOTE_DRAFTS);
-  const [writingItems, setWritingItems] = useState(WRITING_ITEMS);
-  const [ratings, setRatings] = useState(PILLAR_RATINGS);
-  const [pillarNotes, setPillarNotes] = useState(PILLAR_NOTES);
+  const [draftsByDate, setDraftsByDate] = useState<Record<string, Record<string, string>>>({});
+  const [noteDraftsByDate, setNoteDraftsByDate] = useState<Record<string, Record<string, string>>>(
+    {},
+  );
+  const [savingSections, setSavingSections] = useState<ReadonlySet<string>>(() => new Set());
+  const savingSectionsRef = useRef(new Set<string>());
+  const [deletePending, setDeletePending] = useState(false);
+  const [pillarSaving, setPillarSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{
     sectionId: string;
     id: string;
     name: string;
+    onDate: string;
   } | null>(null);
-  const { toasts, showToast } = useToasts();
+  const { toasts, showToast, dismissToast } = useToasts();
+  const [celebrateName, setCelebrateName] = useState<string | null>(null);
+  const celebrateNoteRef = useRef<HTMLParagraphElement>(null);
+  const celebrateTimer = useRef(0);
 
-  const achievedCount = triggers.filter((trigger) => trigger.state === "achieved").length;
-  const triggerProgress = Math.round((achievedCount / triggers.length) * 100);
+  useEffect(() => {
+    return () => window.clearTimeout(celebrateTimer.current);
+  }, []);
+
+  useEffect(() => {
+    if (!celebrateName) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      burstConfetti(celebrateNoteRef.current);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [celebrateName]);
+
+  const onDate = isoDate(date);
+  const dayPillars = pillarsByDate[onDate] ?? emptyPillarDay();
+  const dayDrafts = draftsByDate[onDate] ?? emptyWritingDrafts();
+  const dayNoteDrafts = noteDraftsByDate[onDate] ?? emptyWritingDrafts();
+  const triggers = useMemo(
+    () =>
+      flattenDayTriggers(
+        plan.assignments[onDate] ?? [],
+        plan.triggers,
+        plan.scenarios,
+        states[onDate],
+      ),
+    [onDate, plan, states],
+  );
+  const achievedCount = triggers.filter((trigger) => trigger.status === "achieved").length;
+  const triggerProgress =
+    triggers.length === 0 ? 0 : Math.round((achievedCount / triggers.length) * 100);
   const pillarAverage =
-    HOME_PILLARS.reduce((sum, pillar) => sum + (ratings[pillar.id] ?? 5), 0) / HOME_PILLARS.length;
+    HOME_PILLARS.reduce((sum, pillar) => sum + (dayPillars[pillar.id]?.rating ?? 5), 0) /
+    HOME_PILLARS.length;
 
   const chipDate = useMemo(() => formatChipDate(date), [date]);
   const chipDateShort = useMemo(() => formatChipDateShort(date), [date]);
 
-  function toggleTrigger(id: string) {
-    setTriggers((current) =>
-      current.map((trigger) => {
-        if (trigger.id !== id) {
-          return trigger;
-        }
+  const calendarMarkers = useMemo(() => {
+    const next: Record<string, CalendarMarker> = {};
+    for (const [key, items] of Object.entries(plan.assignments)) {
+      const count = flattenDayTriggers(items, plan.triggers, plan.scenarios).length;
+      if (count > 0) {
+        next[key] = { count, dot: true };
+      }
+    }
+    return next;
+  }, [plan]);
 
-        const next: TriggerCardState = trigger.state === "achieved" ? "todo" : "achieved";
-        return { ...trigger, state: next };
-      }),
-    );
+  function celebrateTrigger(name: string) {
+    setCelebrateName(name);
+    window.clearTimeout(celebrateTimer.current);
+    celebrateTimer.current = window.setTimeout(() => setCelebrateName(null), 2800);
   }
 
-  function updateWritingItem(sectionId: string, id: string, checked: boolean) {
-    setWritingItems((current) => ({
+  async function toggleTrigger(id: string) {
+    const current = states[onDate]?.[id] === "achieved" ? "achieved" : "todo";
+    const next: DateTriggerStatus = current === "achieved" ? "todo" : "achieved";
+    const previousDay = states[onDate] ?? {};
+
+    setStates((currentStates) => ({
+      ...currentStates,
+      [onDate]: { ...previousDay, [id]: next },
+    }));
+
+    if (next === "achieved") {
+      const name = triggers.find((trigger) => trigger.id === id)?.name ?? "trigger";
+      celebrateTrigger(name);
+    }
+
+    try {
+      await setDateTriggerStatus(createClient(), onDate, id, next);
+    } catch {
+      setStates((currentStates) => ({
+        ...currentStates,
+        [onDate]: previousDay,
+      }));
+      setCelebrateName(null);
+      showToast("Couldn't update that trigger. Please try again.", "error");
+    }
+  }
+
+  function markSaving(sectionId: string, saving: boolean) {
+    if (saving) {
+      savingSectionsRef.current.add(sectionId);
+    } else {
+      savingSectionsRef.current.delete(sectionId);
+    }
+
+    setSavingSections((current) => {
+      const next = new Set(current);
+      if (saving) {
+        next.add(sectionId);
+      } else {
+        next.delete(sectionId);
+      }
+      return next;
+    });
+  }
+
+  async function updateWritingItem(sectionId: string, id: string, checked: boolean) {
+    if (sectionId !== "mind-sweep") {
+      return;
+    }
+
+    const status = checked ? "achieved" : "todo";
+    const previous = mindSweepByDate[onDate] ?? [];
+
+    setMindSweepByDate((current) => ({
       ...current,
-      [sectionId]: (current[sectionId] ?? []).map((item) =>
-        item.id === id
-          ? {
-            ...item,
-            checked,
-            achieved: checked,
-            variant: checked ? ("striked" as const) : ("default" as const),
-          }
-          : item,
+      [onDate]: (current[onDate] ?? []).map((item) =>
+        item.id === id ? { ...item, status } : item,
       ),
     }));
+
+    if (status === "achieved") {
+      const name = previous.find((item) => item.id === id)?.title ?? "task";
+      celebrateTrigger(name);
+    }
+
+    try {
+      await setMindSweepStatus(createClient(), id, status);
+    } catch {
+      setMindSweepByDate((current) => ({
+        ...current,
+        [onDate]: previous,
+      }));
+      setCelebrateName(null);
+      showToast("Couldn't update that item. Please try again.", "error");
+    }
   }
 
-  function addWritingItem(sectionId: string, title: string, notes?: string) {
-    const section = HOME_WRITING_SECTIONS.find((entry) => entry.id === sectionId);
-    const alwaysAchieved = Boolean(
-      section && "alwaysAchieved" in section && section.alwaysAchieved,
-    );
+  async function addWritingItem(sectionId: string, title: string, notes?: string) {
+    if (savingSectionsRef.current.has(sectionId)) {
+      return;
+    }
 
-    setWritingItems((current) => ({
-      ...current,
-      [sectionId]: [
-        ...(current[sectionId] ?? []),
-        {
-          id: `${sectionId}-${Date.now()}`,
-          title,
-          notes,
-          checked: alwaysAchieved,
-          achieved: alwaysAchieved,
-          variant: alwaysAchieved ? ("striked" as const) : undefined,
+    markSaving(sectionId, true);
+
+    try {
+      if (sectionId === "mind-sweep") {
+        const row = await addMindSweepItem(createClient(), { onDate, title, notes });
+        setMindSweepByDate((current) => ({
+          ...current,
+          [onDate]: [...(current[onDate] ?? []), { ...row, on_date: onDate }],
+        }));
+      } else {
+        const kind = writingKindForSection(sectionId);
+        if (!kind) {
+          return;
+        }
+
+        const row = await addWritingEntry(createClient(), { onDate, kind, title, notes });
+        setWritingByDate((current) => {
+          const day = current[onDate] ?? emptyWritingDay();
+          return {
+            ...current,
+            [onDate]: {
+              ...day,
+              [kind]: [...day[kind], { ...row, on_date: onDate }],
+            },
+          };
+        });
+      }
+
+      setDraftsByDate((current) => ({
+        ...current,
+        [onDate]: { ...(current[onDate] ?? emptyWritingDrafts()), [sectionId]: "" },
+      }));
+      setNoteDraftsByDate((current) => ({
+        ...current,
+        [onDate]: { ...(current[onDate] ?? emptyWritingDrafts()), [sectionId]: "" },
+      }));
+
+      if (sectionId === "done-list") {
+        celebrateTrigger(title);
+      }
+    } catch {
+      showToast("Couldn't save that entry. Please try again.", "error");
+    } finally {
+      markSaving(sectionId, false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete || deletePending) {
+      return;
+    }
+
+    setDeletePending(true);
+
+    try {
+      if (pendingDelete.sectionId === "mind-sweep") {
+        await deleteMindSweepItem(createClient(), pendingDelete.id);
+        setMindSweepByDate((current) => ({
+          ...current,
+          [pendingDelete.onDate]: (current[pendingDelete.onDate] ?? []).filter(
+            (item) => item.id !== pendingDelete.id,
+          ),
+        }));
+      } else {
+        const kind = writingKindForSection(pendingDelete.sectionId);
+        if (!kind) {
+          return;
+        }
+
+        await deleteWritingEntry(createClient(), pendingDelete.id);
+        setWritingByDate((current) => {
+          const day = current[pendingDelete.onDate];
+          if (!day) {
+            return current;
+          }
+
+          return {
+            ...current,
+            [pendingDelete.onDate]: {
+              ...day,
+              [kind]: day[kind].filter((item) => item.id !== pendingDelete.id),
+            },
+          };
+        });
+      }
+
+      setPendingDelete(null);
+    } catch {
+      showToast("Couldn't delete that entry. Please try again.", "error");
+    } finally {
+      setDeletePending(false);
+    }
+  }
+
+  function updatePillar(pillarId: PillarId, patch: { rating?: number; notes?: string }) {
+    setPillarsByDate((current) => {
+      const day = current[onDate] ?? emptyPillarDay();
+      return {
+        ...current,
+        [onDate]: {
+          ...day,
+          [pillarId]: { ...day[pillarId], ...patch },
         },
-      ],
-    }));
-    setDrafts((current) => ({ ...current, [sectionId]: "" }));
-    setNoteDrafts((current) => ({ ...current, [sectionId]: "" }));
+      };
+    });
   }
 
-  function deleteWritingItem(sectionId: string, id: string) {
-    setWritingItems((current) => ({
-      ...current,
-      [sectionId]: (current[sectionId] ?? []).filter((item) => item.id !== id),
-    }));
-  }
+  async function savePillars() {
+    if (pillarSaving) {
+      return;
+    }
 
-  function confirmDelete() {
-    if (!pendingDelete) return;
-    deleteWritingItem(pendingDelete.sectionId, pendingDelete.id);
-    setPendingDelete(null);
+    setPillarSaving(true);
+
+    try {
+      const saved = await savePillarEntries(
+        createClient(),
+        onDate,
+        pillarsByDate[onDate] ?? emptyPillarDay(),
+      );
+      setPillarsByDate((current) => ({ ...current, [onDate]: saved }));
+      showToast(HOME_PILLAR_SECTION.saved);
+    } catch {
+      showToast("Couldn't save progression. Please try again.", "error");
+    } finally {
+      setPillarSaving(false);
+    }
   }
 
   function writingSection(section: (typeof HOME_WRITING_SECTIONS)[number]) {
@@ -281,7 +513,10 @@ export function HomePage() {
     const isJournal = section.id === "journal";
     const isReflections = section.id === "reflections";
     const isComposer = Boolean("composer" in section && section.composer);
-    const items = writingItems[section.id] ?? WRITING_ITEMS[section.id] ?? [];
+    const kind = writingKindForSection(section.id);
+    const items = isMindSweep
+      ? writingItemsFromMindSweep(mindSweepByDate[onDate] ?? [])
+      : writingItemsFromEntries(kind ? (writingByDate[onDate]?.[kind] ?? []) : []);
     const achievedCount = items.filter((item) => item.checked || item.achieved).length;
     const chip =
       "chip" in section
@@ -310,6 +545,7 @@ export function HomePage() {
         title={section.title}
         description={section.description}
         composer={isComposer}
+        saving={savingSections.has(section.id)}
         accent={section.accent}
         addLabel={"addLabel" in section ? section.addLabel : undefined}
         submitIcon={
@@ -322,9 +558,12 @@ export function HomePage() {
                 : true
         }
         notesPlaceholder={"notesPlaceholder" in section ? section.notesPlaceholder : undefined}
-        notesValue={noteDrafts[section.id] ?? ""}
+        notesValue={dayNoteDrafts[section.id] ?? ""}
         onNotesChange={(value) =>
-          setNoteDrafts((current) => ({ ...current, [section.id]: value }))
+          setNoteDraftsByDate((current) => ({
+            ...current,
+            [onDate]: { ...(current[onDate] ?? emptyWritingDrafts()), [section.id]: value },
+          }))
         }
         itemCheckbox={isComposer ? isMindSweep : undefined}
         itemLocked={Boolean("alwaysAchieved" in section && section.alwaysAchieved)}
@@ -363,8 +602,13 @@ export function HomePage() {
         }
         tag={chip ? <CountChip>{chip}</CountChip> : undefined}
         placeholder={section.placeholder}
-        value={drafts[section.id] ?? ""}
-        onChange={(value) => setDrafts((current) => ({ ...current, [section.id]: value }))}
+        value={dayDrafts[section.id] ?? ""}
+        onChange={(value) =>
+          setDraftsByDate((current) => ({
+            ...current,
+            [onDate]: { ...(current[onDate] ?? emptyWritingDrafts()), [section.id]: value },
+          }))
+        }
         items={items}
         onCheckedChange={(id, checked) => updateWritingItem(section.id, id, checked)}
         onAdd={isComposer ? (title, notes) => addWritingItem(section.id, title, notes) : undefined}
@@ -376,6 +620,7 @@ export function HomePage() {
                 sectionId: section.id,
                 id,
                 name: item?.title ?? "this item",
+                onDate,
               });
             }
             : undefined
@@ -385,7 +630,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 md:gap-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 md:gap-6">
       <HomeBanner
         size="lg"
         kicker={HOME_HERO.kicker}
@@ -423,9 +668,13 @@ export function HomePage() {
 
       <CalendarStrip
         value={date}
-        onChange={setDate}
+        onChange={(next) => {
+          setDate(next);
+          setShowAllTriggers(false);
+        }}
         view={calendarView}
         onViewChange={setCalendarView}
+        markers={calendarMarkers}
         className="max-w-none"
       />
 
@@ -453,38 +702,62 @@ export function HomePage() {
           }
         />
 
-        <Progress value={triggerProgress} size="md" label="Today’s trigger progress" />
+        {triggers.length === 0 ? (
+          <EmptyState
+            className="border-0 bg-transparent py-8"
+            media={<FilesIcon size="xl" className="text-(--pp-spring-green-700)" />}
+            title="No triggers yet"
+            description="Add your first trigger to start building small actions that create big change over time."
+            action={
+              <Button size="md" onClick={() => router.push("/triggers")}>
+                <PlusIcon size={16} />
+                Add Your First Trigger
+              </Button>
+            }
+          />
+        ) : (
+          <>
+            <Progress value={triggerProgress} size="md" label="Today’s trigger progress" />
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {triggers.map((trigger, index) => {
-            const hiddenOnMobile = !showAllTriggers && index >= MOBILE_TRIGGER_COUNT;
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {triggers.map((trigger, index) => {
+                const hiddenOnMobile = !showAllTriggers && index >= MOBILE_TRIGGER_COUNT;
 
-            return (
-              <TriggerCard
-                key={trigger.id}
-                kind="item"
-                state={trigger.state}
-                title={trigger.title}
-                leftEmoji={false}
-                showDescription={false}
-                className={cn("cursor-pointer", hiddenOnMobile && "hidden md:flex")}
-                onClick={() => toggleTrigger(trigger.id)}
-              />
-            );
-          })}
-        </div>
+                return (
+                  <TriggerCard
+                    key={trigger.id}
+                    kind="item"
+                    state={trigger.status}
+                    title={trigger.name}
+                    leftIcon={
+                      trigger.status === "achieved" || !trigger.emoji ? undefined : (
+                        <IconMark size="sm" tone="surface" className="text-(length:--pp-font-size-14) leading-none">
+                          <span aria-hidden>{trigger.emoji}</span>
+                        </IconMark>
+                      )
+                    }
+                    leftEmoji={false}
+                    showDescription={false}
+                    className={cn("cursor-pointer", hiddenOnMobile && "hidden md:flex")}
+                    onClick={() => void toggleTrigger(trigger.id)}
+                  />
+                );
+              })}
+            </div>
 
-        {!showAllTriggers ? (
-          <Button
-            className="md:hidden max-sm:w-full"
-            size="md"
-            variant="secondary"
-            look="outline"
-            onClick={() => setShowAllTriggers(true)}
-          >
-            Show all triggers
-          </Button>
-        ) : null}
+            {!showAllTriggers && triggers.length > MOBILE_TRIGGER_COUNT ? (
+              <Button
+                className="md:hidden max-sm:w-full"
+                size="md"
+                variant="secondary"
+                look="outline"
+                onClick={() => setShowAllTriggers(true)}
+              >
+                Show all triggers
+              </Button>
+            ) : null}
+          </>
+        )}
       </Card>
 
       {writingSection(HOME_WRITING_SECTIONS[0])}
@@ -533,30 +806,44 @@ export function HomePage() {
               title={pillar.title}
               description={pillar.description}
               placeholder={pillar.placeholder}
-              value={ratings[pillar.id] ?? 5}
-              notes={pillarNotes[pillar.id] ?? ""}
+              value={dayPillars[pillar.id]?.rating ?? 5}
+              notes={dayPillars[pillar.id]?.notes ?? ""}
               onChange={(value) => {
-                setRatings((current) => ({ ...current, [pillar.id]: value }));
+                updatePillar(pillar.id, { rating: value });
               }}
               onNotesChange={(value) => {
-                setPillarNotes((current) => ({ ...current, [pillar.id]: value }));
+                updatePillar(pillar.id, { notes: value });
               }}
               icon={<ItemIcon>{PILLAR_ICONS[pillar.id]}</ItemIcon>}
             />
           ))}
         </div>
         <div className="flex justify-end max-sm:w-full">
-          <Button size="md" className="max-sm:w-full" onClick={() => showToast(HOME_PILLAR_SECTION.saved)}>
+          <Button
+            size="md"
+            className="max-sm:w-full"
+            loading={pillarSaving}
+            onClick={() => void savePillars()}
+          >
             {HOME_PILLAR_SECTION.saveLabel}
           </Button>
         </div>
       </Card>
-      <ToastRegion toasts={toasts} />
+      {celebrateName ? (
+        <p
+          ref={celebrateNoteRef}
+          role="status"
+          className="type-status pointer-events-none fixed bottom-6 left-1/2 z-50 w-fit max-w-[min(100%-2rem,24rem)] -translate-x-1/2 truncate rounded-full border border-(--pp-bondi-blue-600) bg-(--pp-bondi-blue-25) px-4 py-2 text-center text-(--pp-bondi-blue-700) shadow-md animate-[pp-ready-check-pop_0.45s_cubic-bezier(0.22,1.15,0.36,1)_both]"
+        >
+          Achieved ‘{celebrateName}’
+        </p>
+      ) : null}
+      <ToastRegion toasts={toasts} onDismiss={dismissToast} />
 
       <Dialog
         open={pendingDelete !== null}
         onOpenChange={(open) => {
-          if (!open) setPendingDelete(null);
+          if (!open && !deletePending) setPendingDelete(null);
         }}
         title="Delete this item?"
         description={
@@ -567,9 +854,12 @@ export function HomePage() {
       >
         <DialogConfirmActions
           danger
+          pending={deletePending}
           confirmLabel="Delete"
-          onCancel={() => setPendingDelete(null)}
-          onConfirm={confirmDelete}
+          onCancel={() => {
+            if (!deletePending) setPendingDelete(null);
+          }}
+          onConfirm={() => void confirmDelete()}
         />
       </Dialog>
     </div>
