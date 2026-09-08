@@ -104,7 +104,7 @@ export function DayPlanDrawer({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} labelledBy={titleId}>
-      <div className="flex h-full min-h-0 flex-col">
+      <div className="flex h-full min-h-0 max-h-full flex-col p-2">
         <div className="flex items-start justify-between gap-3 p-card pb-4">
           <div className="flex min-w-0 items-start gap-3">
             <IconMark size="lg" shape="circle" tone="primary">
@@ -196,8 +196,8 @@ export function DayPlanDrawer({
           </section>
         </div>
 
-        <div className="flex flex-col items-center gap-4 border-t border-border p-card">
-          {hasItems ? (
+        {hasItems ? (
+          <div className="flex flex-col items-center gap-4 border-t border-border p-card">
             <button
               type="button"
               className="type-label cursor-pointer text-error underline decoration-error/40 underline-offset-2"
@@ -205,8 +205,8 @@ export function DayPlanDrawer({
             >
               Clear all from this date
             </button>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
     </Drawer>
   );
