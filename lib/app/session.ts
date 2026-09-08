@@ -7,6 +7,7 @@ import {
   type PillarsByDate,
   type WritingByDate,
 } from "@/lib/home/store";
+import { loadNotifications, type StoredNotification } from "@/lib/notifications/store";
 import type { Database } from "@/lib/supabase/database";
 import {
   loadDatePlan,
@@ -32,6 +33,7 @@ export type AppSession = {
   writingByDate: WritingByDate;
   mindSweepByDate: MindSweepByDate;
   pillarsByDate: PillarsByDate;
+  notifications: StoredNotification[];
 };
 
 function mergeById<T extends { id: string }>(...lists: T[][]) {
@@ -45,14 +47,16 @@ function mergeById<T extends { id: string }>(...lists: T[][]) {
 }
 
 export async function loadAppSession(supabase: Client): Promise<AppSession> {
-  const [plan, states, writing, pillars, libraryTriggers, libraryScenarios] = await Promise.all([
-    loadDatePlan(supabase),
-    loadDateTriggerStates(supabase),
-    loadHomeWriting(supabase),
-    loadHomePillars(supabase),
-    loadLibraryTriggers(supabase),
-    loadLibraryScenarios(supabase),
-  ]);
+  const [plan, states, writing, pillars, libraryTriggers, libraryScenarios, notifications] =
+    await Promise.all([
+      loadDatePlan(supabase),
+      loadDateTriggerStates(supabase),
+      loadHomeWriting(supabase),
+      loadHomePillars(supabase),
+      loadLibraryTriggers(supabase),
+      loadLibraryScenarios(supabase),
+      loadNotifications(supabase),
+    ]);
 
   const scenarioTriggerIds = new Map<string, readonly string[]>();
   for (const scenario of mergeById(plan.scenarios, libraryScenarios)) {
@@ -73,5 +77,6 @@ export async function loadAppSession(supabase: Client): Promise<AppSession> {
     writingByDate: writing.writingByDate,
     mindSweepByDate: writing.mindSweepByDate,
     pillarsByDate: pillars,
+    notifications,
   };
 }

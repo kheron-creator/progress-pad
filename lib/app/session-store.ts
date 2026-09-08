@@ -1,6 +1,7 @@
 import { createStore } from "zustand/vanilla";
 
 import type { MindSweepByDate, PillarsByDate, WritingByDate } from "@/lib/home/store";
+import type { StoredNotification } from "@/lib/notifications/store";
 import type {
   DateAssignmentItem,
   DateTriggerStatus,
@@ -32,6 +33,8 @@ export type SessionState = AppSession & {
   setWritingByDate: (writingByDate: Updater<WritingByDate>) => void;
   setMindSweepByDate: (mindSweepByDate: Updater<MindSweepByDate>) => void;
   setPillarsByDate: (pillarsByDate: Updater<PillarsByDate>) => void;
+  setNotifications: (notifications: Updater<StoredNotification[]>) => void;
+  addNotification: (notification: StoredNotification) => void;
   addLibraryTrigger: (trigger: StoredTrigger) => void;
   removeLibraryTrigger: (id: string) => void;
   addLibraryScenario: (scenario: StoredScenario) => void;
@@ -52,6 +55,15 @@ export function createSessionStore(initial: AppSession) {
       set((current) => ({ mindSweepByDate: apply(current.mindSweepByDate, mindSweepByDate) })),
     setPillarsByDate: (pillarsByDate) =>
       set((current) => ({ pillarsByDate: apply(current.pillarsByDate, pillarsByDate) })),
+    setNotifications: (notifications) =>
+      set((current) => ({ notifications: apply(current.notifications, notifications) })),
+    addNotification: (notification) =>
+      set((current) => {
+        if (current.notifications.some((item) => item.id === notification.id)) {
+          return current;
+        }
+        return { notifications: [notification, ...current.notifications] };
+      }),
     addLibraryTrigger: (trigger) =>
       set((current) => ({
         libraryTriggers: [...current.libraryTriggers, trigger],
