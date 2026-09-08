@@ -265,6 +265,30 @@ export function emptyPillarDay(): PillarDayValues {
   };
 }
 
+export function clonePillarDay(day: PillarDayValues): PillarDayValues {
+  return Object.fromEntries(PILLAR_IDS.map((id) => [id, { ...day[id] }])) as PillarDayValues;
+}
+
+export function clonePillarsByDate(value: PillarsByDate): PillarsByDate {
+  return Object.fromEntries(
+    Object.entries(value).map(([date, day]) => [date, clonePillarDay(day)]),
+  );
+}
+
+export function pillarDaysEqual(a: PillarDayValues, b: PillarDayValues) {
+  return PILLAR_IDS.every((id) => a[id].rating === b[id].rating && a[id].notes === b[id].notes);
+}
+
+export function pillarsByDateEqual(a: PillarsByDate, b: PillarsByDate) {
+  const dates = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const date of dates) {
+    if (!pillarDaysEqual(a[date] ?? emptyPillarDay(), b[date] ?? emptyPillarDay())) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function isPillarId(value: string): value is PillarId {
   return (PILLAR_IDS as readonly string[]).includes(value);
 }
