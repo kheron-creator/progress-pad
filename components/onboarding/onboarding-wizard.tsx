@@ -8,6 +8,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icon";
 import { Logo } from "@/components/ui/logo";
 import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils/cn";
+import { pruneOnboardingTriggerIds } from "@/lib/onboarding/content";
 import {
   ONBOARDING_MAX_MULTI,
   ONBOARDING_MAX_ROUTINE,
@@ -132,10 +133,13 @@ export function OnboardingWizard({ step, initialDraft }: OnboardingWizardProps) 
               <IntentStep
                 draft={draft}
                 onToggle={(id) =>
-                  setDraft((currentDraft) => ({
-                    ...currentDraft,
-                    reasons: toggleLimited(currentDraft.reasons, id, ONBOARDING_MAX_MULTI),
-                  }))
+                  setDraft((currentDraft) => {
+                    const next = {
+                      ...currentDraft,
+                      reasons: toggleLimited(currentDraft.reasons, id, ONBOARDING_MAX_MULTI),
+                    };
+                    return { ...next, triggerIds: pruneOnboardingTriggerIds(next) };
+                  })
                 }
               />
             ) : null}
@@ -143,10 +147,13 @@ export function OnboardingWizard({ step, initialDraft }: OnboardingWizardProps) 
               <SpaceStep
                 draft={draft}
                 onToggle={(id) =>
-                  setDraft((currentDraft) => ({
-                    ...currentDraft,
-                    spaceFor: toggleLimited(currentDraft.spaceFor, id, ONBOARDING_MAX_MULTI),
-                  }))
+                  setDraft((currentDraft) => {
+                    const next = {
+                      ...currentDraft,
+                      spaceFor: toggleLimited(currentDraft.spaceFor, id, ONBOARDING_MAX_MULTI),
+                    };
+                    return { ...next, triggerIds: pruneOnboardingTriggerIds(next) };
+                  })
                 }
               />
             ) : null}
@@ -154,10 +161,13 @@ export function OnboardingWizard({ step, initialDraft }: OnboardingWizardProps) 
               <RoutineStep
                 draft={draft}
                 onToggle={(id) =>
-                  setDraft((currentDraft) => ({
-                    ...currentDraft,
-                    routine: toggleLimited(currentDraft.routine, id, ONBOARDING_MAX_ROUTINE),
-                  }))
+                  setDraft((currentDraft) => {
+                    const next = {
+                      ...currentDraft,
+                      routine: toggleLimited(currentDraft.routine, id, ONBOARDING_MAX_ROUTINE),
+                    };
+                    return { ...next, triggerIds: pruneOnboardingTriggerIds(next) };
+                  })
                 }
               />
             ) : null}
