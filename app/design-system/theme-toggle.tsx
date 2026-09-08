@@ -1,21 +1,12 @@
 "use client";
 
-import { useState } from "react";
-
+import { useTheme } from "@/components/app/theme-provider";
 import { IconButton } from "@/components/ui/icon-button";
 import { MoonIcon, SunIcon } from "@/components/ui/icon";
 import { Tooltip } from "@/components/ui/tooltip";
 
-type Theme = "light" | "dark";
-
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("light");
-
-  function toggleTheme() {
-    const next: Theme = theme === "light" ? "dark" : "light";
-    document.documentElement.dataset.theme = next;
-    setTheme(next);
-  }
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <Tooltip content={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}>
