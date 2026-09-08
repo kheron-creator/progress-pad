@@ -98,9 +98,7 @@ export function TriggerDropzone({
   const heading =
     title ??
     (emptyCopy
-      ? canAddSelected
-        ? TRIGGERS_PICK_COPY.selectedTriggers(pendingCount)
-        : TRIGGERS_PICK_COPY.dropzoneEmptyTitle
+      ? TRIGGERS_PICK_COPY.selectedTriggers(pendingCount)
       : `${countLabel(count, "Trigger")} Added`);
 
   return (
@@ -114,8 +112,10 @@ export function TriggerDropzone({
       className={cn(
         "flex w-full flex-col rounded-lg border-2 border-dashed border-primary px-4",
         highlight ? "bg-primary-muted" : "bg-surface",
-        "max-lg:h-52 max-lg:py-5",
-        added ? "gap-4 py-5 max-lg:gap-2" : "gap-2.5 py-15 max-lg:justify-center",
+        "max-lg:py-5",
+        added
+          ? "gap-4 py-5 max-lg:gap-2"
+          : "gap-2.5 py-15 max-lg:h-52 max-lg:justify-center",
         className,
       )}
     >
@@ -126,25 +126,35 @@ export function TriggerDropzone({
               <CheckIcon weight="bold" />
             </IconMark>
           ) : null)}
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center gap-1 max-w-88 my-2">
           <Text variant="sectionTitle" className="text-primary">
-            {heading}
+            {emptyCopy && !canAddSelected && !title ? (
+              <>
+                <span className="lg:hidden">{TRIGGERS_PICK_COPY.dropzoneEmptyTitle}</span>
+                <span className="hidden lg:inline">{TRIGGERS_PICK_COPY.dropzoneEmptyTitle}</span>
+              </>
+            ) : (
+              heading
+            )}
           </Text>
           <Text variant="caption" className="text-foreground">
             {emptyCopy
               ? (description ?? (
-                  <>
-                    {TRIGGERS_PICK_COPY.dropzoneEmptyDescription}{" "}
-                    <span className="hidden pointer-fine:inline">
-                      {TRIGGERS_PICK_COPY.dropzoneDragHint}
-                    </span>
-                  </>
-                ))
+                <>
+                  <span className="lg:hidden">{TRIGGERS_PICK_COPY.dropzoneEmptyDescription}</span>
+                  <span className="hidden lg:inline">{TRIGGERS_PICK_COPY.dropzoneDragHint}</span>
+                </>
+              ))
               : TRIGGERS_PICK_COPY.dropzoneAddedDescription}
           </Text>
         </div>
-        {canAddSelected ? (
-          <Button size="md" onClick={onAddSelected}>
+        {onAddSelected && (emptyCopy || canAddSelected) ? (
+          <Button
+            size="md"
+            className="lg:hidden"
+            disabled={!canAddSelected}
+            onClick={onAddSelected}
+          >
             {TRIGGERS_PICK_COPY.addTriggers(pendingCount)}
           </Button>
         ) : emptyCopy ? (
@@ -152,7 +162,7 @@ export function TriggerDropzone({
         ) : null}
       </div>
       {added && items.length > 0 ? (
-        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+        <div className="flex min-h-(--pp-trigger-item-height) flex-1 flex-col gap-2 overflow-y-auto max-lg:max-h-[calc(var(--pp-trigger-item-height)*3+0.5rem*2)]">
           {items.map((item) => (
             <div
               key={item.id}
