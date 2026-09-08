@@ -27,17 +27,19 @@ import { IconButton } from "@/components/ui/icon-button";
 import { IconMark } from "@/components/ui/icon-mark";
 import {
   BarbellIcon,
-  ChatIcon,
-  CheckCircleIcon,
+  BrainIcon,
+  CalendarBlankIcon,
+  ChartLineIcon,
+  ChecksIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
   CloseIcon,
-  GridIcon,
+  LightbulbIcon,
   LightningIcon,
-  ListBulletsIcon,
   MoonIcon,
   NoteIcon,
   PlusIcon,
+  QuotesIcon,
   SparkleIcon,
   StarIcon,
   SunIcon,
@@ -92,11 +94,15 @@ const DEMO_LIBRARY_TRIGGERS = [
 ];
 
 const DEMO_FLOW_ITEMS = [
-  { id: "general", label: "Overview & Stats", count: 4, icon: <GridIcon size={14} /> },
-  { id: "triggers", label: "Common Triggers", count: 12, icon: <LightningIcon size={14} /> },
-  { id: "habits", label: "Habit Sweep", count: 3, icon: <ListBulletsIcon size={14} /> },
-  { id: "today", label: "Progress Today", count: 6, icon: <CheckCircleIcon size={14} /> },
-  { id: "assistant", label: "Progress Assistant", count: 1, icon: <ChatIcon size={14} /> },
+  { id: "overview", label: "Overview", icon: <CalendarBlankIcon size={12} /> },
+  { id: "triggers", label: "Trigger List", icon: <LightningIcon size={12} /> },
+  { id: "gratitude", label: "Daily Gratitude", icon: <SparkleIcon size={12} /> },
+  { id: "mind-sweep", label: "Mind Sweep", icon: <BrainIcon size={12} /> },
+  { id: "done-list", label: "Done List", icon: <ChecksIcon size={12} /> },
+  { id: "quotes", label: "Impactful Quotes", icon: <QuotesIcon size={12} /> },
+  { id: "journal", label: "Let’s Journal", icon: <NoteIcon size={12} /> },
+  { id: "reflections", label: "Reflections", icon: <LightbulbIcon size={12} /> },
+  { id: "pillars", label: "Progression Pillars", icon: <ChartLineIcon size={12} /> },
 ];
 
 const DEMO_NAV_ITEMS = defaultNavItems.map((item) =>
@@ -154,9 +160,8 @@ export function ComponentGallery() {
   const [filters, setFilters] = useState(DEMO_FILTERS);
   const [scaleValue, setScaleValue] = useState(5);
   const [listChecked, setListChecked] = useState(true);
-  const [flowView, setFlowView] = useState<"templates" | "library">("templates");
-  const [flowSelected, setFlowSelected] = useState("general");
-  const [flowQuery, setFlowQuery] = useState("");
+  const [flowOpen, setFlowOpen] = useState(true);
+  const [flowSelected, setFlowSelected] = useState("overview");
   const [chatValue, setChatValue] = useState("");
   const [libraryQuery, setLibraryQuery] = useState("");
   const [libraryName, setLibraryName] = useState("Fresh-air walk");
@@ -544,24 +549,28 @@ export function ComponentGallery() {
       </PreviewSection>
 
       <PreviewSection title="Flow navigator">
-        <FlowNavigator
-          items={DEMO_FLOW_ITEMS.map((item) => ({
-            ...item,
-            icon: (
-              <IconMark size="xs">
-                {item.icon}
-              </IconMark>
-            ),
-          }))}
-          selected={flowSelected}
-          onSelect={setFlowSelected}
-          query={flowQuery}
-          onQueryChange={setFlowQuery}
-          view={flowView}
-          onViewChange={setFlowView}
-          onClose={() => undefined}
-          onSave={() => undefined}
-        />
+        <div className="flex flex-col gap-6">
+          <FlowNavigator
+            items={DEMO_FLOW_ITEMS}
+            selected={flowSelected}
+            onSelect={setFlowSelected}
+            currentLabel={DEMO_FLOW_ITEMS.find((item) => item.id === flowSelected)?.label}
+            open={false}
+            onOpenChange={setFlowOpen}
+          />
+          <FlowNavigator
+            items={DEMO_FLOW_ITEMS}
+            selected={flowSelected}
+            onSelect={setFlowSelected}
+            currentLabel={DEMO_FLOW_ITEMS.find((item) => item.id === flowSelected)?.label}
+            open={flowOpen}
+            onOpenChange={setFlowOpen}
+            onJumpTop={() => setFlowSelected("overview")}
+            onJumpBottom={() => setFlowSelected("quotes")}
+            onStepPrev={() => undefined}
+            onStepNext={() => undefined}
+          />
+        </div>
       </PreviewSection>
 
       <PreviewSection title="Progress assistant">
