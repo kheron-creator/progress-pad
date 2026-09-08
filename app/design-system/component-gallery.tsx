@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
-import { NavLinks } from "@/components/ui/nav-links";
+import { NavLinks, defaultNavItems } from "@/components/ui/nav-links";
 import { Progress } from "@/components/ui/progress";
 import { ProgressSection } from "@/components/ui/progress-section";
 import { QuestionField } from "@/components/ui/question-field";
@@ -98,6 +98,10 @@ const DEMO_FLOW_ITEMS = [
   { id: "today", label: "Progress Today", count: 6, icon: <CheckCircleIcon size={14} /> },
   { id: "assistant", label: "Progress Assistant", count: 1, icon: <ChatIcon size={14} /> },
 ];
+
+const DEMO_NAV_ITEMS = defaultNavItems.map((item) =>
+  item.id === "progress-today" ? { ...item, badge: 3 } : item,
+);
 
 const DEMO_CHAT = [
   { id: "1", role: "assistant" as const, text: "What would you like to work on today?" },
@@ -229,14 +233,14 @@ export function ComponentGallery() {
             <Text variant="caption">Nav links — selected item</Text>
             <div className="flex w-full flex-col gap-2">
               {["dashboard", "habit-sweep", "progress-today", "triggers", "assistant"].map((id) => (
-                <NavLinks key={id} selected={id} />
+                <NavLinks key={id} selected={id} items={DEMO_NAV_ITEMS} />
               ))}
             </div>
           </div>
           <div className="flex flex-col gap-2">
             <Text variant="caption">Header</Text>
             <div className="w-full overflow-hidden rounded-md border border-border">
-              <Header selected={navSelected} onSelect={setNavSelected} />
+              <Header selected={navSelected} onSelect={setNavSelected} items={DEMO_NAV_ITEMS} />
             </div>
           </div>
         </div>
@@ -950,9 +954,24 @@ export function ComponentGallery() {
             <Skeleton className="h-4 w-40" />
             <Skeleton className="h-10 w-10 rounded-full" />
           </div>
-          <Toast>Progression ratings saved</Toast>
-          <Toast tone="error">Couldn’t save changes</Toast>
-          <Toast tone="info">A new reflection is ready</Toast>
+          <div className="flex w-full max-w-xs flex-col gap-2">
+            <Toast
+              tone="info"
+              action="Button"
+              onDismiss={() => undefined}
+            >
+              Toast message
+            </Toast>
+            <Toast tone="success" onDismiss={() => undefined}>
+              Progression ratings saved
+            </Toast>
+            <Toast tone="warning" onDismiss={() => undefined}>
+              A date can have at most 10 triggers
+            </Toast>
+            <Toast tone="error" onDismiss={() => undefined}>
+              Couldn’t save changes
+            </Toast>
+          </div>
           <EmptyState
             title="Your Progress Pad is ready."
             description="Add a first note when you want to capture the day."

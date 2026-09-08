@@ -14,6 +14,7 @@ export type DropdownOption = {
 
 type DropdownProps = {
   label?: string;
+  labelClassName?: string;
   options: DropdownOption[];
   value?: string;
   onChange: (value: string) => void;
@@ -27,6 +28,7 @@ type DropdownProps = {
 
 export function Dropdown({
   label,
+  labelClassName,
   options,
   value,
   onChange,
@@ -66,7 +68,11 @@ export function Dropdown({
 
   return (
     <Field className={cn(look === "chip" && "w-auto!", className)}>
-      {label ? <FieldLabel htmlFor={buttonId}>{label}</FieldLabel> : null}
+      {label ? (
+        <FieldLabel htmlFor={buttonId} className={labelClassName}>
+          {label}
+        </FieldLabel>
+      ) : null}
       <div ref={rootRef} className="relative">
         <button
           id={buttonId}
@@ -80,7 +86,7 @@ export function Dropdown({
             look === "chip"
               ? "inline-flex h-auto min-h-0 cursor-pointer items-center justify-between gap-(--pp-space-4) rounded-full border border-(--pp-bondi-blue-600) bg-(--pp-bondi-blue-50) px-(--pp-space-16) py-(--pp-space-4) text-(length:--pp-font-size-12) font-(--pp-font-weight-semibold) leading-none text-(--pp-bondi-blue-600) disabled:cursor-not-allowed disabled:opacity-50"
               : cn(
-                  "type-body pp-control flex items-center justify-between gap-2 text-left",
+                  "type-body pp-control flex cursor-pointer items-center justify-between gap-2 text-left",
                   fieldSizeClass[size],
                   fieldPaddingClass[size],
                   fieldStateClass[disabled ? "disabled" : open ? "focus" : "default"],
@@ -111,8 +117,8 @@ export function Dropdown({
                   <button
                     type="button"
                     className={cn(
-                      "type-body flex w-full px-3 py-2 text-left hover:bg-primary-muted",
-                      isSelected ? "bg-primary-muted text-primary" : "text-foreground",
+                      "type-body flex w-full px-3 py-2 text-left text-foreground-muted hover:bg-primary-muted",
+                      isSelected && "bg-primary-muted",
                     )}
                     onClick={() => {
                       onChange(option.value);

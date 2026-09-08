@@ -22,41 +22,16 @@ export const HOME_BANNERS = {
     description: "Offload heavy cognitive load. Record immediate triggers, project priorities, and capture loose items.",
   },
   pillars: {
-    kicker: "HORIZON PRESPECTIVE",
+    kicker: "HORIZON PERSPECTIVE",
     title: "City Window Reflection & Life Pillars",
     description: "Step back from tactical noise. Review progress across mental, physical, career, and personal dimensions.",
   },
 } as const;
 
-
-
-
-
-
-
-
-
 export const HOME_TRIGGER_SECTION = {
   title: "Today’s triggers",
   description: "Small actions over time create big change.",
 } as const;
-
-export const HOME_TRIGGERS = [
-  { id: "plan-tomorrow", title: "Plan tomorrow", state: "achieved" as const },
-  { id: "check-calendar", title: "Check my calendar", state: "todo" as const },
-  { id: "review-unfinished", title: "Review what’s unfinished", state: "todo" as const },
-  { id: "take-a-break", title: "Take a proper break", state: "achieved" as const },
-  { id: "go-for-a-walk", title: "Go for a walk", state: "todo" as const },
-  { id: "drink-water", title: "Drink enough water", state: "achieved" as const },
-  { id: "work-on-assignment", title: "Work on my assignment", state: "todo" as const },
-  { id: "study-30", title: "Study for 30 minutes", state: "todo" as const },
-  { id: "hardest-task-first", title: "Start my hardest task first", state: "todo" as const },
-  { id: "tidy-workspace", title: "Tidy my workspace", state: "achieved" as const },
-  { id: "reflect-on-today", title: "Reflect on today", state: "todo" as const },
-  { id: "eat-healthy", title: "Eat healthy", state: "todo" as const },
-  { id: "inbox-zero", title: "Clear the inbox", state: "todo" as const },
-  { id: "deep-work", title: "Protect a deep work block", state: "achieved" as const },
-] as const;
 
 export const HOME_WRITING_SECTIONS = [
   {

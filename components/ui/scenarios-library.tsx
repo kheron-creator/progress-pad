@@ -2,14 +2,15 @@
 
 import type { ReactNode } from "react";
 
-import { beginLibraryDrag } from "@/lib/triggers/drag";
+import { beginLibraryDrag, type LibraryDragPayload } from "@/lib/triggers/drag";
 import { cn } from "@/lib/utils/cn";
 
 import { Button } from "./button";
 import { Card } from "./card";
 import { EmojiPicker } from "./emoji-picker";
+import { EmptyState } from "./empty-state";
 import { IconMark } from "./icon-mark";
-import { PlusIcon, LightningIcon } from "./icon";
+import { FolderIcon, LightningIcon, PlusIcon } from "./icon";
 import { Input } from "./input";
 import { Text } from "./text";
 import { Toast } from "./toast";
@@ -22,6 +23,7 @@ export type LibraryScenario = {
   description?: string;
   meta?: string;
   triggerCount?: number;
+  triggerIds?: string[];
   icon?: ReactNode;
 };
 
@@ -38,12 +40,18 @@ type ScenariosLibraryProps = {
   onIconSelect?: (emoji: string) => void;
   droppedTriggers?: DroppedTrigger[];
   onDropTrigger?: (item: DroppedTrigger) => void;
+  pendingCount?: number;
+  onAddSelected?: () => void;
   onRemoveTrigger?: (id: string) => void;
   onAdd?: () => void;
   onSave?: () => void;
   onCancel?: () => void;
+  saving?: boolean;
   onDelete?: (id: string) => void;
   assigning?: boolean;
+  selectedIds?: ReadonlySet<string>;
+  onSelectedChange?: (id: string, checked: boolean) => void;
+  selection?: LibraryDragPayload[];
   className?: string;
 };
 
@@ -60,12 +68,18 @@ export function ScenariosLibrary({
   onIconSelect,
   droppedTriggers = [],
   onDropTrigger,
+  pendingCount = 0,
+  onAddSelected,
   onRemoveTrigger,
   onAdd,
   onSave,
   onCancel,
+  saving = false,
   onDelete,
   assigning = false,
+  selectedIds,
+  onSelectedChange,
+  selection = [],
   className,
 }: ScenariosLibraryProps) {
   const pick = state === "pick" || assigning;
@@ -79,10 +93,10 @@ export function ScenariosLibrary({
         </Text>
         {state === "add" && !assigning ? (
           <div className="flex shrink-0 items-center gap-2">
-            <Button size="md" variant="primary" look="outline" onClick={onCancel}>
+            <Button size="md" variant="primary" look="outline" onClick={onCancel} disabled={saving}>
               Cancel
             </Button>
-            <Button size="md" onClick={onSave} disabled={!canSave}>
+            <Button size="md" onClick={onSave} disabled={!canSave} loading={saving}>
               Save
             </Button>
           </div>
@@ -97,8 +111,9 @@ export function ScenariosLibrary({
       {state === "add" && !assigning ? (
         <div className="flex flex-col gap-section">
           <TriggerDropzone
-            description="to create a new scenario"
             items={droppedTriggers}
+            pendingCount={pendingCount}
+            onAddSelected={onAddSelected}
             onDropTrigger={onDropTrigger}
             onRemove={onRemoveTrigger}
           />
@@ -120,39 +135,56 @@ export function ScenariosLibrary({
           />
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex min-h-0 flex-1 flex-col gap-3">
           {notice ? (
             <Toast tone="success" className="shadow-none">
               {notice}
             </Toast>
           ) : null}
-          <div className="flex flex-col gap-3">
-            {items.map((item) => (
-              <TriggerListItem
-                key={item.id}
-                look="library"
-                title={item.title}
-                description={item.description}
-                meta={item.meta}
-                checkbox={false}
-                draggable={pick}
-                onDragStart={
-                  pick
-                    ? (event) =>
-                        beginLibraryDrag(event, { kind: "scenario", id: item.id, name: item.title })
-                    : undefined
-                }
-                leftEmoji={
-                  item.icon ?? (
-                    <IconMark size="sm" tone="surface">
-                      <LightningIcon size={14} />
-                    </IconMark>
-                  )
-                }
-                onDelete={pick ? undefined : () => onDelete?.(item.id)}
-              />
-            ))}
-          </div>
+          {items.length === 0 ? (
+            <EmptyState
+              className="flex-1 justify-center border-0 bg-transparent py-8"
+              media={<FolderIcon size="xl" className="text-(--pp-spring-green-700)" />}
+              title="No scenarios yet"
+              description="Add your first scenario to group triggers into a routine you can assign to any day."
+            />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {items.map((item) => (
+                <TriggerListItem
+                  key={item.id}
+                  look="library"
+                  title={item.title}
+                  description={item.description}
+                  meta={item.meta}
+                  checkbox={assigning}
+                  checked={selectedIds?.has(item.id) ?? false}
+                  onCheckedChange={
+                    assigning ? (checked) => onSelectedChange?.(item.id, checked) : undefined
+                  }
+                  draggable={pick}
+                  onDragStart={
+                    pick
+                      ? (event) =>
+                          beginLibraryDrag(
+                            event,
+                            { kind: "scenario", id: item.id, name: item.title },
+                            selection,
+                          )
+                      : undefined
+                  }
+                  leftEmoji={
+                    item.icon ?? (
+                      <IconMark size="sm" tone="surface">
+                        <LightningIcon size={14} />
+                      </IconMark>
+                    )
+                  }
+                  onDelete={pick ? undefined : () => onDelete?.(item.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </Card>

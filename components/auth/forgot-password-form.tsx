@@ -95,7 +95,7 @@ export function ForgotPasswordForm({ errorMessage }: ForgotPasswordFormProps) {
         type="email"
         name="email"
         autoComplete="email"
-        placeholder="johndoe@gmail.com"
+        placeholder="Enter your email"
         size="lg"
         leftIcon={<EnvelopeIcon />}
         state={emailFieldError ? "error" : "default"}

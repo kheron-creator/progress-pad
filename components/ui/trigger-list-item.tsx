@@ -1,6 +1,6 @@
 "use client";
 
-import type { HTMLAttributes, ReactNode } from "react";
+import { useEffect, useState, type HTMLAttributes, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
@@ -52,13 +52,31 @@ export function TriggerListItem({
   const emoji =
     leftEmoji === false ? null : leftEmoji === true ? <DefaultEmoji /> : leftEmoji;
   const library = look === "library";
+  const [finePointer, setFinePointer] = useState(false);
+
+  useEffect(() => {
+    if (!draggable) {
+      setFinePointer(false);
+      return;
+    }
+
+    const media = window.matchMedia("(pointer: fine)");
+    function update() {
+      setFinePointer(media.matches);
+    }
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, [draggable]);
+
+  const nativeDrag = draggable && finePointer;
 
   return (
     <article
-      draggable={draggable}
+      draggable={nativeDrag}
       className={cn(
         "flex w-full items-center gap-3 overflow-hidden rounded-md",
-        draggable && "cursor-grab select-none active:cursor-grabbing",
+        nativeDrag && "cursor-grab select-none active:cursor-grabbing",
         library
           ? "min-h-(--pp-trigger-item-height) border border-border bg-(--pp-grey-25) px-(--pp-space-16) py-(--pp-space-12) in-data-[theme=dark]:bg-background-subtle"
           : "border border-border bg-surface px-(--pp-space-16) py-(--pp-space-12)",
@@ -67,12 +85,21 @@ export function TriggerListItem({
       {...props}
     >
       {checkbox ? (
-        <Checkbox
-          size="sm"
-          checked={checked}
-          onChange={(event) => onCheckedChange?.(event.currentTarget.checked)}
-          aria-label={title}
-        />
+        <span
+          className="shrink-0"
+          onPointerDown={(event) => event.stopPropagation()}
+          onMouseDown={(event) => event.stopPropagation()}
+        >
+          <Checkbox
+            size="lg"
+            checked={checked}
+            onChange={(event) => {
+              event.stopPropagation();
+              onCheckedChange?.(event.currentTarget.checked);
+            }}
+            aria-label={title}
+          />
+        </span>
       ) : null}
       {emoji}
       <div className="min-w-0 flex-1">
@@ -115,7 +142,7 @@ export function TriggerListItem({
         </IconButton>
       ) : null}
       {draggable ? (
-        <span className="text-foreground-muted" aria-hidden>
+        <span className="hidden text-foreground-muted pointer-fine:inline-flex" aria-hidden>
           <DragHandleIcon />
         </span>
       ) : null}

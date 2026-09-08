@@ -58,6 +58,12 @@
   --color-info-muted: var(--pp-color-info-muted);
   --color-info-foreground: var(--pp-color-info-foreground);
 
+  --color-toast: var(--pp-toast-fg);
+  --color-toast-success: var(--pp-toast-success-bg);
+  --color-toast-warning: var(--pp-toast-warning-bg);
+  --color-toast-error: var(--pp-toast-error-bg);
+  --color-toast-info: var(--pp-toast-info-bg);
+
   --color-accent: var(--pp-color-accent);
   --color-accent-muted: var(--pp-color-accent-muted);
   --color-accent-foreground: var(--pp-color-accent-foreground);
@@ -314,6 +320,12 @@
     background-color: var(--pp-input-bg);
     color: var(--pp-input-fg);
     box-shadow: none;
+    outline: none;
+  }
+
+  .pp-control:focus,
+  .pp-control:focus-visible {
+    border-color: var(--pp-input-border-focus);
     outline: none;
   }
 

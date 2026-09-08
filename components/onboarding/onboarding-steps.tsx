@@ -16,7 +16,7 @@ import {
   intentOptions,
   routineOptions,
   spaceOptions,
-  triggerOptions,
+  triggersForOnboarding,
 } from "@/lib/onboarding/content";
 import {
   ONBOARDING_MAX_TRIGGERS,
@@ -242,7 +242,7 @@ export function TriggersStep({
     >
       <StepBody>
         <ChoiceGrid
-          options={triggerOptions}
+          options={triggersForOnboarding(draft)}
           selected={draft.triggerIds}
           onToggle={onToggle}
           columns={4}
@@ -291,13 +291,13 @@ export function CheckInStep({
             )}
             <Text
               variant="cardTitle"
-              className="font-semibold text-[length:var(--pp-font-size-14)] leading-(--pp-leading-20) lg:text-[length:var(--pp-text-card-title-size)] lg:leading-(--pp-text-card-title-leading)"
+              className="font-semibold text-(length:--pp-font-size-14) leading-(--pp-leading-20) lg:text-(length:--pp-text-card-title-size) lg:leading-(--pp-text-card-title-leading)"
             >
               {option.title}
             </Text>
             <Text
               variant="description"
-              className="text-[length:var(--pp-font-size-12)] leading-(--pp-leading-16) lg:text-[length:var(--pp-text-body-size)] lg:leading-(--pp-text-body-leading)"
+              className="text-(length:--pp-font-size-12) leading-(--pp-leading-16) lg:text-(length:--pp-text-body-size) lg:leading-(--pp-text-body-leading)"
             >
               {option.description}
             </Text>

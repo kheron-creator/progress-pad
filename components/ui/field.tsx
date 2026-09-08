@@ -31,15 +31,15 @@ export const fieldPaddingClass: Record<FieldSize, string> = {
 };
 
 export const fieldStatusClass: Record<FieldStatus, string> = {
-  default: "focus:border-border-focus",
+  default: "focus:border-[var(--pp-input-border-focus)]",
   success: "border-border-success focus:border-border-success",
   error: "border-border-error focus:border-border-error",
 };
 
 export const fieldStateClass: Record<FieldState, string> = {
   ...fieldStatusClass,
-  filled: "focus:border-border-focus",
-  focus: "border-border-focus",
+  filled: "focus:border-[var(--pp-input-border-focus)]",
+  focus: "border-[var(--pp-input-border-focus)]",
   disabled: "",
 };
 
@@ -49,7 +49,7 @@ export function Field({
 }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("flex w-full flex-col gap-[var(--pp-space-8)]", className)}
+      className={cn("flex w-full flex-col gap-(--pp-space-8)", className)}
       {...props}
     />
   );

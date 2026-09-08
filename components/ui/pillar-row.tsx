@@ -4,8 +4,8 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
-import { Button } from "./button";
-import { ChartLineIcon, ChevronDownIcon, MicrophoneIcon } from "./icon";
+import { ChartLineIcon, ChevronDownIcon } from "./icon";
+import { DictateButton } from "./dictate-button";
 import { IconMark } from "./icon-mark";
 import { Input } from "./input";
 import { Text } from "./text";
@@ -113,16 +113,12 @@ export function PillarRow({
               aria-label={placeholder ?? `${title} context`}
             />
           </div>
-          <Button
-            type="button"
-            variant="secondary"
-            look="icon"
-            size="md"
-            aria-label={`Dictate ${title} context`}
+          <DictateButton
+            value={notes}
+            onChange={onNotesChange}
+            label={`Dictate ${title} context`}
             style={{ borderColor: accent, color: accent }}
-          >
-            <MicrophoneIcon size={20} />
-          </Button>
+          />
         </div>
       </div>
       {open ? (

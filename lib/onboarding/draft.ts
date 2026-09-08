@@ -159,6 +159,8 @@ function isCheckInTime(value: unknown): value is CheckInTime {
   return value === "morning" || value === "afternoon" || value === "evening";
 }
 
+export { isCheckInTime };
+
 function clampStep(value: unknown) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return 1;

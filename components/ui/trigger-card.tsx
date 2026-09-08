@@ -116,7 +116,7 @@ export function TriggerCard({
   const emoji = isItem ? resolveSlot(leftEmoji, <DefaultLeftEmoji />) : leftEmoji && leftEmoji !== true ? leftEmoji : null;
   const statusSlot = isItem && status ? <DefaultStatus state={state} /> : tag;
   const deleteButton =
-    isItem && state !== "select" ? (
+    isItem && state !== "select" && onDelete ? (
       <IconButton
         label={`Delete ${title}`}
         variant="danger"

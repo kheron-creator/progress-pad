@@ -19,7 +19,6 @@ export function createClient() {
   }
 
   return createBrowserClient<Database>(url, key, {
-    isSingleton: false,
     cookies: {
       getAll() {
         return document.cookie
