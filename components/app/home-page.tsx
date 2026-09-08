@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
@@ -214,7 +213,6 @@ function ItemIcon({ children }: { children: ReactNode }) {
 }
 
 export function HomePage() {
-  const router = useRouter();
   const [date, setDate] = useState(() => new Date());
   const [calendarView, setCalendarView] = useState<"week" | "month">("week");
   const assignments = useSessionStore((state) => state.assignments);
@@ -274,7 +272,7 @@ export function HomePage() {
   const dayNoteDrafts = noteDraftsByDate[onDate] ?? emptyWritingDrafts();
   const composerDirty = hasComposerDrafts(draftsByDate, noteDraftsByDate);
   const pillarsDirty = !pillarsByDateEqual(pillarsByDate, savedPillarsByDate);
-  useRegisterUnsavedLeave(composerDirty, composerDirty || pillarsDirty);
+  const { guardedPush } = useRegisterUnsavedLeave(composerDirty || pillarsDirty);
   const triggers = useMemo(
     () =>
       flattenDayTriggers(
@@ -728,7 +726,7 @@ export function HomePage() {
             title="No triggers yet"
             description="Add your first trigger to start building small actions that create big change over time."
             action={
-              <Button size="md" onClick={() => router.push("/triggers")}>
+              <Button size="md" onClick={() => guardedPush("/triggers")}>
                 <PlusIcon size={16} />
                 Add Your First Trigger
               </Button>

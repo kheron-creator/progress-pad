@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { BellIcon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
@@ -14,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils/cn";
 
 import { useSessionStore } from "./session-store-provider";
+import { useUnsavedLeave } from "./unsaved-leave-provider";
 
 function formatNotificationTime(value: string) {
   const date = new Date(value);
@@ -30,7 +30,7 @@ function formatNotificationTime(value: string) {
 }
 
 export function NotificationsMenu() {
-  const router = useRouter();
+  const { guardedPush } = useUnsavedLeave();
   const notifications = useSessionStore((state) => state.notifications);
   const setNotifications = useSessionStore((state) => state.setNotifications);
   const unreadCount = notifications.filter((item) => !item.read_at).length;
@@ -87,7 +87,7 @@ export function NotificationsMenu() {
     }
 
     setOpen(false);
-    router.push(item.href || "/home");
+    guardedPush(item.href || "/home");
     setPendingId(null);
   }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { isoDate } from "@/components/ui/calendar-strip";
 import { Toast } from "@/components/ui/toast";
@@ -24,9 +23,10 @@ import { createClient } from "@/lib/supabase/client";
 
 import { useCurrentUser } from "./current-user-provider";
 import { useSessionStore } from "./session-store-provider";
+import { useUnsavedLeave } from "./unsaved-leave-provider";
 
 export function CheckInReminder() {
-  const router = useRouter();
+  const { guardedPush } = useUnsavedLeave();
   const checkIn = useCurrentUser().onboarding.checkIn;
   const assignments = useSessionStore((state) => state.assignments);
   const planTriggers = useSessionStore((state) => state.planTriggers);
@@ -119,7 +119,7 @@ export function CheckInReminder() {
         if (document.visibilityState === "visible") {
           void ensureNotificationPermission();
         } else {
-          showCheckInNotification(nextMessage, () => router.push("/home"));
+          showCheckInNotification(nextMessage, () => guardedPush("/home"));
         }
       } catch {
         pendingKeys.current.delete(key);
@@ -177,7 +177,7 @@ export function CheckInReminder() {
       window.clearTimeout(midnightTimer);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [addNotification, checkIn, openCount, router]);
+  }, [addNotification, checkIn, guardedPush, openCount]);
 
   async function markPresentedRead() {
     if (!presentedId) {
@@ -214,7 +214,7 @@ export function CheckInReminder() {
         action="View"
         onAction={() => {
           dismissPresented();
-          router.push("/home");
+          guardedPush("/home");
         }}
         onDismiss={dismissPresented}
       >

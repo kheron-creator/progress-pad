@@ -24,6 +24,7 @@ const EMPTY_GUARD: LeaveGuard = { blockInApp: false, blockUnload: false };
 const UnsavedLeaveContext = createContext<{
   setGuard: (guard: LeaveGuard) => void;
   confirmLeave: (proceed: () => void) => void;
+  guardedPush: (href: string) => void;
 } | null>(null);
 
 function samePage(url: URL) {
@@ -88,6 +89,19 @@ export function UnsavedLeaveProvider({ children }: { children: ReactNode }) {
     setPendingLeave({ proceed });
   }, []);
 
+  const guardedPush = useCallback(
+    (href: string) => {
+      const url = new URL(href, window.location.href);
+      if (url.origin === window.location.origin && samePage(url)) {
+        return;
+      }
+
+      const next = `${url.pathname}${url.search}${url.hash}`;
+      confirmLeave(() => router.push(next));
+    },
+    [confirmLeave, router],
+  );
+
   useEffect(() => {
     function onBeforeUnload(event: BeforeUnloadEvent) {
       if (!guardRef.current.blockUnload) {
@@ -122,7 +136,10 @@ export function UnsavedLeaveProvider({ children }: { children: ReactNode }) {
     };
   }, [router]);
 
-  const value = useMemo(() => ({ setGuard, confirmLeave }), [setGuard, confirmLeave]);
+  const value = useMemo(
+    () => ({ setGuard, confirmLeave, guardedPush }),
+    [setGuard, confirmLeave, guardedPush],
+  );
 
   return (
     <UnsavedLeaveContext.Provider value={value}>
@@ -162,11 +179,13 @@ export function useUnsavedLeave() {
   return context;
 }
 
-export function useRegisterUnsavedLeave(blockInApp: boolean, blockUnload: boolean) {
-  const { setGuard } = useUnsavedLeave();
-  setGuard({ blockInApp, blockUnload });
+export function useRegisterUnsavedLeave(dirty: boolean) {
+  const { setGuard, confirmLeave, guardedPush } = useUnsavedLeave();
+  setGuard({ blockInApp: dirty, blockUnload: dirty });
 
   useEffect(() => {
     return () => setGuard(EMPTY_GUARD);
   }, [setGuard]);
+
+  return { confirmLeave, guardedPush };
 }
