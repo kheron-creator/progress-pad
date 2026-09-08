@@ -12,6 +12,7 @@ import { ToastRegion, useToasts } from "@/components/ui/toast-region";
 import { type DroppedTrigger } from "@/components/ui/trigger-dropzone";
 import { TriggersLibrary, type LibraryTrigger } from "@/components/ui/triggers-library";
 import { useSessionStore } from "@/components/app/session-store-provider";
+import { useRegisterUnsavedLeave } from "@/components/app/unsaved-leave-provider";
 import { createClient } from "@/lib/supabase/client";
 import { TRIGGERS_HEADING } from "@/lib/triggers/content";
 import { type LibraryDragPayload } from "@/lib/triggers/drag";
@@ -299,6 +300,7 @@ export function TriggersPage() {
   }
 
   const canSaveAssign = JSON.stringify(assignments) !== JSON.stringify(assignmentBaseline);
+  useRegisterUnsavedLeave(assigning && canSaveAssign);
 
   function startAssigning() {
     if (savingAssign) return;
