@@ -38,6 +38,7 @@ import { ToastRegion, useToasts } from "@/components/ui/toast-region";
 import { TriggerCard } from "@/components/ui/trigger-card";
 import { WritingSection, type WritingSectionItem } from "@/components/ui/writing-section";
 import { useSessionStore } from "@/components/app/session-store-provider";
+import { useRegisterUnsavedLeave } from "@/components/app/unsaved-leave-provider";
 import { createClient } from "@/lib/supabase/client";
 import {
   HOME_BANNERS,
@@ -55,6 +56,7 @@ import {
   deleteWritingEntry,
   emptyWritingDay,
   emptyPillarDay,
+  pillarsByDateEqual,
   savePillarEntries,
   setMindSweepStatus,
   writingKindForSection,
@@ -89,6 +91,17 @@ const PILLAR_ICONS = {
 
 function emptyWritingDrafts(): Record<string, string> {
   return Object.fromEntries(HOME_WRITING_SECTIONS.map((section) => [section.id, ""]));
+}
+
+function hasComposerDrafts(
+  drafts: Record<string, Record<string, string>>,
+  notes: Record<string, Record<string, string>>,
+) {
+  return [drafts, notes].some((byDate) =>
+    Object.values(byDate).some((day) =>
+      Object.values(day).some((value) => value.trim().length > 0),
+    ),
+  );
 }
 
 function formatChipDate(date: Date) {
@@ -215,6 +228,8 @@ export function HomePage() {
   const setMindSweepByDate = useSessionStore((state) => state.setMindSweepByDate);
   const pillarsByDate = useSessionStore((state) => state.pillarsByDate);
   const setPillarsByDate = useSessionStore((state) => state.setPillarsByDate);
+  const savedPillarsByDate = useSessionStore((state) => state.savedPillarsByDate);
+  const markPillarsSaved = useSessionStore((state) => state.markPillarsSaved);
   const plan = useMemo(
     () => ({ assignments, triggers: planTriggers, scenarios: planScenarios }),
     [assignments, planTriggers, planScenarios],
@@ -257,6 +272,9 @@ export function HomePage() {
   const dayPillars = pillarsByDate[onDate] ?? emptyPillarDay();
   const dayDrafts = draftsByDate[onDate] ?? emptyWritingDrafts();
   const dayNoteDrafts = noteDraftsByDate[onDate] ?? emptyWritingDrafts();
+  const composerDirty = hasComposerDrafts(draftsByDate, noteDraftsByDate);
+  const pillarsDirty = !pillarsByDateEqual(pillarsByDate, savedPillarsByDate);
+  useRegisterUnsavedLeave(composerDirty, composerDirty || pillarsDirty);
   const triggers = useMemo(
     () =>
       flattenDayTriggers(
@@ -497,6 +515,7 @@ export function HomePage() {
         pillarsByDate[onDate] ?? emptyPillarDay(),
       );
       setPillarsByDate((current) => ({ ...current, [onDate]: saved }));
+      markPillarsSaved(onDate, saved);
       showToast(HOME_PILLAR_SECTION.saved);
     } catch {
       showToast("Couldn't save progression. Please try again.", "error");
@@ -745,15 +764,15 @@ export function HomePage() {
               })}
             </div>
 
-            {!showAllTriggers && triggers.length > MOBILE_TRIGGER_COUNT ? (
+            {triggers.length > MOBILE_TRIGGER_COUNT ? (
               <Button
                 className="md:hidden max-sm:w-full"
                 size="md"
                 variant="secondary"
                 look="outline"
-                onClick={() => setShowAllTriggers(true)}
+                onClick={() => setShowAllTriggers((open) => !open)}
               >
-                Show all triggers
+                {showAllTriggers ? "Show less" : "Show all triggers"}
               </Button>
             ) : null}
           </>

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { CheckInReminder } from "@/components/app/check-in-reminder";
 import { SessionStoreProvider } from "@/components/app/session-store-provider";
+import { UnsavedLeaveProvider } from "@/components/app/unsaved-leave-provider";
 import { loadAppSession } from "@/lib/app/session";
 import { requireUser } from "@/lib/auth/user";
 import { createClient } from "@/lib/supabase/server";
@@ -15,8 +16,10 @@ export async function SessionGate({ children }: { children: ReactNode }) {
 
   return (
     <SessionStoreProvider initial={session}>
-      <CheckInReminder />
-      {children}
+      <UnsavedLeaveProvider>
+        <CheckInReminder />
+        {children}
+      </UnsavedLeaveProvider>
     </SessionStoreProvider>
   );
 }

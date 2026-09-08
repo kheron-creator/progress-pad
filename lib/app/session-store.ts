@@ -1,6 +1,13 @@
 import { createStore } from "zustand/vanilla";
 
-import type { MindSweepByDate, PillarsByDate, WritingByDate } from "@/lib/home/store";
+import {
+  clonePillarDay,
+  clonePillarsByDate,
+  type MindSweepByDate,
+  type PillarDayValues,
+  type PillarsByDate,
+  type WritingByDate,
+} from "@/lib/home/store";
 import type { StoredNotification } from "@/lib/notifications/store";
 import type {
   DateAssignmentItem,
@@ -28,11 +35,13 @@ function mergeById<T extends { id: string }>(...lists: T[][]) {
 }
 
 export type SessionState = AppSession & {
+  savedPillarsByDate: PillarsByDate;
   setAssignments: (assignments: Updater<Record<string, DateAssignmentItem[]>>) => void;
   setStates: (states: Updater<Record<string, Record<string, DateTriggerStatus>>>) => void;
   setWritingByDate: (writingByDate: Updater<WritingByDate>) => void;
   setMindSweepByDate: (mindSweepByDate: Updater<MindSweepByDate>) => void;
   setPillarsByDate: (pillarsByDate: Updater<PillarsByDate>) => void;
+  markPillarsSaved: (onDate: string, values: PillarDayValues) => void;
   setNotifications: (notifications: Updater<StoredNotification[]>) => void;
   addNotification: (notification: StoredNotification) => void;
   addLibraryTrigger: (trigger: StoredTrigger) => void;
@@ -46,6 +55,7 @@ export type SessionStore = ReturnType<typeof createSessionStore>;
 export function createSessionStore(initial: AppSession) {
   return createStore<SessionState>()((set) => ({
     ...initial,
+    savedPillarsByDate: clonePillarsByDate(initial.pillarsByDate),
     setAssignments: (assignments) =>
       set((current) => ({ assignments: apply(current.assignments, assignments) })),
     setStates: (states) => set((current) => ({ states: apply(current.states, states) })),
@@ -55,6 +65,10 @@ export function createSessionStore(initial: AppSession) {
       set((current) => ({ mindSweepByDate: apply(current.mindSweepByDate, mindSweepByDate) })),
     setPillarsByDate: (pillarsByDate) =>
       set((current) => ({ pillarsByDate: apply(current.pillarsByDate, pillarsByDate) })),
+    markPillarsSaved: (onDate, values) =>
+      set((current) => ({
+        savedPillarsByDate: { ...current.savedPillarsByDate, [onDate]: clonePillarDay(values) },
+      })),
     setNotifications: (notifications) =>
       set((current) => ({ notifications: apply(current.notifications, notifications) })),
     addNotification: (notification) =>

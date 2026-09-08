@@ -18,6 +18,7 @@ import { useSignOut } from "./logout-button";
 import { NotificationsMenu } from "./notifications-menu";
 import { useSessionStore } from "./session-store-provider";
 import { useTheme } from "./theme-provider";
+import { useUnsavedLeave } from "./unsaved-leave-provider";
 
 const navHrefs: Record<string, string> = {
   dashboard: "/dashboard",
@@ -75,6 +76,7 @@ function AccountMenu({
   onThemeToggle: () => void;
 }) {
   const { signOut, pending, error } = useSignOut();
+  const { confirmLeave } = useUnsavedLeave();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -156,7 +158,9 @@ function AccountMenu({
             className="type-label flex w-full px-3 py-2 text-left text-foreground hover:bg-background-subtle disabled:opacity-60"
             disabled={pending}
             onClick={() => {
-              void signOut();
+              confirmLeave(() => {
+                void signOut();
+              });
             }}
           >
             {pending ? "Signing out…" : "Log out"}

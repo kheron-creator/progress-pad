@@ -22,7 +22,7 @@ export const HOME_BANNERS = {
     description: "Offload heavy cognitive load. Record immediate triggers, project priorities, and capture loose items.",
   },
   pillars: {
-    kicker: "HORIZON PRESPECTIVE",
+    kicker: "HORIZON PERSPECTIVE",
     title: "City Window Reflection & Life Pillars",
     description: "Step back from tactical noise. Review progress across mental, physical, career, and personal dimensions.",
   },
