@@ -357,13 +357,13 @@ function IntroColumn({
       {icon}
       <Text
         variant="cardTitle"
-        className="font-semibold text-[length:var(--pp-font-size-14)] leading-(--pp-leading-20) lg:text-[length:var(--pp-text-card-title-size)] lg:leading-(--pp-text-card-title-leading)"
+        className="font-semibold text-(length:--pp-font-size-14) leading-(--pp-leading-20) lg:text-(length:--pp-text-card-title-size) lg:leading-(--pp-text-card-title-leading)"
       >
         {title}
       </Text>
       <Text
         variant="description"
-        className="text-[length:var(--pp-font-size-12)] leading-(--pp-leading-16) lg:text-[length:var(--pp-text-body-size)] lg:leading-(--pp-text-body-leading)"
+        className="text-(length:--pp-font-size-12) leading-(--pp-leading-16) lg:text-(length:--pp-text-body-size) lg:leading-(--pp-text-body-leading)"
       >
         {description}
       </Text>
