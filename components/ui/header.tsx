@@ -21,6 +21,7 @@ type HeaderProps = {
   initials?: string;
   avatarSrc?: string;
   account?: ReactNode;
+  tools?: ReactNode;
   className?: string;
 };
 
@@ -34,6 +35,7 @@ export function Header({
   initials = "PP",
   avatarSrc,
   account,
+  tools,
   className,
 }: HeaderProps) {
   const menuId = useId();
@@ -133,7 +135,8 @@ export function Header({
             <NavLinks items={items} selected={selected} onSelect={onSelect} />
           </div>
 
-          <div className="relative z-20 flex w-max shrink-0 items-center self-center md:justify-self-end md:gap-2">
+          <div className="relative z-20 flex w-max shrink-0 items-center self-center gap-1 md:justify-self-end md:gap-2">
+            {tools}
             <button
               type="button"
               aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}

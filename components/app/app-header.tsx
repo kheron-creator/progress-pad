@@ -10,13 +10,14 @@ import { Header } from "@/components/ui/header";
 import { MoonIcon, SunIcon, UserIcon } from "@/components/ui/icon";
 import { defaultNavItems } from "@/components/ui/nav-links";
 import { Text } from "@/components/ui/text";
+import type { Theme } from "@/lib/theme";
 import { flattenDayTriggers } from "@/lib/triggers/store";
 
 import { useCurrentUser } from "./current-user-provider";
 import { useSignOut } from "./logout-button";
+import { NotificationsMenu } from "./notifications-menu";
 import { useSessionStore } from "./session-store-provider";
-
-type Theme = "light" | "dark";
+import { useTheme } from "./theme-provider";
 
 const navHrefs: Record<string, string> = {
   dashboard: "/dashboard",
@@ -38,6 +39,9 @@ function selectedNavId(pathname: string) {
   }
   if (pathname.startsWith("/assistant")) {
     return "assistant";
+  }
+  if (pathname.startsWith("/profile")) {
+    return "";
   }
   if (pathname.startsWith("/coming-soon")) {
     return "";
@@ -171,7 +175,7 @@ function AccountMenu({
 export function AppHeader() {
   const user = useCurrentUser();
   const pathname = usePathname();
-  const [theme, setTheme] = useState<Theme>("light");
+  const { theme, toggleTheme } = useTheme();
   const initials = initialsFromUser(user.name, user.email);
   const remainingToday = useSessionStore((state) => {
     const today = isoDate(new Date());
@@ -195,12 +199,6 @@ export function AppHeader() {
     [remainingToday],
   );
 
-  function toggleTheme() {
-    const next: Theme = theme === "light" ? "dark" : "light";
-    document.documentElement.dataset.theme = next;
-    setTheme(next);
-  }
-
   return (
     <Header
       className="sticky top-0 z-20"
@@ -211,6 +209,7 @@ export function AppHeader() {
       onThemeToggle={toggleTheme}
       initials={initials}
       avatarSrc={user.avatarUrl?.trim() || undefined}
+      tools={<NotificationsMenu />}
       account={
         <AccountMenu
           name={user.name}
