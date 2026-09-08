@@ -38,7 +38,8 @@ type PendingDelete =
   | { kind: "library-scenario"; id: string; name: string }
   | { kind: "date-trigger"; id: string; name: string }
   | { kind: "date-scenario"; id: string; name: string }
-  | { kind: "date-clear" };
+  | { kind: "date-clear" }
+  | { kind: "calendar-clear" };
 
 const DELETE_COPY: Record<
   PendingDelete["kind"],
@@ -70,6 +71,12 @@ const DELETE_COPY: Record<
     description: () =>
       "All scenarios and triggers will be removed from this date. They will stay in your library.",
     confirm: "Clear",
+  },
+  "calendar-clear": {
+    title: "Clear calendar?",
+    description: () =>
+      "All scenarios and triggers will be removed from every date. They will stay in your library.",
+    confirm: "Clear calendar",
   },
 };
 
@@ -462,6 +469,27 @@ export function TriggersPage() {
     return persistDayChange(next, () => clearDateAssignments(createClient(), key));
   }
 
+  async function clearCalendar() {
+    const previous = assignments;
+    const next: Record<string, DayAssignment[]> = {};
+    setAssignments(next);
+    setAssignmentBaseline(next);
+    setSavedAssignments(next);
+
+    try {
+      await saveDateAssignments(createClient(), previous, next);
+      setStates((current) =>
+        pruneStatesToAssignments(current, next, (scenarioId) => scenarioById.get(scenarioId)?.triggerIds),
+      );
+      showToast("Calendar cleared.");
+    } catch {
+      setAssignments(previous);
+      setAssignmentBaseline(previous);
+      setSavedAssignments(previous);
+      showToast("Couldn't clear the calendar. Please try again.", "error");
+    }
+  }
+
   const dayAssignments = assignments[isoDate(date)] ?? [];
   const dayScenarios = dayAssignments
     .filter((item) => item.kind === "scenario")
@@ -559,6 +587,17 @@ export function TriggersPage() {
       setDeletePending(true);
       try {
         await clearDate();
+        setPendingDelete(null);
+      } finally {
+        setDeletePending(false);
+      }
+      return;
+    }
+
+    if (pendingDelete.kind === "calendar-clear") {
+      setDeletePending(true);
+      try {
+        await clearCalendar();
         setPendingDelete(null);
       } finally {
         setDeletePending(false);
@@ -679,7 +718,7 @@ export function TriggersPage() {
           }
           setDayDrawerOpen(true);
         }}
-        onClear={() => setDate(new Date())}
+        onClear={() => setPendingDelete({ kind: "calendar-clear" })}
       />
 
       <DayPlanDrawer
