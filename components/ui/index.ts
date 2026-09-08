@@ -40,7 +40,11 @@ export {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronUpIcon,
   CloseIcon,
+  CompassIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
   DragHandleIcon,
   EnvelopeIcon,
   FilesIcon,
@@ -73,6 +77,7 @@ export {
   TrashIcon,
   UploadIcon,
   UserIcon,
+  SignOutIcon,
   UsersThreeIcon,
 } from "./icon";
 export { Input } from "./input";

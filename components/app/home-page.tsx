@@ -257,6 +257,18 @@ export function HomePage() {
   }, []);
 
   useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (!id) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
     if (!celebrateName) return;
 
     const frame = window.requestAnimationFrame(() => {
@@ -657,7 +669,7 @@ export function HomePage() {
         priority
       />
 
-      <section className="flex flex-col items-center gap-1 py-2 text-center">
+      <section id="flow-overview" className="flex scroll-mt-28 flex-col items-center gap-1 py-2 text-center">
         <Chip
           state="outlined"
           size="lg"
@@ -683,17 +695,19 @@ export function HomePage() {
         </Text>
       </section>
 
-      <CalendarStrip
-        value={date}
-        onChange={(next) => {
-          setDate(next);
-          setShowAllTriggers(false);
-        }}
-        view={calendarView}
-        onViewChange={setCalendarView}
-        markers={calendarMarkers}
-        className="max-w-none"
-      />
+      <div id="flow-calendar" className="scroll-mt-28">
+        <CalendarStrip
+          value={date}
+          onChange={(next) => {
+            setDate(next);
+            setShowAllTriggers(false);
+          }}
+          view={calendarView}
+          onViewChange={setCalendarView}
+          markers={calendarMarkers}
+          className="max-w-none"
+        />
+      </div>
 
       <HomeBanner
         size="sm"
@@ -703,7 +717,7 @@ export function HomePage() {
         image={HOME_BANNER_IMAGES.triggers}
       />
 
-      <Card className="flex w-full flex-col gap-section">
+      <Card id="flow-triggers" className="flex w-full scroll-mt-28 flex-col gap-section">
         <TriggerCard
           title={HOME_TRIGGER_SECTION.title}
           description={HOME_TRIGGER_SECTION.description}
@@ -777,7 +791,9 @@ export function HomePage() {
         )}
       </Card>
 
-      {writingSection(HOME_WRITING_SECTIONS[0])}
+      <div id="flow-gratitude" className="scroll-mt-28">
+        {writingSection(HOME_WRITING_SECTIONS[0])}
+      </div>
 
       <HomeBanner
         size="sm"
@@ -787,7 +803,11 @@ export function HomePage() {
         image={HOME_BANNER_IMAGES.writing}
       />
 
-      {HOME_WRITING_SECTIONS.slice(1, 3).map(writingSection)}
+      {HOME_WRITING_SECTIONS.slice(1, 3).map((section) => (
+        <div key={section.id} id={`flow-${section.id}`} className="scroll-mt-28">
+          {writingSection(section)}
+        </div>
+      ))}
 
 
       <HomeBanner
@@ -798,9 +818,16 @@ export function HomePage() {
         image={HOME_BANNER_IMAGES.pillars}
       />
 
-      {HOME_WRITING_SECTIONS.slice(3).map(writingSection)}
+      <div id="flow-quotes" className="scroll-mt-28">
+        {writingSection(HOME_WRITING_SECTIONS[3])}
+      </div>
+      {HOME_WRITING_SECTIONS.slice(4).map((section) => (
+        <div key={section.id} id={`flow-${section.id}`} className="scroll-mt-28">
+          {writingSection(section)}
+        </div>
+      ))}
 
-      <Card className="flex w-full flex-col gap-section">
+      <Card id="flow-pillars" className="flex w-full scroll-mt-28 flex-col gap-section">
         <TriggerCard
           title={HOME_PILLAR_SECTION.title}
           description={HOME_PILLAR_SECTION.description}
