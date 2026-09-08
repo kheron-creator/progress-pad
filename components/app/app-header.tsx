@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/avatar";
 import { isoDate } from "@/components/ui/calendar-strip";
 import { Header } from "@/components/ui/header";
-import { MoonIcon, SunIcon, UserIcon } from "@/components/ui/icon";
+import { MoonIcon, SignOutIcon, SunIcon, UserIcon } from "@/components/ui/icon";
 import { defaultNavItems } from "@/components/ui/nav-links";
 import { Text } from "@/components/ui/text";
 import type { Theme } from "@/lib/theme";
@@ -155,7 +155,7 @@ function AccountMenu({
           <button
             type="button"
             role="menuitem"
-            className="type-label flex w-full px-3 py-2 text-left text-foreground hover:bg-background-subtle disabled:opacity-60"
+            className="type-label flex w-full items-center gap-2 px-3 py-2 text-left text-foreground hover:bg-background-subtle disabled:opacity-60"
             disabled={pending}
             onClick={() => {
               confirmLeave(() => {
@@ -163,6 +163,7 @@ function AccountMenu({
               });
             }}
           >
+            <SignOutIcon size={16} className="shrink-0 text-foreground" />
             {pending ? "Signing out…" : "Log out"}
           </button>
           {error ? (

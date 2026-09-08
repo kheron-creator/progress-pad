@@ -12,6 +12,10 @@ import {
   CaretLeftIcon,
   CaretRightIcon,
   CaretDownIcon,
+  CaretUpIcon,
+  Compass as PhosphorCompassIcon,
+  ArrowUp as PhosphorArrowUpIcon,
+  ArrowDown as PhosphorArrowDownIcon,
   ChatIcon as PhosphorChatIcon,
   ChartLineUpIcon as PhosphorChartLineUpIcon,
   CheckCircleIcon as PhosphorCheckCircleIcon,
@@ -52,6 +56,7 @@ import {
   UploadSimpleIcon,
   PaperPlaneTiltIcon,
   UserIcon as PhosphorUserIcon,
+  SignOut as PhosphorSignOutIcon,
   UsersThreeIcon as PhosphorUsersThreeIcon,
   XIcon,
   type IconProps as PhosphorIconProps,
@@ -106,9 +111,14 @@ function withIcon(Icon: ComponentType<PhosphorIconProps>) {
 export const CheckIcon = withIcon(PhosphorCheckIcon);
 export const ChecksIcon = withIcon(PhosphorChecksIcon);
 export const ChevronDownIcon = withIcon(CaretDownIcon);
+export const ChevronUpIcon = withIcon(CaretUpIcon);
+export const CompassIcon = withIcon(PhosphorCompassIcon);
+export const ArrowUpIcon = withIcon(PhosphorArrowUpIcon);
+export const ArrowDownIcon = withIcon(PhosphorArrowDownIcon);
 export const StarIcon = withIcon(PhosphorStarIcon);
 export const CloseIcon = withIcon(XIcon);
 export const UserIcon = withIcon(PhosphorUserIcon);
+export const SignOutIcon = withIcon(PhosphorSignOutIcon);
 export const UsersThreeIcon = withIcon(PhosphorUsersThreeIcon);
 export const SunIcon = withIcon(PhosphorSunIcon);
 export const MoonIcon = withIcon(PhosphorMoonIcon);
