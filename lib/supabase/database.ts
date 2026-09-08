@@ -9,6 +9,7 @@ export type Json =
 type TriggerStatus = "todo" | "achieved";
 type DateAssignmentKind = "trigger" | "scenario";
 type WritingKind = "gratitude" | "quotes" | "journal" | "reflections" | "done";
+type NotificationKind = "check_in";
 
 export type Database = {
   public: {
@@ -315,6 +316,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          kind: NotificationKind;
+          title: string;
+          body: string;
+          href: string | null;
+          dedupe_key: string;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          kind: NotificationKind;
+          title: string;
+          body: string;
+          href?: string | null;
+          dedupe_key: string;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          kind?: NotificationKind;
+          title?: string;
+          body?: string;
+          href?: string | null;
+          dedupe_key?: string;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -322,6 +359,7 @@ export type Database = {
       trigger_status: TriggerStatus;
       date_assignment_kind: DateAssignmentKind;
       writing_kind: WritingKind;
+      notification_kind: NotificationKind;
     };
     CompositeTypes: Record<string, never>;
   };
