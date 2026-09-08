@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { CheckInReminder } from "@/components/app/check-in-reminder";
 import { SessionStoreProvider } from "@/components/app/session-store-provider";
 import { loadAppSession } from "@/lib/app/session";
 import { requireUser } from "@/lib/auth/user";
@@ -12,5 +13,10 @@ export async function SessionGate({ children }: { children: ReactNode }) {
   await ensureOnboardingTriggers(supabase, user.id, user.onboarding.triggerIds);
   const session = await loadAppSession(supabase);
 
-  return <SessionStoreProvider initial={session}>{children}</SessionStoreProvider>;
+  return (
+    <SessionStoreProvider initial={session}>
+      <CheckInReminder />
+      {children}
+    </SessionStoreProvider>
+  );
 }
