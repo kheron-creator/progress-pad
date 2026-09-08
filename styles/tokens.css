@@ -275,7 +275,7 @@
   --pp-input-fg: var(--pp-fg-default);
   --pp-input-placeholder: var(--pp-fg-muted);
   --pp-input-border: var(--pp-border-default);
-  --pp-input-border-focus: var(--pp-border-focus);
+  --pp-input-border-focus: var(--pp-grey-700);
   --pp-input-border-error: var(--pp-border-error);
   --pp-input-border-success: var(--pp-border-success);
   --pp-input-bg-disabled: var(--pp-bg-disabled);
@@ -701,6 +701,7 @@
   --pp-border-subtle: var(--pp-grey-800);
   --pp-border-strong: var(--pp-grey-500);
   --pp-border-focus: var(--pp-spring-green-600);
+  --pp-input-border-focus: var(--pp-grey-200);
   --pp-border-selected: var(--pp-spring-green-600);
   --pp-border-error: var(--pp-red-300);
   --pp-border-success: var(--pp-green-300);

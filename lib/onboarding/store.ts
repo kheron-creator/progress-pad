@@ -5,7 +5,7 @@ import type { Database, Json } from "@/lib/supabase/database";
 import { appPathForComplete } from "@/lib/auth/paths";
 import { ensureOnboardingTriggers } from "@/lib/triggers/store";
 
-import { isOnboardingComplete, parseOnboardingDraft, type OnboardingDraft } from "./draft";
+import { isOnboardingComplete, parseOnboardingDraft, type CheckInTime, type OnboardingDraft } from "./draft";
 
 type Client = SupabaseClient<Database>;
 
@@ -120,6 +120,36 @@ export async function saveFullName(supabase: Client, fullName: string) {
   const { error } = await supabase.from("user_data").upsert({
     user_id: user.id,
     full_name: fullName,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function saveCheckIn(supabase: Client, checkIn: CheckInTime | null) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Not signed in");
+  }
+
+  const { data: existing, error: readError } = await supabase
+    .from("user_data")
+    .select("onboarding")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (readError) {
+    throw readError;
+  }
+
+  const previous = asObject(existing?.onboarding);
+  const { error } = await supabase.from("user_data").upsert({
+    user_id: user.id,
+    onboarding: { ...previous, checkIn, checkInSkipped: checkIn == null } as Json,
   });
 
   if (error) {

@@ -323,6 +323,12 @@
     outline: none;
   }
 
+  .pp-control:focus,
+  .pp-control:focus-visible {
+    border-color: var(--pp-input-border-focus);
+    outline: none;
+  }
+
   .pp-control::placeholder {
     color: var(--pp-input-placeholder);
   }

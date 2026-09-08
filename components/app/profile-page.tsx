@@ -4,11 +4,13 @@ import { useRef, useState, type ChangeEvent, type SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { AvatarCropDialog } from "@/components/app/avatar-crop-dialog";
+import { useSetCheckIn } from "@/components/app/current-user-provider";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogConfirmActions } from "@/components/ui/dialog";
+import { Dropdown } from "@/components/ui/dropdown";
 import { CameraIcon, ChevronRightIcon, UserIcon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -29,10 +31,14 @@ import {
   nameError,
   passwordError,
 } from "@/lib/auth/validation";
-import { saveFullName } from "@/lib/onboarding/store";
+import { ensureNotificationPermission } from "@/lib/check-in/reminder";
+import { checkInOptions } from "@/lib/onboarding/content";
+import { isCheckInTime, type CheckInTime } from "@/lib/onboarding/draft";
+import { saveCheckIn, saveFullName } from "@/lib/onboarding/store";
 import { createClient } from "@/lib/supabase/client";
 
 const fieldLabelClass = "type-overline text-foreground-muted";
+const CHECK_IN_OFF = "none";
 
 function initialsFromUser(name: string, email: string | null) {
   const words = name.trim().split(/\s+/).filter((part) => part.length > 0);
@@ -50,14 +56,17 @@ export function ProfilePage({
   avatarUrl,
   roleLabels,
   memberSince,
+  checkIn: savedCheckIn,
 }: {
   name: string;
   email: string | null;
   avatarUrl?: string;
   roleLabels?: string[];
   memberSince?: string;
+  checkIn: CheckInTime | null;
 }) {
   const router = useRouter();
+  const syncCheckIn = useSetCheckIn();
   const { toasts, showToast, dismissToast } = useToasts();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState(false);
@@ -76,6 +85,8 @@ export function ProfilePage({
     currentPassword?: string;
     newPassword?: string;
   }>({});
+  const [checkIn, setCheckIn] = useState<CheckInTime | null>(savedCheckIn);
+  const [checkInPending, setCheckInPending] = useState(false);
   if (name !== savedName) {
     setSavedName(name);
     setFullName(name);
@@ -181,7 +192,7 @@ export function ProfilePage({
       router.replace("/login");
       router.refresh();
     } catch {
-      showToast("Couldn't clear data. Please try again.", "error");
+      showToast("Couldn't delete account. Please try again.", "error");
     } finally {
       setClearPending(false);
     }
@@ -232,6 +243,33 @@ export function ProfilePage({
       showToast("Something went wrong. Please try again.", "error");
     } finally {
       setNamePending(false);
+    }
+  }
+
+  async function handleCheckInChange(next: string) {
+    const parsed = isCheckInTime(next) ? next : next === CHECK_IN_OFF ? null : undefined;
+    if (parsed === undefined || parsed === checkIn || checkInPending) {
+      return;
+    }
+
+    const previous = checkIn;
+    setCheckIn(parsed);
+    syncCheckIn(parsed);
+    setCheckInPending(true);
+
+    try {
+      await saveCheckIn(createClient(), parsed);
+      showToast(parsed ? "Check-in time updated." : "Check-in turned off.");
+      if (parsed) {
+        void ensureNotificationPermission();
+      }
+      router.refresh();
+    } catch {
+      setCheckIn(previous);
+      syncCheckIn(previous);
+      showToast("Couldn't update check-in time. Please try again.", "error");
+    } finally {
+      setCheckInPending(false);
     }
   }
 
@@ -425,6 +463,33 @@ export function ProfilePage({
 
       <Card>
         <Text as="h2" variant="sectionTitle">
+          Check-in
+        </Text>
+        <Text variant="caption" className="mt-1 text-foreground-muted">
+          When you&apos;d like to check in with yourself. We&apos;ll remind you in this browser
+          at 10am, 2pm, or 7pm if you still have triggers left. Choose None to turn reminders off.
+        </Text>
+        <div className="mt-6">
+          <Dropdown
+            label="Preferred time"
+            labelClassName={fieldLabelClass}
+            placeholder="None"
+            value={checkIn ?? CHECK_IN_OFF}
+            disabled={checkInPending}
+            options={[
+              { value: CHECK_IN_OFF, label: "None" },
+              ...checkInOptions.map((option) => ({
+                value: option.id,
+                label: option.title,
+              })),
+            ]}
+            onChange={handleCheckInChange}
+          />
+        </div>
+      </Card>
+
+      <Card>
+        <Text as="h2" variant="sectionTitle">
           Change Password
         </Text>
         <form
@@ -470,7 +535,7 @@ export function ProfilePage({
         >
           <span className="flex min-w-0 flex-col gap-1">
             <Text variant="label" className="text-error">
-              Clear data
+              Delete account
             </Text>
             <Text variant="caption">
               Permanently delete all triggers, data, and account configurations. This cannot be undone.
@@ -487,13 +552,13 @@ export function ProfilePage({
             setClearOpen(open);
           }
         }}
-        title="Clear data?"
-        description="Permanently delete all triggers, data, and account configurations. This cannot be undone."
+        title="Delete account?"
+        description="This will permanently delete your account, including all triggers, data, and configurations. This cannot be undone."
       >
         <DialogConfirmActions
           danger
           pending={clearPending}
-          confirmLabel="Clear data"
+          confirmLabel="Delete account"
           onCancel={() => setClearOpen(false)}
           onConfirm={handleClearData}
         />

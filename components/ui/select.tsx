@@ -9,6 +9,7 @@ import { ChevronDownIcon } from "./icon";
 
 type SelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> & {
   label?: string;
+  labelClassName?: string;
   hint?: string;
   size?: FieldSize;
   status?: FieldStatus;
@@ -16,6 +17,7 @@ type SelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> & {
 
 export function Select({
   label,
+  labelClassName,
   hint,
   size = "md",
   status = "default",
@@ -31,7 +33,11 @@ export function Select({
 
   return (
     <Field>
-      {label ? <FieldLabel htmlFor={selectId}>{label}</FieldLabel> : null}
+      {label ? (
+        <FieldLabel htmlFor={selectId} className={labelClassName}>
+          {label}
+        </FieldLabel>
+      ) : null}
       <div className="relative">
         <select
           id={selectId}
