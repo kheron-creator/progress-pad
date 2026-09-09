@@ -11,8 +11,8 @@ import { EmojiPicker } from "./emoji-picker";
 import { EmptyState } from "./empty-state";
 import { IconMark } from "./icon-mark";
 import { FolderIcon, LightningIcon, PlusIcon } from "./icon";
-import { Input } from "./input";
 import { Text } from "./text";
+import { Textarea } from "./textarea";
 import { Toast } from "./toast";
 import { TriggerDropzone, type DroppedTrigger } from "./trigger-dropzone";
 import { TriggerListItem } from "./trigger-list-item";
@@ -117,13 +117,15 @@ export function ScenariosLibrary({
             onDropTrigger={onDropTrigger}
             onRemove={onRemoveTrigger}
           />
-          <Input
+          <Textarea
+            autoSize
             label="Scenario Name"
             placeholder="Add a Scenario name."
             value={name}
             onChange={(event) => onNameChange?.(event.currentTarget.value)}
           />
-          <Input
+          <Textarea
+            autoSize
             label="Description (optional)"
             placeholder="Description..."
             value={description}

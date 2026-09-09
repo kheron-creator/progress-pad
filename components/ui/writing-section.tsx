@@ -8,7 +8,6 @@ import { Button } from "./button";
 import { Card } from "./card";
 import { DictateButton } from "./dictate-button";
 import { IconMark } from "./icon-mark";
-import { Input } from "./input";
 import { CheckIcon, NoteIcon, PlusIcon } from "./icon";
 import { Progress } from "./progress";
 import { Textarea } from "./textarea";
@@ -116,11 +115,18 @@ export function WritingSection({
           style={{ borderColor: accent }}
           onSubmit={handleSubmit}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <Input
+              <Textarea
+                autoSize
                 value={value}
                 onChange={(event) => onChange?.(event.currentTarget.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    event.currentTarget.form?.requestSubmit();
+                  }
+                }}
                 placeholder={placeholder}
                 aria-label={placeholder}
                 disabled={saving}
@@ -143,7 +149,8 @@ export function WritingSection({
             </Button>
           </div>
           {showNotes ? (
-            <Input
+            <Textarea
+              autoSize
               value={notesValue}
               onChange={(event) => onNotesChange?.(event.currentTarget.value)}
               placeholder={notesPlaceholder}

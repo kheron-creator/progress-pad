@@ -13,6 +13,7 @@ import { IconMark } from "./icon-mark";
 import { Input } from "./input";
 import { FilesIcon, LightningIcon, PlusIcon, SearchIcon } from "./icon";
 import { Text } from "./text";
+import { Textarea } from "./textarea";
 import { TriggerListItem } from "./trigger-list-item";
 
 export type LibraryTrigger = {
@@ -94,7 +95,8 @@ export function TriggersLibrary({
 
       {state === "add" && !assigning ? (
         <div className="flex flex-col gap-section">
-          <Input
+          <Textarea
+            autoSize
             label="Trigger Name"
             placeholder="Fresh-air walk"
             value={name}

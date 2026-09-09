@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils/cn";
 import { ChartLineIcon, ChevronDownIcon } from "./icon";
 import { DictateButton } from "./dictate-button";
 import { IconMark } from "./icon-mark";
-import { Input } from "./input";
 import { Text } from "./text";
+import { Textarea } from "./textarea";
 
 type PillarRowProps = {
   title: string;
@@ -104,9 +104,10 @@ export function PillarRow({
             <ChevronDownIcon size={12} className={cn("transition-transform", open && "rotate-180")} />
           </button>
         </div>
-        <div className="flex min-w-0 flex-1 items-center gap-(--pp-space-16)">
+        <div className="flex min-w-0 flex-1 items-start gap-(--pp-space-16)">
           <div className="min-w-0 flex-1">
-            <Input
+            <Textarea
+              autoSize
               value={notes}
               onChange={(event) => onNotesChange?.(event.currentTarget.value)}
               placeholder={placeholder}
