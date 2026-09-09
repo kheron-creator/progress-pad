@@ -55,9 +55,12 @@ import {
   deleteWritingEntry,
   emptyWritingDay,
   emptyPillarDay,
+  pillarDaysEqual,
   pillarsByDateEqual,
   savePillarEntries,
   setMindSweepStatus,
+  updateMindSweepItem,
+  updateWritingEntry,
   writingKindForSection,
   type PillarId,
   type StoredMindSweepItem,
@@ -78,6 +81,7 @@ const HOME_BANNER_IMAGES = {
   pillars: "/brand/home-banner-pillars.jpg",
 } as const;
 const MOBILE_TRIGGER_COUNT = 5;
+const PILLAR_SAVE_DELAY_MS = 500;
 
 const PILLAR_ICONS = {
   mentally: <BrainIcon />,
@@ -239,8 +243,8 @@ export function HomePage() {
   );
   const [savingSections, setSavingSections] = useState<ReadonlySet<string>>(() => new Set());
   const savingSectionsRef = useRef(new Set<string>());
+  const [dirtyItemKeys, setDirtyItemKeys] = useState<ReadonlySet<string>>(() => new Set());
   const [deletePending, setDeletePending] = useState(false);
-  const [pillarSaving, setPillarSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{
     sectionId: string;
     id: string;
@@ -251,6 +255,14 @@ export function HomePage() {
   const [celebrateName, setCelebrateName] = useState<string | null>(null);
   const celebrateNoteRef = useRef<HTMLParagraphElement>(null);
   const celebrateTimer = useRef(0);
+  const pillarsByDateRef = useRef(pillarsByDate);
+  const savedPillarsByDateRef = useRef(savedPillarsByDate);
+  const pillarSaveTimerRef = useRef<number>(null);
+  const pillarSavingRef = useRef(false);
+  const pendingPillarDatesRef = useRef(new Set<string>());
+  const previousPillarDateRef = useRef<string | null>(null);
+  pillarsByDateRef.current = pillarsByDate;
+  savedPillarsByDateRef.current = savedPillarsByDate;
 
   useEffect(() => {
     return () => window.clearTimeout(celebrateTimer.current);
@@ -278,13 +290,23 @@ export function HomePage() {
     return () => window.cancelAnimationFrame(frame);
   }, [celebrateName]);
 
+  useEffect(() => {
+    return () => {
+      if (pillarSaveTimerRef.current != null) {
+        window.clearTimeout(pillarSaveTimerRef.current);
+      }
+    };
+  }, []);
+
   const onDate = isoDate(date);
   const dayPillars = pillarsByDate[onDate] ?? emptyPillarDay();
   const dayDrafts = draftsByDate[onDate] ?? emptyWritingDrafts();
   const dayNoteDrafts = noteDraftsByDate[onDate] ?? emptyWritingDrafts();
   const composerDirty = hasComposerDrafts(draftsByDate, noteDraftsByDate);
   const pillarsDirty = !pillarsByDateEqual(pillarsByDate, savedPillarsByDate);
-  const { guardedPush } = useRegisterUnsavedLeave(composerDirty || pillarsDirty);
+  const { guardedPush } = useRegisterUnsavedLeave(
+    composerDirty || pillarsDirty || dirtyItemKeys.size > 0,
+  );
   const triggers = useMemo(
     () =>
       flattenDayTriggers(
@@ -399,6 +421,113 @@ export function HomePage() {
     }
   }
 
+  async function saveWritingItem(
+    sectionId: string,
+    id: string,
+    next: { title: string; notes?: string },
+  ) {
+    const title = next.title.trim();
+    if (!title) {
+      return;
+    }
+
+    const notes = next.notes !== undefined ? next.notes.trim() || null : undefined;
+
+    if (sectionId === "mind-sweep") {
+      const previous = mindSweepByDate[onDate] ?? [];
+      const currentItem = previous.find((item) => item.id === id);
+      if (!currentItem) {
+        return;
+      }
+
+      const nextNotes = notes !== undefined ? notes : currentItem.notes;
+      if (currentItem.title === title && currentItem.notes === nextNotes) {
+        return;
+      }
+
+      setMindSweepByDate((current) => ({
+        ...current,
+        [onDate]: (current[onDate] ?? []).map((item) =>
+          item.id === id ? { ...item, title, notes: nextNotes } : item,
+        ),
+      }));
+
+      try {
+        await updateMindSweepItem(createClient(), id, {
+          title,
+          ...(notes !== undefined ? { notes } : {}),
+        });
+      } catch {
+        setMindSweepByDate((current) => ({
+          ...current,
+          [onDate]: previous,
+        }));
+        showToast("Couldn't update that item. Please try again.", "error");
+      }
+      return;
+    }
+
+    const kind = writingKindForSection(sectionId);
+    if (!kind) {
+      return;
+    }
+
+    const previousDay = writingByDate[onDate] ?? emptyWritingDay();
+    const currentItem = previousDay[kind].find((item) => item.id === id);
+    if (!currentItem) {
+      return;
+    }
+
+    const nextNotes = notes !== undefined ? notes : currentItem.notes;
+    if (currentItem.title === title && currentItem.notes === nextNotes) {
+      return;
+    }
+
+    setWritingByDate((current) => {
+      const day = current[onDate] ?? emptyWritingDay();
+      return {
+        ...current,
+        [onDate]: {
+          ...day,
+          [kind]: day[kind].map((item) =>
+            item.id === id ? { ...item, title, notes: nextNotes } : item,
+          ),
+        },
+      };
+    });
+
+    try {
+      await updateWritingEntry(createClient(), id, {
+        title,
+        ...(notes !== undefined ? { notes } : {}),
+      });
+    } catch {
+      setWritingByDate((current) => ({
+        ...current,
+        [onDate]: previousDay,
+      }));
+      showToast("Couldn't update that item. Please try again.", "error");
+    }
+  }
+
+  function setWritingItemDirty(sectionId: string, id: string, dirty: boolean) {
+    const key = `${sectionId}:${id}`;
+    setDirtyItemKeys((current) => {
+      const has = current.has(key);
+      if (dirty === has) {
+        return current;
+      }
+
+      const next = new Set(current);
+      if (dirty) {
+        next.add(key);
+      } else {
+        next.delete(key);
+      }
+      return next;
+    });
+  }
+
   async function addWritingItem(sectionId: string, title: string, notes?: string) {
     if (savingSectionsRef.current.has(sectionId)) {
       return;
@@ -499,40 +628,95 @@ export function HomePage() {
   }
 
   function updatePillar(pillarId: PillarId, patch: { rating?: number; notes?: string }) {
-    setPillarsByDate((current) => {
-      const day = current[onDate] ?? emptyPillarDay();
-      return {
-        ...current,
-        [onDate]: {
-          ...day,
-          [pillarId]: { ...day[pillarId], ...patch },
-        },
-      };
-    });
+    const day = {
+      ...(pillarsByDateRef.current[onDate] ?? emptyPillarDay()),
+    };
+    day[pillarId] = { ...day[pillarId], ...patch };
+    pillarsByDateRef.current = { ...pillarsByDateRef.current, [onDate]: day };
+    setPillarsByDate((current) => ({
+      ...current,
+      [onDate]: day,
+    }));
   }
 
-  async function savePillars() {
-    if (pillarSaving) {
+  async function persistPendingPillars() {
+    if (pillarSavingRef.current) {
       return;
     }
 
-    setPillarSaving(true);
+    const dates = [...pendingPillarDatesRef.current];
+    if (dates.length === 0) {
+      return;
+    }
+
+    pendingPillarDatesRef.current.clear();
+    pillarSavingRef.current = true;
 
     try {
-      const saved = await savePillarEntries(
-        createClient(),
-        onDate,
-        pillarsByDate[onDate] ?? emptyPillarDay(),
-      );
-      setPillarsByDate((current) => ({ ...current, [onDate]: saved }));
-      markPillarsSaved(onDate, saved);
-      showToast(HOME_PILLAR_SECTION.saved);
+      for (const forDate of dates) {
+        const values = pillarsByDateRef.current[forDate] ?? emptyPillarDay();
+        const saved = savedPillarsByDateRef.current[forDate] ?? emptyPillarDay();
+        if (pillarDaysEqual(values, saved)) {
+          continue;
+        }
+
+        const next = await savePillarEntries(createClient(), forDate, values);
+        const latest = pillarsByDateRef.current[forDate] ?? emptyPillarDay();
+        savedPillarsByDateRef.current = { ...savedPillarsByDateRef.current, [forDate]: next };
+        markPillarsSaved(forDate, next);
+
+        if (pillarDaysEqual(latest, values)) {
+          pillarsByDateRef.current = { ...pillarsByDateRef.current, [forDate]: next };
+          setPillarsByDate((current) => ({ ...current, [forDate]: next }));
+        } else {
+          pendingPillarDatesRef.current.add(forDate);
+        }
+      }
     } catch {
       showToast("Couldn't save progression. Please try again.", "error");
     } finally {
-      setPillarSaving(false);
+      pillarSavingRef.current = false;
+      if (pendingPillarDatesRef.current.size > 0) {
+        void persistPendingPillars();
+      }
     }
   }
+
+  function flushPillarSaves() {
+    if (pillarSaveTimerRef.current != null) {
+      window.clearTimeout(pillarSaveTimerRef.current);
+      pillarSaveTimerRef.current = null;
+    }
+
+    void persistPendingPillars();
+  }
+
+  function schedulePillarSave(forDate: string) {
+    pendingPillarDatesRef.current.add(forDate);
+    if (pillarSaveTimerRef.current != null) {
+      window.clearTimeout(pillarSaveTimerRef.current);
+    }
+
+    pillarSaveTimerRef.current = window.setTimeout(() => {
+      pillarSaveTimerRef.current = null;
+      void persistPendingPillars();
+    }, PILLAR_SAVE_DELAY_MS);
+  }
+
+  useEffect(() => {
+    if (previousPillarDateRef.current == null) {
+      previousPillarDateRef.current = onDate;
+      return;
+    }
+
+    if (previousPillarDateRef.current === onDate) {
+      return;
+    }
+
+    pendingPillarDatesRef.current.add(previousPillarDateRef.current);
+    previousPillarDateRef.current = onDate;
+    flushPillarSaves();
+  }, [onDate]);
 
   function writingSection(section: (typeof HOME_WRITING_SECTIONS)[number]) {
     const isGratitude = section.id === "gratitude";
@@ -640,6 +824,8 @@ export function HomePage() {
         }
         items={items}
         onCheckedChange={(id, checked) => updateWritingItem(section.id, id, checked)}
+        onItemChange={(id, next) => void saveWritingItem(section.id, id, next)}
+        onItemDirtyChange={(id, dirty) => setWritingItemDirty(section.id, id, dirty)}
         onAdd={isComposer ? (title, notes) => addWritingItem(section.id, title, notes) : undefined}
         onDelete={
           isComposer
@@ -659,7 +845,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 md:gap-6">
+    <div className="flex w-full flex-col gap-4 md:gap-6">
       <HomeBanner
         size="lg"
         kicker={HOME_HERO.kicker}
@@ -854,23 +1040,20 @@ export function HomePage() {
               notes={dayPillars[pillar.id]?.notes ?? ""}
               onChange={(value) => {
                 updatePillar(pillar.id, { rating: value });
+                pendingPillarDatesRef.current.add(onDate);
+                flushPillarSaves();
               }}
               onNotesChange={(value) => {
                 updatePillar(pillar.id, { notes: value });
+                schedulePillarSave(onDate);
+              }}
+              onNotesBlur={() => {
+                pendingPillarDatesRef.current.add(onDate);
+                flushPillarSaves();
               }}
               icon={<ItemIcon>{PILLAR_ICONS[pillar.id]}</ItemIcon>}
             />
           ))}
-        </div>
-        <div className="flex justify-end max-sm:w-full">
-          <Button
-            size="md"
-            className="max-sm:w-full"
-            loading={pillarSaving}
-            onClick={() => void savePillars()}
-          >
-            {HOME_PILLAR_SECTION.saveLabel}
-          </Button>
         </div>
       </Card>
       {celebrateName ? (

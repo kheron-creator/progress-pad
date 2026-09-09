@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils/cn";
 
 import { Button } from "./button";
 import { Card } from "./card";
-import { DictateButton } from "./dictate-button";
+// import { DictateButton } from "./dictate-button";
 import { IconMark } from "./icon-mark";
 import { CheckIcon, NoteIcon, PlusIcon } from "./icon";
 import { Progress } from "./progress";
@@ -38,6 +38,8 @@ type WritingSectionProps = {
   items?: WritingSectionItem[];
   onCheckedChange?: (id: string, checked: boolean) => void;
   onDelete?: (id: string) => void;
+  onItemChange?: (id: string, next: { title: string; notes?: string }) => void;
+  onItemDirtyChange?: (id: string, dirty: boolean) => void;
   onAdd?: (value: string, notes?: string) => void | Promise<void>;
   composer?: boolean;
   addLabel?: string;
@@ -66,6 +68,8 @@ export function WritingSection({
   items = [],
   onCheckedChange,
   onDelete,
+  onItemChange,
+  onItemDirtyChange,
   onAdd,
   composer = false,
   addLabel = "Add Entry",
@@ -132,13 +136,13 @@ export function WritingSection({
                 disabled={saving}
               />
             </div>
-            <DictateButton
+            {/* <DictateButton
               value={value}
               onChange={onChange}
               disabled={saving}
               label="Dictate entry"
               style={{ borderColor: accent, color: accent }}
-            />
+            /> */}
             <Button type="submit" size="md" disabled={!value?.trim() || saving} loading={saving} className="max-sm:hidden">
               {submitIcon === "check" ? (
                 <CheckIcon size={16} weight="bold" />
@@ -209,6 +213,12 @@ export function WritingSection({
               onCheckedChange={
                 itemLocked ? undefined : (checked) => onCheckedChange?.(item.id, checked)
               }
+              onChange={onItemChange ? (next) => onItemChange(item.id, next) : undefined}
+              onDirtyChange={
+                onItemDirtyChange ? (dirty) => onItemDirtyChange(item.id, dirty) : undefined
+              }
+              notesEditable={showNotes}
+              notesPlaceholder={notesPlaceholder}
               onDelete={onDelete ? () => onDelete(item.id) : undefined}
               accent={composer ? accent : undefined}
             />

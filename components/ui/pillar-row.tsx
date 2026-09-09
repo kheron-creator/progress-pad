@@ -5,7 +5,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils/cn";
 
 import { ChartLineIcon, ChevronDownIcon } from "./icon";
-import { DictateButton } from "./dictate-button";
+// import { DictateButton } from "./dictate-button";
 import { IconMark } from "./icon-mark";
 import { Text } from "./text";
 import { Textarea } from "./textarea";
@@ -19,6 +19,7 @@ type PillarRowProps = {
   onChange: (value: number) => void;
   notes?: string;
   onNotesChange?: (value: string) => void;
+  onNotesBlur?: () => void;
   max?: number;
   accent?: string;
   className?: string;
@@ -33,6 +34,7 @@ export function PillarRow({
   onChange,
   notes = "",
   onNotesChange,
+  onNotesBlur,
   max = 10,
   accent = "var(--pp-magenta-400)",
   className,
@@ -110,16 +112,17 @@ export function PillarRow({
               autoSize
               value={notes}
               onChange={(event) => onNotesChange?.(event.currentTarget.value)}
+              onBlur={() => onNotesBlur?.()}
               placeholder={placeholder}
               aria-label={placeholder ?? `${title} context`}
             />
           </div>
-          <DictateButton
+          {/* <DictateButton
             value={notes}
             onChange={onNotesChange}
             label={`Dictate ${title} context`}
             style={{ borderColor: accent, color: accent }}
-          />
+          /> */}
         </div>
       </div>
       {open ? (
