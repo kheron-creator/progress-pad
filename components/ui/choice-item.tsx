@@ -47,8 +47,8 @@ export function ChoiceItem({
         "flex items-center gap-(--pp-space-16) rounded-sm border text-left",
         fill ? fillClass : sizeClass[size],
         selected
-          ? "border-(--pp-spring-green-600) bg-(--pp-spring-green-10)"
-          : "border-(--pp-grey-50) bg-(--pp-grey-25)",
+          ? "border-(--pp-spring-green-600) bg-primary-muted"
+          : "border-border bg-background-subtle",
         disabled ? "cursor-not-allowed" : "cursor-pointer",
         className,
       )}
@@ -69,9 +69,9 @@ export function ChoiceItem({
         as="span"
         variant={size === "sm" ? "label" : "body"}
         className={cn(
-          "min-w-0 flex-1 text-pretty text-[length:var(--pp-font-size-14)] leading-[length:var(--pp-font-size-14)]",
+          "min-w-0 flex-1 text-pretty text-(length:--pp-font-size-14) leading-(--pp-font-size-14)",
           size === "lg" &&
-            "sm:text-[length:var(--pp-text-body-size)] sm:leading-[var(--pp-text-body-leading)]",
+          "sm:text-(length:--pp-text-body-size) sm:leading-(--pp-text-body-leading)",
         )}
       >
         {label}
@@ -86,7 +86,7 @@ export function ChoiceItem({
         )}
         boxClassName={
           selected
-            ? "border-[var(--pp-spring-green-600)] bg-[var(--pp-spring-green-600)] text-primary-foreground"
+            ? "border-transparent bg-[var(--pp-spring-green-600)] text-primary-foreground"
             : "border-[var(--pp-grey-300)] bg-transparent text-primary-foreground"
         }
         onChange={() => onClick?.()}

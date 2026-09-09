@@ -27,23 +27,26 @@ import { IconButton } from "@/components/ui/icon-button";
 import { IconMark } from "@/components/ui/icon-mark";
 import {
   BarbellIcon,
-  ChatIcon,
-  CheckCircleIcon,
+  BrainIcon,
+  CalendarBlankIcon,
+  ChartLineIcon,
+  ChecksIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
   CloseIcon,
-  GridIcon,
+  LightbulbIcon,
   LightningIcon,
-  ListBulletsIcon,
   MoonIcon,
   NoteIcon,
+  PlusIcon,
+  QuotesIcon,
   SparkleIcon,
   StarIcon,
   SunIcon,
 } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
-import { NavLinks } from "@/components/ui/nav-links";
+import { NavLinks, defaultNavItems } from "@/components/ui/nav-links";
 import { Progress } from "@/components/ui/progress";
 import { ProgressSection } from "@/components/ui/progress-section";
 import { QuestionField } from "@/components/ui/question-field";
@@ -91,12 +94,20 @@ const DEMO_LIBRARY_TRIGGERS = [
 ];
 
 const DEMO_FLOW_ITEMS = [
-  { id: "general", label: "Overview & Stats", count: 4, icon: <GridIcon size={14} /> },
-  { id: "triggers", label: "Common Triggers", count: 12, icon: <LightningIcon size={14} /> },
-  { id: "habits", label: "Habit Sweep", count: 3, icon: <ListBulletsIcon size={14} /> },
-  { id: "today", label: "Progress Today", count: 6, icon: <CheckCircleIcon size={14} /> },
-  { id: "assistant", label: "Progress Assistant", count: 1, icon: <ChatIcon size={14} /> },
+  { id: "overview", label: "Overview", icon: <CalendarBlankIcon size={12} /> },
+  { id: "triggers", label: "Trigger List", icon: <LightningIcon size={12} /> },
+  { id: "gratitude", label: "Daily Gratitude", icon: <SparkleIcon size={12} /> },
+  { id: "mind-sweep", label: "Mind Sweep", icon: <BrainIcon size={12} /> },
+  { id: "done-list", label: "Done List", icon: <ChecksIcon size={12} /> },
+  { id: "quotes", label: "Impactful Quotes", icon: <QuotesIcon size={12} /> },
+  { id: "journal", label: "Let’s Journal", icon: <NoteIcon size={12} /> },
+  { id: "reflections", label: "Reflections", icon: <LightbulbIcon size={12} /> },
+  { id: "pillars", label: "Progression Pillars", icon: <ChartLineIcon size={12} /> },
 ];
+
+const DEMO_NAV_ITEMS = defaultNavItems.map((item) =>
+  item.id === "progress-today" ? { ...item, badge: 3 } : item,
+);
 
 const DEMO_CHAT = [
   { id: "1", role: "assistant" as const, text: "What would you like to work on today?" },
@@ -149,12 +160,12 @@ export function ComponentGallery() {
   const [filters, setFilters] = useState(DEMO_FILTERS);
   const [scaleValue, setScaleValue] = useState(5);
   const [listChecked, setListChecked] = useState(true);
-  const [flowView, setFlowView] = useState<"templates" | "library">("templates");
-  const [flowSelected, setFlowSelected] = useState("general");
-  const [flowQuery, setFlowQuery] = useState("");
+  const [flowOpen, setFlowOpen] = useState(true);
+  const [flowSelected, setFlowSelected] = useState("overview");
   const [chatValue, setChatValue] = useState("");
   const [libraryQuery, setLibraryQuery] = useState("");
-  const [libraryName, setLibraryName] = useState("");
+  const [libraryName, setLibraryName] = useState("Fresh-air walk");
+  const [libraryIcon, setLibraryIcon] = useState<string>();
   const [sectionName, setSectionName] = useState("");
   const [sectionDetail, setSectionDetail] = useState("");
   const [choiceId, setChoiceId] = useState("deep-work");
@@ -178,6 +189,9 @@ export function ComponentGallery() {
                 </Button>
                 <Button variant={variant} look="ghost">
                   Ghost
+                </Button>
+                <Button variant={variant} look="icon" aria-label="Icon only">
+                  <PlusIcon size={20} />
                 </Button>
                 <Button variant={variant} size="sm">
                   SM
@@ -224,14 +238,14 @@ export function ComponentGallery() {
             <Text variant="caption">Nav links — selected item</Text>
             <div className="flex w-full flex-col gap-2">
               {["dashboard", "habit-sweep", "progress-today", "triggers", "assistant"].map((id) => (
-                <NavLinks key={id} selected={id} />
+                <NavLinks key={id} selected={id} items={DEMO_NAV_ITEMS} />
               ))}
             </div>
           </div>
           <div className="flex flex-col gap-2">
             <Text variant="caption">Header</Text>
             <div className="w-full overflow-hidden rounded-md border border-border">
-              <Header selected={navSelected} onSelect={setNavSelected} />
+              <Header selected={navSelected} onSelect={setNavSelected} items={DEMO_NAV_ITEMS} />
             </div>
           </div>
         </div>
@@ -477,7 +491,7 @@ export function ComponentGallery() {
                   Progress Today
                 </Tag>
               }
-              media={<div className="h-full w-full bg-gradient-to-br from-secondary to-accent" />}
+              media={<div className="h-full w-full bg-linear-to-br from-secondary to-accent" />}
             />
             <Banner
               size="sm"
@@ -488,7 +502,7 @@ export function ComponentGallery() {
                   Mind Sweep
                 </Tag>
               }
-              media={<div className="h-full w-full bg-gradient-to-br from-accent to-primary" />}
+              media={<div className="h-full w-full bg-linear-to-br from-accent to-primary" />}
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -526,30 +540,37 @@ export function ComponentGallery() {
             state="add"
             name={libraryName}
             onNameChange={setLibraryName}
+            selectedIcon={libraryIcon}
+            onIconSelect={setLibraryIcon}
             onSave={() => undefined}
+            onCancel={() => undefined}
           />
         </div>
       </PreviewSection>
 
       <PreviewSection title="Flow navigator">
-        <FlowNavigator
-          items={DEMO_FLOW_ITEMS.map((item) => ({
-            ...item,
-            icon: (
-              <IconMark size="xs">
-                {item.icon}
-              </IconMark>
-            ),
-          }))}
-          selected={flowSelected}
-          onSelect={setFlowSelected}
-          query={flowQuery}
-          onQueryChange={setFlowQuery}
-          view={flowView}
-          onViewChange={setFlowView}
-          onClose={() => undefined}
-          onSave={() => undefined}
-        />
+        <div className="flex flex-col gap-6">
+          <FlowNavigator
+            items={DEMO_FLOW_ITEMS}
+            selected={flowSelected}
+            onSelect={setFlowSelected}
+            currentLabel={DEMO_FLOW_ITEMS.find((item) => item.id === flowSelected)?.label}
+            open={false}
+            onOpenChange={setFlowOpen}
+          />
+          <FlowNavigator
+            items={DEMO_FLOW_ITEMS}
+            selected={flowSelected}
+            onSelect={setFlowSelected}
+            currentLabel={DEMO_FLOW_ITEMS.find((item) => item.id === flowSelected)?.label}
+            open={flowOpen}
+            onOpenChange={setFlowOpen}
+            onJumpTop={() => setFlowSelected("overview")}
+            onJumpBottom={() => setFlowSelected("quotes")}
+            onStepPrev={() => undefined}
+            onStepNext={() => undefined}
+          />
+        </div>
       </PreviewSection>
 
       <PreviewSection title="Progress assistant">
@@ -734,15 +755,17 @@ export function ComponentGallery() {
               <TriggerCard
                 kind="item"
                 state="todo"
-                title="Trigger Name"
-                description="description"
+                title="Daily Micro-Expense Log"
+                leftEmoji={false}
+                showDescription={false}
                 onDelete={() => undefined}
               />
               <TriggerCard
                 kind="item"
                 state="achieved"
-                title="Trigger Name"
-                description="description"
+                title="1 min of gratitude"
+                leftEmoji={false}
+                showDescription={false}
                 onDelete={() => undefined}
               />
               <TriggerCard kind="item" state="select" title="Trigger Name" description="description" />
@@ -850,7 +873,7 @@ export function ComponentGallery() {
             <Text variant="caption">Closed</Text>
             <EmojiPicker open={false} />
             <Text variant="caption">Opened</Text>
-            <EmojiPicker />
+            <EmojiPicker open />
           </div>
         </div>
       </PreviewSection>
@@ -940,9 +963,24 @@ export function ComponentGallery() {
             <Skeleton className="h-4 w-40" />
             <Skeleton className="h-10 w-10 rounded-full" />
           </div>
-          <Toast>Progression ratings saved</Toast>
-          <Toast tone="error">Couldn’t save changes</Toast>
-          <Toast tone="info">A new reflection is ready</Toast>
+          <div className="flex w-full max-w-xs flex-col gap-2">
+            <Toast
+              tone="info"
+              action="Button"
+              onDismiss={() => undefined}
+            >
+              Toast message
+            </Toast>
+            <Toast tone="success" onDismiss={() => undefined}>
+              Progression ratings saved
+            </Toast>
+            <Toast tone="warning" onDismiss={() => undefined}>
+              A date can have at most 10 triggers
+            </Toast>
+            <Toast tone="error" onDismiss={() => undefined}>
+              Couldn’t save changes
+            </Toast>
+          </div>
           <EmptyState
             title="Your Progress Pad is ready."
             description="Add a first note when you want to capture the day."

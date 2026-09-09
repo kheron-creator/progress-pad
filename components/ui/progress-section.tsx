@@ -49,7 +49,7 @@ export function ProgressSection({
   className,
 }: ProgressSectionProps) {
   return (
-    <Card className={cn("flex w-full flex-col gap-3", className)}>
+    <Card className={cn("flex w-full flex-col gap-section", className)}>
       <div className="flex items-start gap-3">
         <IconMark>
           <LightningIcon size={14} />

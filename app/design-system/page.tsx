@@ -144,7 +144,7 @@ function PreviewSection({
 
 export default function DesignSystemPage() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-[80rem] flex-col gap-section px-page-x py-page-y">
+    <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-section px-page-x py-page-y">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-2">
           <Logo size="sm" />
@@ -167,13 +167,13 @@ export default function DesignSystemPage() {
         <div className="grid gap-6 md:grid-cols-2">
           <div className="flex flex-col gap-3">
             <Text variant="caption">Light</Text>
-            <div className="flex items-center rounded-md border border-border-subtle bg-[var(--pp-grey-0)] p-card">
+            <div className="flex items-center rounded-md border border-border-subtle bg-(--pp-grey-0) p-card">
               <Logo variant="light" />
             </div>
           </div>
           <div className="flex flex-col gap-3">
             <Text variant="caption">Dark</Text>
-            <div className="flex items-center rounded-md bg-[var(--pp-grey-900)] p-card">
+            <div className="flex items-center rounded-md bg-(--pp-grey-900) p-card">
               <Logo variant="dark" />
             </div>
           </div>

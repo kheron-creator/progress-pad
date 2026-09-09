@@ -11,24 +11,22 @@ import {
   withoutCookieLifetime,
 } from "@/lib/auth/remember";
 
-const publicPaths = new Set([
-  "/",
-  "/login",
-  "/signup",
-  "/forgot-password",
-  "/reset-password",
-  "/password-reset-success",
-  "/design-system",
-]);
-
 const recoveryAllowedPaths = new Set(["/reset-password", "/password-reset-success"]);
 
-function isProtectedPath(pathname: string) {
-  if (publicPaths.has(pathname) || pathname.startsWith("/auth/") || pathname.startsWith("/design-system")) {
-    return false;
-  }
+const protectedPrefixes = [
+  "/home",
+  "/triggers",
+  "/profile",
+  "/onboarding",
+  "/dashboard",
+  "/assistant",
+  "/habit-sweep",
+  "/coming-soon",
+  "/api",
+];
 
-  return true;
+function isProtectedPath(pathname: string) {
+  return protectedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
 function isRecoveryPath(pathname: string) {

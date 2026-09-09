@@ -1,21 +1,54 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { Avatar } from "@/components/ui/avatar";
+import { isoDate } from "@/components/ui/calendar-strip";
 import { Header } from "@/components/ui/header";
+import { MoonIcon, SignOutIcon, SunIcon, UserIcon } from "@/components/ui/icon";
 import { defaultNavItems } from "@/components/ui/nav-links";
 import { Text } from "@/components/ui/text";
+import type { Theme } from "@/lib/theme";
+import { flattenDayTriggers } from "@/lib/triggers/store";
 
 import { useCurrentUser } from "./current-user-provider";
 import { useSignOut } from "./logout-button";
+import { NotificationsMenu } from "./notifications-menu";
+import { useSessionStore } from "./session-store-provider";
+import { useTheme } from "./theme-provider";
+import { useUnsavedLeave } from "./unsaved-leave-provider";
 
-type Theme = "light" | "dark";
+const navHrefs: Record<string, string> = {
+  dashboard: "/dashboard",
+  "habit-sweep": "/habit-sweep",
+  "progress-today": "/home",
+  triggers: "/triggers",
+  assistant: "/assistant",
+};
 
-const appNavItems = defaultNavItems.map((item) =>
-  item.id === "progress-today" ? { ...item, href: "/home" } : item,
-);
+function selectedNavId(pathname: string) {
+  if (pathname.startsWith("/triggers")) {
+    return "triggers";
+  }
+  if (pathname.startsWith("/dashboard")) {
+    return "dashboard";
+  }
+  if (pathname.startsWith("/habit-sweep")) {
+    return "habit-sweep";
+  }
+  if (pathname.startsWith("/assistant")) {
+    return "assistant";
+  }
+  if (pathname.startsWith("/profile")) {
+    return "";
+  }
+  if (pathname.startsWith("/coming-soon")) {
+    return "";
+  }
+  return "progress-today";
+}
 
 function initialsFromUser(name: string, email: string | null) {
   const words = name.trim().split(/\s+/).filter((part) => part.length > 0);
@@ -32,13 +65,18 @@ function AccountMenu({
   email,
   initials,
   avatarSrc,
+  theme,
+  onThemeToggle,
 }: {
   name: string;
   email: string | null;
   initials: string;
   avatarSrc?: string;
+  theme: Theme;
+  onThemeToggle: () => void;
 }) {
   const { signOut, pending, error } = useSignOut();
+  const { confirmLeave } = useUnsavedLeave();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -90,27 +128,42 @@ function AccountMenu({
           <Link
             href="/profile"
             role="menuitem"
-            className="block border-b border-border px-3 py-2 hover:bg-background-subtle"
+            className="flex items-start gap-2 border-b border-border px-3 py-2 hover:bg-background-subtle"
             onClick={() => setOpen(false)}
           >
-            <Text variant="label" className="truncate">
-              {name}
-            </Text>
-            {email ? (
-              <Text variant="caption" className="truncate">
-                {email}
+            <UserIcon size={16} className="mt-0.5 shrink-0 text-foreground" />
+            <span className="min-w-0 flex-1">
+              <Text variant="label" className="truncate">
+                {name}
               </Text>
-            ) : null}
+              {email ? (
+                <Text variant="caption" className="truncate">
+                  {email}
+                </Text>
+              ) : null}
+            </span>
           </Link>
           <button
             type="button"
             role="menuitem"
-            className="type-label flex w-full px-3 py-2 text-left text-foreground hover:bg-background-subtle disabled:opacity-60"
+            className="type-label flex w-full items-center gap-2 border-b border-border px-3 py-2 text-left text-foreground hover:bg-background-subtle md:hidden"
+            onClick={onThemeToggle}
+          >
+            {theme === "dark" ? <SunIcon size={16} /> : <MoonIcon size={16} />}
+            {theme === "light" ? "Dark mode" : "Light mode"}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="type-label flex w-full items-center gap-2 px-3 py-2 text-left text-foreground hover:bg-background-subtle disabled:opacity-60"
             disabled={pending}
             onClick={() => {
-              void signOut();
+              confirmLeave(() => {
+                void signOut();
+              });
             }}
           >
+            <SignOutIcon size={16} className="shrink-0 text-foreground" />
             {pending ? "Signing out…" : "Log out"}
           </button>
           {error ? (
@@ -126,31 +179,50 @@ function AccountMenu({
 
 export function AppHeader() {
   const user = useCurrentUser();
-  const [theme, setTheme] = useState<Theme>("light");
+  const pathname = usePathname();
+  const { theme, toggleTheme } = useTheme();
   const initials = initialsFromUser(user.name, user.email);
-
-  function toggleTheme() {
-    const next: Theme = theme === "light" ? "dark" : "light";
-    document.documentElement.dataset.theme = next;
-    setTheme(next);
-  }
+  const remainingToday = useSessionStore((state) => {
+    const today = isoDate(new Date());
+    return flattenDayTriggers(
+      state.assignments[today] ?? [],
+      state.planTriggers,
+      state.planScenarios,
+      state.states[today],
+    ).filter((trigger) => trigger.status !== "achieved").length;
+  });
+  const items = useMemo(
+    () =>
+      defaultNavItems.map((item) => {
+        const href = navHrefs[item.id];
+        const withHref = href ? { ...item, href } : item;
+        if (item.id !== "progress-today") {
+          return withHref;
+        }
+        return { ...withHref, badge: remainingToday };
+      }),
+    [remainingToday],
+  );
 
   return (
     <Header
       className="sticky top-0 z-20"
-      selected="progress-today"
-      items={appNavItems}
+      selected={selectedNavId(pathname)}
+      items={items}
       homeHref="/home"
       theme={theme}
       onThemeToggle={toggleTheme}
       initials={initials}
       avatarSrc={user.avatarUrl?.trim() || undefined}
+      tools={<NotificationsMenu />}
       account={
         <AccountMenu
           name={user.name}
           email={user.email}
           initials={initials}
           avatarSrc={user.avatarUrl?.trim() || undefined}
+          theme={theme}
+          onThemeToggle={toggleTheme}
         />
       }
     />

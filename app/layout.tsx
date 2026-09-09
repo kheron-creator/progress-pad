@@ -1,11 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import { Dosis, Poppins } from "next/font/google";
+import { cookies } from "next/headers";
+
+import { ThemeProvider } from "@/components/app/theme-provider";
+import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 
 import "./globals.css";
 
 const heading = Poppins({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-heading-face",
   display: "swap",
 });
@@ -30,10 +34,14 @@ export const viewport: Viewport = {
   interactiveWidget: "resizes-content",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
+
   return (
-    <html lang="en" className={`${heading.variable} ${body.variable} h-full antialiased`} data-theme="light">
-      <body className="min-h-full bg-background font-sans text-foreground">{children}</body>
+    <html lang="en" className={`${heading.variable} ${body.variable} h-full antialiased`} data-theme={theme}>
+      <body className="min-h-full bg-background font-sans text-foreground">
+        <ThemeProvider initialTheme={theme}>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

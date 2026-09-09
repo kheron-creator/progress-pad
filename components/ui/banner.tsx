@@ -85,32 +85,37 @@ export function Banner({
   return (
     <section
       className={cn(
-        "relative w-full overflow-hidden rounded-lg bg-background-subtle",
+        "relative flex w-full items-center overflow-hidden rounded-md border border-border-subtle bg-background-subtle",
         heroHeight[size],
         className,
       )}
       {...props}
     >
       {media ? <div className="absolute inset-0">{media}</div> : null}
-      {media ? <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/10" /> : null}
+      {media ? (
+        <div className="absolute inset-0 bg-linear-to-r from-(--pp-grey-900)/70 to-transparent" />
+      ) : null}
       {(kicker || title || description || children) ? (
         <div
           className={cn(
-            "relative flex h-full flex-col justify-start gap-2 p-card",
-            media ? "text-foreground-inverse" : undefined,
+            "relative flex max-w-150 flex-col justify-center gap-3 p-card",
+            media ? "text-(--pp-grey-0)" : undefined,
           )}
         >
           {kicker ? <div className="w-fit">{kicker}</div> : null}
           {title ? (
             <Text
-              variant={size === "lg" ? "sectionTitle" : "cardTitle"}
-              className={media ? "text-inherit" : undefined}
+              variant={size === "lg" ? "pageTitle" : "sectionTitle"}
+              className={cn("font-bold", media ? "text-inherit" : undefined)}
             >
               {title}
             </Text>
           ) : null}
           {description ? (
-            <Text variant="description" className={media ? "text-inherit opacity-90" : undefined}>
+            <Text
+              variant="description"
+              className={media ? "text-(--pp-grey-0)! opacity-90" : undefined}
+            >
               {description}
             </Text>
           ) : null}

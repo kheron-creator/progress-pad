@@ -1,13 +1,15 @@
 "use client";
 
-import { createContext, useContext, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import type { CurrentUser } from "@/lib/auth/user";
 import { clearRememberPreference } from "@/lib/auth/remember";
+import type { CheckInTime } from "@/lib/onboarding/draft";
 import { createClient } from "@/lib/supabase/client";
 
 const CurrentUserContext = createContext<CurrentUser | null>(null);
+const SetCheckInContext = createContext<(checkIn: CheckInTime | null) => void>(() => {});
 
 export function CurrentUserProvider({
   user,
@@ -17,6 +19,19 @@ export function CurrentUserProvider({
   children: ReactNode;
 }) {
   const router = useRouter();
+  const [checkIn, setCheckIn] = useState<CheckInTime | null>(user.onboarding.checkIn);
+
+  useEffect(() => {
+    setCheckIn(user.onboarding.checkIn);
+  }, [user.onboarding.checkIn]);
+
+  const value = useMemo<CurrentUser>(
+    () => ({
+      ...user,
+      onboarding: { ...user.onboarding, checkIn },
+    }),
+    [user, checkIn],
+  );
 
   useEffect(() => {
     const supabase = createClient();
@@ -56,7 +71,11 @@ export function CurrentUserProvider({
     };
   }, [router]);
 
-  return <CurrentUserContext.Provider value={user}>{children}</CurrentUserContext.Provider>;
+  return (
+    <CurrentUserContext.Provider value={value}>
+      <SetCheckInContext.Provider value={setCheckIn}>{children}</SetCheckInContext.Provider>
+    </CurrentUserContext.Provider>
+  );
 }
 
 export function useCurrentUser() {
@@ -66,5 +85,9 @@ export function useCurrentUser() {
   }
 
   return user;
+}
+
+export function useSetCheckIn() {
+  return useContext(SetCheckInContext);
 }
 

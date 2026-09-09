@@ -33,7 +33,7 @@ export function AssistantChat({
   return (
     <aside
       className={cn(
-        "flex h-[29.5rem] w-full max-w-[22.125rem] flex-col overflow-hidden rounded-md border border-border bg-surface",
+        "flex h-118 w-full max-w-88.5 flex-col overflow-hidden rounded-md border border-border bg-surface",
         className,
       )}
     >

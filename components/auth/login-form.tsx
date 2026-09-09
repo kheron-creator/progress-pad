@@ -135,7 +135,7 @@ export function LoginForm({ errorMessage }: LoginFormProps) {
           type="email"
           name="email"
           autoComplete="email"
-          placeholder="johndoe@gmail.com"
+          placeholder="Enter your email"
           size="lg"
           leftIcon={<EnvelopeIcon />}
           state={fieldErrors.email ? "error" : "default"}

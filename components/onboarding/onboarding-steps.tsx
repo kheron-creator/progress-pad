@@ -16,7 +16,7 @@ import {
   intentOptions,
   routineOptions,
   spaceOptions,
-  triggerOptions,
+  triggersForOnboarding,
 } from "@/lib/onboarding/content";
 import {
   ONBOARDING_MAX_TRIGGERS,
@@ -45,24 +45,10 @@ function StepLayout({
     <div className="flex min-h-0 flex-1 flex-col gap-(--pp-space-16) lg:gap-4">
       <div className="shrink-0">{heading}</div>
       <div className="flex min-h-0 flex-1 flex-col">
-        <div
-          className={cn(
-            "min-h-0 flex-1 overflow-y-auto overscroll-y-contain",
-            SCROLL_HIDE,
-          )}
-        >
-          <div
-            className={cn(
-              "flex flex-col",
-              footer ? "min-h-0 sm:h-full" : "min-h-full",
-            )}
-          >
-            <div className={cn("flex min-h-0 flex-col", footer ? "sm:h-full" : "my-auto")}>
-              {children}
-            </div>
-          </div>
+        <div className={cn("min-h-0 flex-1 overflow-y-auto overscroll-y-contain", SCROLL_HIDE)}>
+          <div className="flex min-h-full flex-col justify-start pb-1 sm:justify-center">{children}</div>
         </div>
-        {footer ? <div className="shrink-0 pt-2">{footer}</div> : null}
+        {footer ? <div className="shrink-0">{footer}</div> : null}
       </div>
     </div>
   );
@@ -251,14 +237,14 @@ export function TriggersStep({
         />
       }
       footer={
-        <Text variant="caption" className="m-0 text-right text-primary">
+        <Text variant="caption" className="mt-2 text-right text-primary sm:mt-1">
           {draft.triggerIds.length}/{ONBOARDING_MAX_TRIGGERS} selected
         </Text>
       }
     >
-      <StepBody className="sm:h-full">
+      <StepBody>
         <ChoiceGrid
-          options={triggerOptions}
+          options={triggersForOnboarding(draft)}
           selected={draft.triggerIds}
           onToggle={onToggle}
           columns={4}
@@ -308,13 +294,13 @@ export function CheckInStep({
             )}
             <Text
               variant="cardTitle"
-              className="font-semibold text-[length:var(--pp-font-size-14)] leading-(--pp-leading-20) lg:text-[length:var(--pp-text-card-title-size)] lg:leading-(--pp-text-card-title-leading)"
+              className="font-semibold text-(length:--pp-font-size-14) leading-(--pp-leading-20) lg:text-(length:--pp-text-card-title-size) lg:leading-(--pp-text-card-title-leading)"
             >
               {option.title}
             </Text>
             <Text
               variant="description"
-              className="text-[length:var(--pp-font-size-12)] leading-(--pp-leading-16) lg:text-[length:var(--pp-text-body-size)] lg:leading-(--pp-text-body-leading)"
+              className="text-(length:--pp-font-size-12) leading-(--pp-leading-16) lg:text-(length:--pp-text-body-size) lg:leading-(--pp-text-body-leading)"
             >
               {option.description}
             </Text>
@@ -374,13 +360,13 @@ function IntroColumn({
       {icon}
       <Text
         variant="cardTitle"
-        className="font-semibold text-[length:var(--pp-font-size-14)] leading-(--pp-leading-20) lg:text-[length:var(--pp-text-card-title-size)] lg:leading-(--pp-text-card-title-leading)"
+        className="font-semibold text-(length:--pp-font-size-14) leading-(--pp-leading-20) lg:text-(length:--pp-text-card-title-size) lg:leading-(--pp-text-card-title-leading)"
       >
         {title}
       </Text>
       <Text
         variant="description"
-        className="text-[length:var(--pp-font-size-12)] leading-(--pp-leading-16) lg:text-[length:var(--pp-text-body-size)] lg:leading-(--pp-text-body-leading)"
+        className="text-(length:--pp-font-size-12) leading-(--pp-leading-16) lg:text-(length:--pp-text-body-size) lg:leading-(--pp-text-body-leading)"
       >
         {description}
       </Text>

@@ -32,6 +32,7 @@ export default async function ProfileRoute() {
       avatarUrl={user.avatarUrl}
       roleLabels={roleLabels}
       memberSince={memberSinceLabel(user.createdAt)}
+      checkIn={user.onboarding.checkIn}
     />
   );
 }

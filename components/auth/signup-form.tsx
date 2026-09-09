@@ -195,7 +195,7 @@ export function SignupForm() {
           name="name"
           size="lg"
           autoComplete="name"
-          placeholder="John Doe"
+          placeholder="Enter your full name"
           leftIcon={<UserIcon />}
           state={fieldErrors.name ? "error" : "default"}
           hint={fieldErrors.name}
@@ -207,7 +207,7 @@ export function SignupForm() {
           name="email"
           size="lg"
           autoComplete="email"
-          placeholder="johndoe@gmail.com"
+          placeholder="Enter your email"
           leftIcon={<EnvelopeIcon />}
           state={fieldErrors.email ? "error" : "default"}
           hint={fieldErrors.email}
