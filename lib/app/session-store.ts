@@ -34,6 +34,29 @@ function mergeById<T extends { id: string }>(...lists: T[][]) {
   return [...next.values()];
 }
 
+function remapAssignmentTriggerId(
+  assignments: Record<string, DateAssignmentItem[]>,
+  fromId: string,
+  toId: string,
+) {
+  if (fromId === toId) {
+    return assignments;
+  }
+
+  let changed = false;
+  const next: Record<string, DateAssignmentItem[]> = {};
+  for (const [onDate, items] of Object.entries(assignments)) {
+    next[onDate] = items.map((item) => {
+      if (item.kind !== "trigger" || item.id !== fromId) {
+        return item;
+      }
+      changed = true;
+      return { ...item, id: toId };
+    });
+  }
+  return changed ? next : assignments;
+}
+
 export type SessionState = AppSession & {
   savedPillarsByDate: PillarsByDate;
   setAssignments: (assignments: Updater<Record<string, DateAssignmentItem[]>>) => void;
@@ -79,10 +102,28 @@ export function createSessionStore(initial: AppSession) {
         return { notifications: [notification, ...current.notifications] };
       }),
     addLibraryTrigger: (trigger) =>
-      set((current) => ({
-        libraryTriggers: [...current.libraryTriggers, trigger],
-        planTriggers: mergeById(current.planTriggers, [trigger]),
-      })),
+      set((current) => {
+        const match = current.libraryTriggers.find(
+          (item) =>
+            item.id === trigger.id ||
+            (trigger.source_key != null && item.source_key === trigger.source_key),
+        );
+        if (!match) {
+          return {
+            libraryTriggers: [...current.libraryTriggers, trigger],
+            planTriggers: mergeById(current.planTriggers, [trigger]),
+          };
+        }
+
+        return {
+          libraryTriggers: current.libraryTriggers.map((item) => (item.id === match.id ? trigger : item)),
+          planTriggers: mergeById(
+            current.planTriggers.filter((item) => item.id !== match.id),
+            [trigger],
+          ),
+          assignments: remapAssignmentTriggerId(current.assignments, match.id, trigger.id),
+        };
+      }),
     removeLibraryTrigger: (id) =>
       set((current) => ({
         libraryTriggers: current.libraryTriggers.filter((item) => item.id !== id),

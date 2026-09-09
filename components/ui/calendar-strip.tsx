@@ -6,8 +6,7 @@ import { TRIGGERS_PICK_COPY } from "@/lib/triggers/content";
 import { readLibraryDragItems, type LibraryDragPayload } from "@/lib/triggers/drag";
 import { cn } from "@/lib/utils/cn";
 
-import { Button } from "./button";
-import { CalendarBlankIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PencilIcon } from "./icon";
+import { CalendarBlankIcon, ChevronLeftIcon, ChevronRightIcon, LightbulbIcon } from "./icon";
 import { IconButton } from "./icon-button";
 import { Tabs } from "./tabs";
 import { Text } from "./text";
@@ -19,7 +18,6 @@ export type CalendarAssignedItem = {
   id: string;
   name?: string;
   icon?: ReactNode;
-  addedThisPass?: boolean;
 };
 
 export type CalendarMarker = {
@@ -38,15 +36,7 @@ type CalendarStripProps = {
   markers?: Record<string, CalendarMarker>;
   weekStartsOn?: 0 | 1;
   look?: "horizon" | "intention";
-  assigning?: boolean;
-  canSaveAssign?: boolean;
-  assignSaving?: boolean;
-  onAssign?: () => void;
-  onCancelAssign?: () => void;
-  onSaveAssign?: () => void;
   onDropOnDate?: (date: Date, items: LibraryDragPayload[]) => void;
-  onRemoveFromDate?: (date: Date, item: CalendarAssignedItem) => void;
-  onEditDate?: (date: Date) => void;
   selectionCount?: number;
   onDayClick?: (date: Date) => void;
   onClear?: () => void;
@@ -126,15 +116,7 @@ export function CalendarStrip({
   markers,
   weekStartsOn = 1,
   look = "horizon",
-  assigning = false,
-  canSaveAssign = false,
-  assignSaving = false,
-  onAssign,
-  onCancelAssign,
-  onSaveAssign,
   onDropOnDate,
-  onRemoveFromDate,
-  onEditDate,
   selectionCount = 0,
   onDayClick,
   onClear,
@@ -144,7 +126,7 @@ export function CalendarStrip({
   const today = startOfDay(new Date());
   const weekdayLabels = weekStartsOn === 1 ? WEEKDAYS_MON : WEEKDAYS_SUN;
   const [dropTarget, setDropTarget] = useState<string | null>(null);
-  const canDrop = assigning && Boolean(onDropOnDate);
+  const canDrop = Boolean(onDropOnDate);
   const canAssignOnTap = canDrop && selectionCount > 0;
 
   useEffect(() => {
@@ -252,10 +234,6 @@ export function CalendarStrip({
           if (look === "intention") {
             const over = dropTarget === isoDate(day);
             const assigned = assignedFromMarker(marker);
-            const canRemoveAssigned =
-              assigning && Boolean(onRemoveFromDate) && Boolean(marker?.items?.length);
-            const showEditDate =
-              assigning && Boolean(onEditDate) && assigned.some((item) => item.addedThisPass);
 
             return (
               <div
@@ -279,7 +257,7 @@ export function CalendarStrip({
                 onDragOver={(event) => allowDateDrop(event, day)}
                 onDrop={(event) => handleDateDrop(event, day)}
                 className={cn(
-                  "relative flex min-h-16 w-full cursor-pointer flex-col items-start gap-1 rounded-md p-1 text-left sm:min-h-14 sm:p-2 lg:min-h-16",
+                  "relative flex min-h-16 w-full cursor-pointer flex-col items-start gap-1 rounded-md p-0.5 text-left sm:min-h-14 sm:p-1 lg:min-h-16",
                   inMonth
                     ? over && canDrop
                       ? "bg-primary-muted"
@@ -304,50 +282,16 @@ export function CalendarStrip({
                       {day.getDate()}
                     </span>
                   )}
-                  {showEditDate ? (
-                    <button
-                      type="button"
-                      aria-label={`Edit ${isoDate(day)}`}
-                      className="inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-accent lg:hidden"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onChange(day);
-                        onEditDate?.(day);
-                      }}
-                    >
-                      <PencilIcon size={14} />
-                    </button>
-                  ) : null}
                 </div>
                 {assigned.length > 0 ? (
-                  <span className="grid w-full min-w-0 grid-cols-3 justify-items-start gap-x-px gap-y-1 lg:flex lg:flex-wrap lg:items-center lg:gap-2">
-                    {assigned.map((item) => {
-                      const showRemove = canRemoveAssigned && item.addedThisPass;
-
-                      return (
-                        <span
-                          key={`${item.kind}-${item.id}`}
-                          className={cn("relative inline-flex shrink-0", showRemove && "lg:me-0.5 lg:mt-1")}
-                        >
-                          <span className="inline-flex size-2.5 items-center justify-center leading-none *:size-full *:min-h-0 *:min-w-0 *:bg-transparent *:leading-none **:text-[7px] **:leading-none lg:size-5 lg:overflow-hidden lg:**:text-(length:--pp-font-size-14)">
-                            {item.icon}
-                          </span>
-                          {showRemove ? (
-                            <button
-                              type="button"
-                              aria-label={`Remove ${item.name ?? "item"} from this date`}
-                              className="absolute top-0 right-0 z-10 hidden size-3.5 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface text-foreground shadow-sm hover:bg-error-muted hover:text-error lg:inline-flex"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                onRemoveFromDate?.(day, item);
-                              }}
-                            >
-                              <CloseIcon size={8} weight="bold" />
-                            </button>
-                          ) : null}
+                  <span className="grid w-full grid-cols-3 justify-items-center gap-px self-center lg:flex lg:flex-wrap lg:justify-center lg:gap-0.5">
+                    {assigned.map((item) => (
+                      <span key={`${item.kind}-${item.id}`} className="relative inline-flex shrink-0">
+                        <span className="inline-flex size-2 items-center justify-center leading-none *:size-full *:min-h-0 *:min-w-0 *:bg-transparent *:leading-none **:text-[6px] **:leading-none lg:size-3.5 lg:overflow-hidden lg:**:text-(length:--pp-font-size-10)">
+                          {item.icon}
                         </span>
-                      );
-                    })}
+                      </span>
+                    ))}
                   </span>
                 ) : null}
               </div>
@@ -401,41 +345,33 @@ export function CalendarStrip({
   return (
     <div
       className={cn(
-        "flex w-full max-w-5xl flex-col gap-(--pp-space-16) rounded-md border border-border bg-surface p-card",
+        "flex w-full flex-col gap-(--pp-space-16) rounded-md border border-border bg-surface p-card",
         className,
       )}
     >
       {look === "intention" ? (
         <>
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-2">
             <Text as="h2" variant="cardTitle" className="min-w-0 truncate font-(--pp-font-weight-semibold)">
               Plan with Intention
             </Text>
-            <div className="flex shrink-0 items-center gap-2">
-              {assigning ? (
-                <>
-                  <Button size="md" variant="primary" look="outline" onClick={onCancelAssign} disabled={assignSaving}>
-                    Cancel
-                  </Button>
-                  <Button size="md" onClick={onSaveAssign} disabled={!canSaveAssign} loading={assignSaving}>
-                    Save
-                  </Button>
-                </>
-              ) : (
-                <Button size="md" onClick={onAssign} disabled={assignSaving}>
-                  Assign Triggers / Scenarios
-                </Button>
+            <div
+              className={cn(
+                "flex items-center gap-2 overflow-hidden rounded-sm bg-secondary-muted py-1.5 pr-3 pl-2 text-secondary-hover",
+                "border-l-[3px] border-secondary",
+                selectionCount === 0 && "invisible",
               )}
+              aria-hidden={selectionCount === 0}
+            >
+              <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-surface text-secondary">
+                <LightbulbIcon size={12} />
+              </span>
+              <Text variant="caption" className="min-w-0 text-secondary-hover">
+                {TRIGGERS_PICK_COPY.assignSelected(Math.max(selectionCount, 1))}
+                <span className="hidden pointer-fine:inline">{TRIGGERS_PICK_COPY.assignDragHint}</span>
+              </Text>
             </div>
           </div>
-          {assigning ? (
-            <Text variant="caption" className="text-foreground">
-              {selectionCount > 0
-                ? TRIGGERS_PICK_COPY.assignSelected(selectionCount)
-                : TRIGGERS_PICK_COPY.assignEmpty}
-              <span className="hidden pointer-fine:inline">{TRIGGERS_PICK_COPY.assignDragHint}</span>
-            </Text>
-          ) : null}
           {monthGrid}
         </>
       ) : (
@@ -509,11 +445,12 @@ export function CalendarStrip({
                     >
                       <Text
                         variant="overline"
-                        className={
+                        className={cn(
+                          "truncate text-center",
                           active
                             ? "text-primary-foreground max-sm:text-foreground-muted"
-                            : "text-foreground-muted"
-                        }
+                            : "text-foreground-muted",
+                        )}
                       >
                         {weekdayShort(day)}
                       </Text>

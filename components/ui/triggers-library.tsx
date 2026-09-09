@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 
 import { beginLibraryDrag, type LibraryDragPayload } from "@/lib/triggers/drag";
+import { TRIGGERS_PICK_COPY } from "@/lib/triggers/content";
 import { cn } from "@/lib/utils/cn";
 
 import { Button } from "./button";
@@ -12,6 +13,7 @@ import { EmptyState } from "./empty-state";
 import { IconMark } from "./icon-mark";
 import { Input } from "./input";
 import { FilesIcon, LightningIcon, PlusIcon, SearchIcon } from "./icon";
+import { SuggestedTriggers } from "./suggested-triggers";
 import { Text } from "./text";
 import { Textarea } from "./textarea";
 import { TriggerListItem } from "./trigger-list-item";
@@ -37,11 +39,14 @@ type TriggersLibraryProps = {
   selectedIcon?: string;
   onIconSelect?: (emoji: string) => void;
   onDelete?: (id: string) => void;
-  assigning?: boolean;
   selectedIds?: ReadonlySet<string>;
   onSelectedChange?: (id: string, checked: boolean) => void;
+  onSelectAll?: (selected: boolean) => void;
   selection?: LibraryDragPayload[];
   columns?: 1 | 2;
+  suggestions?: LibraryTrigger[];
+  onAddSuggestion?: (id: string) => void;
+  addingSuggestionId?: string | null;
   className?: string;
 };
 
@@ -60,23 +65,27 @@ export function TriggersLibrary({
   selectedIcon,
   onIconSelect,
   onDelete,
-  assigning = false,
   selectedIds,
   onSelectedChange,
+  onSelectAll,
   selection = [],
   columns = 1,
+  suggestions = [],
+  onAddSuggestion,
+  addingSuggestionId = null,
   className,
 }: TriggersLibraryProps) {
-  const pick = state === "pick" || assigning;
+  const selectable = Boolean(onSelectedChange);
   const canSave = Boolean(name?.trim() && selectedIcon);
+  const allSelected = items.length > 0 && Boolean(selectedIds && items.every((item) => selectedIds.has(item.id)));
 
   return (
-    <Card className={cn("flex w-full flex-col gap-section", className)}>
-      <div className="flex items-center justify-between gap-3">
+    <Card className={cn("flex w-full min-w-0 flex-col gap-section", className)}>
+      <div className="flex shrink-0 items-center justify-between gap-3">
         <Text as="h2" variant="cardTitle" className="min-w-0 truncate font-(--pp-font-weight-semibold)">
           {title}
         </Text>
-        {state === "add" && !assigning ? (
+        {state === "add" ? (
           <div className="flex shrink-0 items-center gap-2">
             <Button size="md" variant="primary" look="outline" onClick={onCancel} disabled={saving}>
               Cancel
@@ -86,14 +95,14 @@ export function TriggersLibrary({
             </Button>
           </div>
         ) : (
-          <Button size="md" className="shrink-0" onClick={onAdd} disabled={assigning}>
+          <Button size="md" className="shrink-0" onClick={onAdd}>
             <PlusIcon size={14} />
             Add New Trigger
           </Button>
         )}
       </div>
 
-      {state === "add" && !assigning ? (
+      {state === "add" ? (
         <div className="flex flex-col gap-section">
           <Textarea
             autoSize
@@ -108,7 +117,7 @@ export function TriggersLibrary({
           />
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex min-w-0 flex-col gap-3">
           {onQueryChange || query != null ? (
             <Input
               placeholder="Search..."
@@ -117,47 +126,67 @@ export function TriggersLibrary({
               leftIcon={<SearchIcon />}
             />
           ) : null}
+          <SuggestedTriggers
+            items={suggestions}
+            onAdd={onAddSuggestion}
+            addingId={addingSuggestionId}
+          />
           {items.length === 0 ? (
-            <EmptyState
-              className="flex-1 justify-center border-0 bg-transparent py-8"
-              media={<FilesIcon size="xl" className="text-(--pp-spring-green-700)" />}
-              title="No triggers yet"
-              description="Add your first trigger to start building small actions that create big change over time."
-            />
+            suggestions.length === 0 ? (
+              <EmptyState
+                className="flex-1 justify-center border-0 bg-transparent py-8"
+                media={<FilesIcon size="xl" className="text-(--pp-spring-green-700)" />}
+                title="No triggers yet"
+                description="Add your first trigger to start building small actions that create big change over time."
+              />
+            ) : null
           ) : (
-            <div className={cn("grid gap-3", columns === 2 && "grid-cols-2 max-sm:grid-cols-1")}>
-              {items.map((item) => (
-                <TriggerListItem
-                  key={item.id}
-                  look="library"
-                  title={item.name}
-                  checkbox={pick}
-                  checked={selectedIds?.has(item.id) ?? false}
-                  onCheckedChange={
-                    pick ? (checked) => onSelectedChange?.(item.id, checked) : undefined
-                  }
-                  draggable={pick}
-                  onDragStart={
-                    pick
-                      ? (event) =>
-                        beginLibraryDrag(
-                          event,
-                          { kind: "trigger", id: item.id, name: item.name },
-                          selection,
-                        )
-                      : undefined
-                  }
-                  leftEmoji={
-                    item.icon ?? (
-                      <IconMark size="sm" tone="surface">
-                        <LightningIcon size={14} />
-                      </IconMark>
-                    )
-                  }
-                  onDelete={pick ? undefined : () => onDelete?.(item.id)}
-                />
-              ))}
-            </div>
+            <>
+              {selectable && onSelectAll ? (
+                <button
+                  type="button"
+                  className="type-caption w-fit font-(--pp-font-weight-medium) text-primary"
+                  onClick={() => onSelectAll(!allSelected)}
+                >
+                  {allSelected ? TRIGGERS_PICK_COPY.unselectAll : TRIGGERS_PICK_COPY.selectAll}
+                </button>
+              ) : null}
+              <div
+                className={cn(
+                  "grid min-h-0 max-h-(--pp-library-list-max-height) content-start gap-3 overflow-y-auto overscroll-y-contain scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
+                  columns === 2 && "grid-cols-2 max-sm:grid-cols-1",
+                )}
+              >
+                {items.map((item) => (
+                  <TriggerListItem
+                    key={item.id}
+                    look="library"
+                    title={item.name}
+                    checkbox={selectable}
+                    checked={selectedIds?.has(item.id) ?? false}
+                    onCheckedChange={
+                      selectable ? (checked) => onSelectedChange?.(item.id, checked) : undefined
+                    }
+                    draggable
+                    onDragStart={(event) =>
+                      beginLibraryDrag(
+                        event,
+                        { kind: "trigger", id: item.id, name: item.name },
+                        selection,
+                      )
+                    }
+                    leftEmoji={
+                      item.icon ?? (
+                        <IconMark size="xs" tone="surface">
+                          <LightningIcon size={10} />
+                        </IconMark>
+                      )
+                    }
+                    onDelete={onDelete ? () => onDelete(item.id) : undefined}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
       )}

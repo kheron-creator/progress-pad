@@ -5,7 +5,7 @@ import { useEffect, useState, type HTMLAttributes, type ReactNode } from "react"
 import { cn } from "@/lib/utils/cn";
 
 import { Checkbox } from "./checkbox";
-import { DragHandleIcon, PencilIcon, TrashIcon } from "./icon";
+import { DragHandleIcon, PencilIcon, PlusIcon, TrashIcon } from "./icon";
 import { IconButton } from "./icon-button";
 import { Tag } from "./tag";
 import { Text } from "./text";
@@ -24,6 +24,8 @@ type TriggerListItemProps = Omit<HTMLAttributes<HTMLElement>, "title"> & {
   onDelete?: () => void;
   draggable?: boolean;
   look?: "default" | "library";
+  onAdd?: () => void;
+  adding?: boolean;
 };
 
 function DefaultEmoji() {
@@ -46,6 +48,8 @@ export function TriggerListItem({
   onDelete,
   draggable = false,
   look = "default",
+  onAdd,
+  adding = false,
   className,
   ...props
 }: TriggerListItemProps) {
@@ -75,10 +79,11 @@ export function TriggerListItem({
     <article
       draggable={nativeDrag}
       className={cn(
-        "flex w-full items-center gap-3 rounded-md",
+        "flex w-full items-center rounded-md",
+        library ? "gap-3 self-start" : "gap-3",
         nativeDrag && "cursor-grab select-none active:cursor-grabbing",
         library
-          ? "min-h-(--pp-trigger-item-height) border border-border bg-(--pp-grey-25) px-(--pp-space-16) py-(--pp-space-12) in-data-[theme=dark]:bg-background-subtle"
+          ? "min-h-(--pp-trigger-item-height) border border-border bg-(--pp-grey-25) px-(--pp-space-12) py-(--pp-space-8) in-data-[theme=dark]:bg-background-subtle"
           : "border border-border bg-surface px-(--pp-space-16) py-(--pp-space-12)",
         className,
       )}
@@ -86,12 +91,12 @@ export function TriggerListItem({
     >
       {checkbox ? (
         <span
-          className="shrink-0"
+          className={cn("inline-flex shrink-0 items-center justify-center", library && "size-5")}
           onPointerDown={(event) => event.stopPropagation()}
           onMouseDown={(event) => event.stopPropagation()}
         >
           <Checkbox
-            size="lg"
+            size={library ? "md" : "lg"}
             checked={checked}
             onChange={(event) => {
               event.stopPropagation();
@@ -101,21 +106,37 @@ export function TriggerListItem({
           />
         </span>
       ) : null}
-      {emoji}
+      {emoji ? (
+        <span
+          className={cn(
+            "inline-flex shrink-0 items-center justify-center",
+            library &&
+            "size-5 [&>span]:size-5 [&>span]:[&_svg]:size-(--pp-font-size-10) [&_span[aria-hidden]]:text-(length:--pp-font-size-12) [&_span[aria-hidden]]:leading-none",
+          )}
+        >
+          {emoji}
+        </span>
+      ) : null}
       <div className="min-w-0 flex-1">
         <Text
-          variant="bodySmall"
+          variant={library ? "caption" : "bodySmall"}
           className="wrap-break-word whitespace-pre-wrap font-(--pp-font-weight-medium) text-foreground"
         >
           {title}
         </Text>
         {description ? (
-          <Text variant="bodySmall" className="wrap-break-word whitespace-pre-wrap text-foreground-muted">
+          <Text
+            variant={library ? "caption" : "bodySmall"}
+            className="wrap-break-word whitespace-pre-wrap text-foreground-muted"
+          >
             {description}
           </Text>
         ) : null}
         {meta ? (
-          <Text variant="caption" className="wrap-break-word whitespace-pre-wrap text-foreground-muted">
+          <Text
+            variant={library ? "status" : "caption"}
+            className="wrap-break-word whitespace-pre-wrap text-foreground-muted"
+          >
             {meta}
           </Text>
         ) : null}
@@ -130,21 +151,37 @@ export function TriggerListItem({
           Active
         </Tag>
       ) : null}
+      {onAdd ? (
+        <IconButton
+          label={`Add ${title} to your library`}
+          look="clear"
+          size={library ? "sm" : "md"}
+          className="shrink-0"
+          loading={adding}
+          disabled={adding}
+          onClick={(event) => {
+            event.stopPropagation();
+            onAdd();
+          }}
+        >
+          <PlusIcon size={library ? 14 : undefined} />
+        </IconButton>
+      ) : null}
       {onDelete ? (
         <IconButton
           label={`Delete ${title}`}
           variant="danger"
           look="clear"
-          size="md"
+          size={library ? "sm" : "md"}
           className="shrink-0"
           onClick={onDelete}
         >
-          <TrashIcon />
+          <TrashIcon size={library ? 14 : undefined} />
         </IconButton>
       ) : null}
       {draggable ? (
         <span className="hidden text-foreground-muted pointer-fine:inline-flex" aria-hidden>
-          <DragHandleIcon />
+          <DragHandleIcon size={library ? 14 : undefined} />
         </span>
       ) : null}
     </article>

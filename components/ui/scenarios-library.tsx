@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 
 import { beginLibraryDrag, type LibraryDragPayload } from "@/lib/triggers/drag";
+import { TRIGGERS_PICK_COPY } from "@/lib/triggers/content";
 import { cn } from "@/lib/utils/cn";
 
 import { Button } from "./button";
@@ -48,10 +49,11 @@ type ScenariosLibraryProps = {
   onCancel?: () => void;
   saving?: boolean;
   onDelete?: (id: string) => void;
-  assigning?: boolean;
   selectedIds?: ReadonlySet<string>;
   onSelectedChange?: (id: string, checked: boolean) => void;
+  onSelectAll?: (selected: boolean) => void;
   selection?: LibraryDragPayload[];
+  columns?: 1 | 2;
   className?: string;
 };
 
@@ -76,22 +78,24 @@ export function ScenariosLibrary({
   onCancel,
   saving = false,
   onDelete,
-  assigning = false,
   selectedIds,
   onSelectedChange,
+  onSelectAll,
   selection = [],
+  columns = 1,
   className,
 }: ScenariosLibraryProps) {
-  const pick = state === "pick" || assigning;
+  const selectable = Boolean(onSelectedChange);
   const canSave = Boolean(name?.trim() && selectedIcon && droppedTriggers.length > 0);
+  const allSelected = items.length > 0 && Boolean(selectedIds && items.every((item) => selectedIds.has(item.id)));
 
   return (
     <Card className={cn("flex w-full flex-col gap-section", className)}>
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex shrink-0 items-center justify-between gap-3">
         <Text as="h2" variant="cardTitle" className="min-w-0 truncate font-(--pp-font-weight-semibold)">
           {title}
         </Text>
-        {state === "add" && !assigning ? (
+        {state === "add" ? (
           <div className="flex shrink-0 items-center gap-2">
             <Button size="md" variant="primary" look="outline" onClick={onCancel} disabled={saving}>
               Cancel
@@ -101,14 +105,14 @@ export function ScenariosLibrary({
             </Button>
           </div>
         ) : (
-          <Button size="md" className="shrink-0" onClick={onAdd} disabled={assigning}>
+          <Button size="md" className="shrink-0" onClick={onAdd}>
             <PlusIcon size={14} />
             Add New Scenario
           </Button>
         )}
       </div>
 
-      {state === "add" && !assigning ? (
+      {state === "add" ? (
         <div className="flex flex-col gap-section">
           <TriggerDropzone
             items={droppedTriggers}
@@ -137,7 +141,7 @@ export function ScenariosLibrary({
           />
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex flex-col gap-3">
           {notice ? (
             <Toast tone="success" className="shadow-none">
               {notice}
@@ -151,41 +155,54 @@ export function ScenariosLibrary({
               description="Add your first scenario to group triggers into a routine you can assign to any day."
             />
           ) : (
-            <div className="flex flex-col gap-3">
-              {items.map((item) => (
-                <TriggerListItem
-                  key={item.id}
-                  look="library"
-                  title={item.title}
-                  description={item.description}
-                  meta={item.meta}
-                  checkbox={assigning}
-                  checked={selectedIds?.has(item.id) ?? false}
-                  onCheckedChange={
-                    assigning ? (checked) => onSelectedChange?.(item.id, checked) : undefined
-                  }
-                  draggable={pick}
-                  onDragStart={
-                    pick
-                      ? (event) =>
-                          beginLibraryDrag(
-                            event,
-                            { kind: "scenario", id: item.id, name: item.title },
-                            selection,
-                          )
-                      : undefined
-                  }
-                  leftEmoji={
-                    item.icon ?? (
-                      <IconMark size="sm" tone="surface">
-                        <LightningIcon size={14} />
-                      </IconMark>
-                    )
-                  }
-                  onDelete={pick ? undefined : () => onDelete?.(item.id)}
-                />
-              ))}
-            </div>
+            <>
+              {selectable && onSelectAll ? (
+                <button
+                  type="button"
+                  className="type-caption w-fit font-(--pp-font-weight-medium) text-primary"
+                  onClick={() => onSelectAll(!allSelected)}
+                >
+                  {allSelected ? TRIGGERS_PICK_COPY.unselectAll : TRIGGERS_PICK_COPY.selectAll}
+                </button>
+              ) : null}
+              <div
+                className={cn(
+                  "grid min-h-0 max-h-(--pp-library-list-max-height) content-start gap-3 overflow-y-auto overscroll-y-contain scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
+                  columns === 2 && "grid-cols-2 max-sm:grid-cols-1",
+                )}
+              >
+                {items.map((item) => (
+                  <TriggerListItem
+                    key={item.id}
+                    look="library"
+                    title={item.title}
+                    description={item.description}
+                    meta={item.meta}
+                    checkbox={selectable}
+                    checked={selectedIds?.has(item.id) ?? false}
+                    onCheckedChange={
+                      selectable ? (checked) => onSelectedChange?.(item.id, checked) : undefined
+                    }
+                    draggable
+                    onDragStart={(event) =>
+                      beginLibraryDrag(
+                        event,
+                        { kind: "scenario", id: item.id, name: item.title },
+                        selection,
+                      )
+                    }
+                    leftEmoji={
+                      item.icon ?? (
+                        <IconMark size="xs" tone="surface">
+                          <LightningIcon size={10} />
+                        </IconMark>
+                      )
+                    }
+                    onDelete={onDelete ? () => onDelete(item.id) : undefined}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
       )}

@@ -25,7 +25,6 @@ type DayPlanDrawerProps = {
   triggerCount?: number;
   onRemoveScenario?: (id: string) => void;
   onRemoveTrigger?: (id: string) => void;
-  onAdd?: () => void;
   onClear?: () => void;
 };
 
