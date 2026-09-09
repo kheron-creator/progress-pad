@@ -531,7 +531,7 @@ export function CalendarStrip({
                         {day.getDate()}
                       </span>
                       <Text
-                        variant="caption"
+                        variant="label"
                         className={cn(
                           "max-sm:hidden",
                           active ? "text-primary-foreground" : "text-foreground-muted",

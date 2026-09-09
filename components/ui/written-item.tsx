@@ -70,7 +70,7 @@ export function WrittenItem({
             checkboxLocked ? undefined : (event) => onCheckedChange?.(event.currentTarget.checked)
           }
           aria-label={title}
-          className="size-6.5!"
+          className="size-6.5! shrink-0"
           boxClassName={
             accent || isDone
               ? cn(
@@ -85,13 +85,13 @@ export function WrittenItem({
       ) : null}
       {leftIcon}
       <div className="min-w-0 flex-1">
-        <Text variant="label" className={cn(striked && doneText)}>
+        <Text variant="label" className={cn("wrap-break-word whitespace-pre-wrap", striked && doneText)}>
           {title}
         </Text>
         {notes ? (
           <Text
             variant="caption"
-            className={cn(striked ? doneText : "text-foreground-muted")}
+            className={cn("wrap-break-word whitespace-pre-wrap", striked ? doneText : "text-foreground-muted")}
           >
             {notes}
           </Text>
@@ -100,7 +100,7 @@ export function WrittenItem({
       {isDone ? (
         <Tag
           size="xs"
-          className="border-transparent! bg-(--pp-spring-green-600)! text-white!"
+          className="shrink-0 border-transparent! bg-(--pp-spring-green-600)! text-white!"
           leftIcon={<CheckIcon size={8} weight="bold" />}
         >
           ACHIEVED

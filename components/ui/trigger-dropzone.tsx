@@ -174,7 +174,7 @@ export function TriggerDropzone({
               {item.icon}
               <Text
                 variant="bodySmall"
-                className="min-w-0 flex-1 truncate font-(--pp-font-weight-medium) text-foreground"
+                className="min-w-0 flex-1 wrap-break-word whitespace-pre-wrap font-(--pp-font-weight-medium) text-foreground"
               >
                 {item.name}
               </Text>

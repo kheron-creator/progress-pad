@@ -75,7 +75,7 @@ export function TriggerListItem({
     <article
       draggable={nativeDrag}
       className={cn(
-        "flex w-full items-center gap-3 overflow-hidden rounded-md",
+        "flex w-full items-center gap-3 rounded-md",
         nativeDrag && "cursor-grab select-none active:cursor-grabbing",
         library
           ? "min-h-(--pp-trigger-item-height) border border-border bg-(--pp-grey-25) px-(--pp-space-16) py-(--pp-space-12) in-data-[theme=dark]:bg-background-subtle"
@@ -105,17 +105,17 @@ export function TriggerListItem({
       <div className="min-w-0 flex-1">
         <Text
           variant="bodySmall"
-          className="truncate font-(--pp-font-weight-medium) text-foreground"
+          className="wrap-break-word whitespace-pre-wrap font-(--pp-font-weight-medium) text-foreground"
         >
           {title}
         </Text>
         {description ? (
-          <Text variant="bodySmall" className="truncate text-foreground-muted">
+          <Text variant="bodySmall" className="wrap-break-word whitespace-pre-wrap text-foreground-muted">
             {description}
           </Text>
         ) : null}
         {meta ? (
-          <Text variant="caption" className="truncate text-foreground-muted">
+          <Text variant="caption" className="wrap-break-word whitespace-pre-wrap text-foreground-muted">
             {meta}
           </Text>
         ) : null}
@@ -136,6 +136,7 @@ export function TriggerListItem({
           variant="danger"
           look="clear"
           size="md"
+          className="shrink-0"
           onClick={onDelete}
         >
           <TrashIcon />
