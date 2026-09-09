@@ -17,6 +17,7 @@ import {
   routineOptions,
   spaceOptions,
   triggersForOnboarding,
+  type OnboardingChoiceOption,
 } from "@/lib/onboarding/content";
 import {
   ONBOARDING_MAX_TRIGGERS,
@@ -26,7 +27,6 @@ import {
 
 import { cn } from "@/lib/utils/cn";
 
-import { optionIcon } from "./option-icons";
 import { ReadyConfetti } from "./ready-confetti";
 
 const SCROLL_HIDE =
@@ -81,7 +81,7 @@ export function ChoiceGrid({
   columns = 2,
   fill = false,
 }: {
-  options: ReadonlyArray<{ id: string; label: string }>;
+  options: ReadonlyArray<OnboardingChoiceOption>;
   selected: string[];
   onToggle: (id: string) => void;
   columns?: 2 | 4;
@@ -101,7 +101,11 @@ export function ChoiceGrid({
         <ChoiceItem
           key={option.id}
           label={option.label}
-          icon={optionIcon(option.id)}
+          icon={
+            <span aria-hidden className="text-(length:--pp-font-size-14) leading-none sm:text-(length:--pp-font-size-18)">
+              {option.emoji}
+            </span>
+          }
           selected={selected.includes(option.id)}
           fill={fill}
           onClick={() => onToggle(option.id)}

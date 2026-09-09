@@ -58,7 +58,7 @@ export function ChoiceItem({
         shape="square"
         tone="surface"
         className={cn(
-          "shrink-0 text-(--pp-spring-green-600) [&_svg]:size-3.5",
+          "shrink-0 [&_svg]:size-3.5 [&_svg]:text-(--pp-spring-green-600)",
           size === "lg" && "sm:size-9 sm:[&_svg]:size-5",
         )}
         aria-hidden

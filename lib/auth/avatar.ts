@@ -18,6 +18,10 @@ export function avatarObjectPath(userId: string) {
   return `${userId}/${AVATAR_OBJECT}`;
 }
 
+export function isUploadedAvatarUrl(url: string) {
+  return url.includes(`/storage/v1/object/public/${AVATAR_BUCKET}/`);
+}
+
 export function avatarActionError(error: unknown, fallback: string) {
   const message = errorMessage(error);
   if (
