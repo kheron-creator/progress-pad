@@ -65,7 +65,7 @@ export function Checkbox({
           "flex size-full items-center justify-center rounded-xs border",
           boxClassName ??
           cn(
-            invalid ? "border-border-error" : "border-border",
+            invalid ? "border-border-error" : "border-border-strong",
             tone === "accent"
               ? "text-accent-foreground peer-checked:border-transparent peer-checked:bg-accent"
               : "text-primary-foreground peer-checked:border-transparent peer-checked:bg-primary",

@@ -102,8 +102,8 @@ export function Header({
       <div className="relative z-10 bg-surface">
         <div
           className={cn(
-            "relative flex h-16 min-w-0 items-center justify-between border-b border-border px-4",
-            "md:grid md:h-auto md:grid-cols-[1fr_auto_1fr] md:items-center md:px-6 md:py-2 min-[1000px]:px-8 lg:px-10",
+            "relative flex h-16 min-w-0 items-center justify-between border-b border-border px-page-x",
+            "md:grid md:h-auto md:grid-cols-[1fr_auto_1fr] md:items-center md:py-2",
             "gap-3 md:gap-4 min-[1000px]:gap-6 xl:gap-12 2xl:gap-20",
           )}
         >
