@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database, Json } from "@/lib/supabase/database";
 
+import { isUploadedAvatarUrl } from "@/lib/auth/avatar";
 import { appPathForComplete } from "@/lib/auth/paths";
 import { ensureOnboardingTriggers } from "@/lib/triggers/store";
 
@@ -168,7 +169,15 @@ function parseAvatar(value: string | null | undefined): StoredAvatar {
   }
 
   const trimmed = value.trim();
-  return { explicit: true, url: trimmed || undefined };
+  if (!trimmed) {
+    return { explicit: true };
+  }
+
+  if (!isUploadedAvatarUrl(trimmed)) {
+    return { explicit: false };
+  }
+
+  return { explicit: true, url: trimmed };
 }
 
 function isMissingAvatarColumn(error: { message?: string }) {
