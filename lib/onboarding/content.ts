@@ -1,42 +1,45 @@
 import type { CheckInTime, OnboardingDraft } from "./draft";
 
-export const intentOptions = [
-  { id: "getting-organized", label: "Getting organized" },
-  { id: "building-better-habits", label: "Building better habits" },
-  { id: "staying-consistent", label: "Staying consistent" },
-  { id: "feeling-less-overwhelmed", label: "Feeling less overwhelmed" },
-  { id: "managing-workload", label: "Managing my workload" },
-  { id: "keeping-track", label: "Keeping track of my progress" },
-  { id: "figuring-out", label: "Figuring out what I want" },
-  { id: "something-else-intent", label: "Something else" },
-] as const;
-
-export const spaceOptions = [
-  { id: "getting-things-done", label: "Getting things done" },
-  { id: "spending-time", label: "Spending time with people" },
-  { id: "mental-wellbeing", label: "Looking after my mental wellbeing" },
-  { id: "relationships", label: "Relationships" },
-  { id: "taking-care", label: "Taking care of myself" },
-  { id: "personal-growth", label: "Personal growth" },
-  { id: "studying", label: "Studying / Learning" },
-  { id: "rest-and-balance", label: "Rest and balance" },
-] as const;
-
-export const routineOptions = [
-  { id: "student", label: "Student" },
-  { id: "working-full-time", label: "Working full-time" },
-  { id: "working-part-time", label: "Working part-time" },
-  { id: "self-employed", label: "Self-employed / Freelancing" },
-  { id: "in-transition", label: "Between jobs / In transition" },
-  { id: "caring-for-others", label: "Caring for others / At home" },
-  { id: "taking-a-break", label: "Taking a break / Focusing on myself" },
-  { id: "something-else-routine", label: "Something else" },
-] as const;
-
-export type TriggerOption = {
+export type OnboardingChoiceOption = {
   id: string;
   label: string;
   emoji: string;
+};
+
+export const intentOptions: readonly OnboardingChoiceOption[] = [
+  { id: "getting-organized", label: "Getting organized", emoji: "📋" },
+  { id: "building-better-habits", label: "Building better habits", emoji: "🔁" },
+  { id: "staying-consistent", label: "Staying consistent", emoji: "📅" },
+  { id: "feeling-less-overwhelmed", label: "Feeling less overwhelmed", emoji: "☁️" },
+  { id: "managing-workload", label: "Managing my workload", emoji: "💼" },
+  { id: "keeping-track", label: "Keeping track of my progress", emoji: "📈" },
+  { id: "figuring-out", label: "Figuring out what I want", emoji: "🧭" },
+  { id: "something-else-intent", label: "Something else", emoji: "✨" },
+];
+
+export const spaceOptions: readonly OnboardingChoiceOption[] = [
+  { id: "getting-things-done", label: "Getting things done", emoji: "✅" },
+  { id: "spending-time", label: "Spending time with people", emoji: "👥" },
+  { id: "mental-wellbeing", label: "Looking after my mental wellbeing", emoji: "💗" },
+  { id: "relationships", label: "Relationships", emoji: "🤝" },
+  { id: "taking-care", label: "Taking care of myself", emoji: "✨" },
+  { id: "personal-growth", label: "Personal growth", emoji: "🌱" },
+  { id: "studying", label: "Studying / Learning", emoji: "📚" },
+  { id: "rest-and-balance", label: "Rest and balance", emoji: "🌸" },
+];
+
+export const routineOptions: readonly OnboardingChoiceOption[] = [
+  { id: "student", label: "Student", emoji: "🎓" },
+  { id: "working-full-time", label: "Working full-time", emoji: "💼" },
+  { id: "working-part-time", label: "Working part-time", emoji: "⏰" },
+  { id: "self-employed", label: "Self-employed / Freelancing", emoji: "💻" },
+  { id: "in-transition", label: "Between jobs / In transition", emoji: "↔️" },
+  { id: "caring-for-others", label: "Caring for others / At home", emoji: "🏠" },
+  { id: "taking-a-break", label: "Taking a break / Focusing on myself", emoji: "🌿" },
+  { id: "something-else-routine", label: "Something else", emoji: "✨" },
+];
+
+export type TriggerOption = OnboardingChoiceOption & {
   intents: readonly string[];
   spaces: readonly string[];
   routines: readonly string[];
@@ -253,7 +256,9 @@ export const triggerOptions: readonly TriggerOption[] = [
   },
 ];
 
-const ONBOARDING_TRIGGER_COUNT = 12;
+const QUESTION_TRIGGER_SLOTS = 4;
+const ONBOARDING_TRIGGER_COUNT = QUESTION_TRIGGER_SLOTS * 3;
+const MATCH_WEIGHT = 3;
 const FALLBACK_TRIGGER_IDS = [
   "plan-tomorrow",
   "drink-water",
@@ -294,36 +299,105 @@ function overlaps(tags: readonly string[], selected: string[]) {
   return tags.some((id) => selected.includes(id));
 }
 
+type QuestionKey = "intents" | "spaces" | "routines";
+
 function scoreTrigger(option: TriggerOption, intents: string[], spaces: string[], routines: string[]) {
   let score = 0;
   if (overlaps(option.intents, intents)) {
-    score += 3;
+    score += MATCH_WEIGHT;
   }
   if (overlaps(option.spaces, spaces)) {
-    score += 3;
+    score += MATCH_WEIGHT;
   }
   if (overlaps(option.routines, routines)) {
-    score += 2;
+    score += MATCH_WEIGHT;
   }
   return score;
 }
 
-export function triggersForOnboarding(draft: Pick<OnboardingDraft, "reasons" | "spaceFor" | "routine">) {
-  const intents = withoutWildcards(draft.reasons, INTENT_WILDCARDS);
-  const spaces = draft.spaceFor;
-  const routines = withoutWildcards(draft.routine, ROUTINE_WILDCARDS);
-  const ranked = [...triggerOptions]
-    .map((option) => ({ option, score: scoreTrigger(option, intents, spaces, routines) }))
-    .sort((a, b) => b.score - a.score || a.option.label.localeCompare(b.option.label));
+function otherQuestionHits(
+  option: TriggerOption,
+  question: QuestionKey,
+  intents: string[],
+  spaces: string[],
+  routines: string[],
+) {
+  let hits = 0;
+  if (question !== "intents" && overlaps(option.intents, intents)) {
+    hits += 1;
+  }
+  if (question !== "spaces" && overlaps(option.spaces, spaces)) {
+    hits += 1;
+  }
+  if (question !== "routines" && overlaps(option.routines, routines)) {
+    hits += 1;
+  }
+  return hits;
+}
 
-  const matched = ranked.filter((item) => item.score > 0).slice(0, ONBOARDING_TRIGGER_COUNT);
-  if (matched.length >= 8) {
-    return matched.map((item) => item.option);
+function pickQuestionTriggers(
+  unused: TriggerOption[],
+  question: QuestionKey,
+  selected: string[],
+  intents: string[],
+  spaces: string[],
+  routines: string[],
+) {
+  if (selected.length === 0) {
+    return [];
   }
 
-  const have = new Set(matched.map((item) => item.option.id));
+  function rank(a: TriggerOption, b: TriggerOption) {
+    const score =
+      scoreTrigger(b, intents, spaces, routines) - scoreTrigger(a, intents, spaces, routines);
+    const exclusive =
+      otherQuestionHits(a, question, intents, spaces, routines) -
+      otherQuestionHits(b, question, intents, spaces, routines);
+    return score || exclusive || a.label.localeCompare(b.label);
+  }
+
+  const picked: TriggerOption[] = [];
+  const used = new Set<string>();
+  const base = Math.floor(QUESTION_TRIGGER_SLOTS / selected.length);
+  const extra = QUESTION_TRIGGER_SLOTS % selected.length;
+
+  for (const [index, id] of selected.entries()) {
+    const quota = base + (index < extra ? 1 : 0);
+    const batch = unused
+      .filter((option) => !used.has(option.id) && option[question].includes(id))
+      .sort(rank)
+      .slice(0, quota);
+    for (const option of batch) {
+      picked.push(option);
+      used.add(option.id);
+    }
+  }
+
+  if (picked.length >= QUESTION_TRIGGER_SLOTS) {
+    return picked;
+  }
+
+  const leftover = unused
+    .filter((option) => !used.has(option.id) && overlaps(option[question], selected))
+    .sort(rank)
+    .slice(0, QUESTION_TRIGGER_SLOTS - picked.length);
+
+  return [...picked, ...leftover];
+}
+
+function fillRemaining(picked: TriggerOption[], unused: TriggerOption[]) {
+  const filled = [...picked];
+  const have = new Set(filled.map((option) => option.id));
   const byId = new Map(triggerOptions.map((option) => [option.id, option]));
-  const filled = [...matched.map((item) => item.option)];
+
+  for (const option of unused) {
+    if (filled.length >= ONBOARDING_TRIGGER_COUNT) {
+      break;
+    }
+    filled.push(option);
+    have.add(option.id);
+  }
+
   for (const id of FALLBACK_TRIGGER_IDS) {
     if (filled.length >= ONBOARDING_TRIGGER_COUNT) {
       break;
@@ -336,6 +410,43 @@ export function triggersForOnboarding(draft: Pick<OnboardingDraft, "reasons" | "
   }
 
   return filled;
+}
+
+export function triggersForOnboarding(draft: Pick<OnboardingDraft, "reasons" | "spaceFor" | "routine">) {
+  const intents = withoutWildcards(draft.reasons, INTENT_WILDCARDS);
+  const spaces = draft.spaceFor;
+  const routines = withoutWildcards(draft.routine, ROUTINE_WILDCARDS);
+  const questions: Array<{ key: QuestionKey; selected: string[] }> = [
+    { key: "intents", selected: intents },
+    { key: "spaces", selected: spaces },
+    { key: "routines", selected: routines },
+  ];
+
+  const picked: TriggerOption[] = [];
+  const used = new Set<string>();
+
+  for (const question of questions) {
+    const unused = triggerOptions.filter((option) => !used.has(option.id));
+    const batch = pickQuestionTriggers(unused, question.key, question.selected, intents, spaces, routines);
+    for (const option of batch) {
+      picked.push(option);
+      used.add(option.id);
+    }
+  }
+
+  const remaining = [...triggerOptions]
+    .filter((option) => !used.has(option.id))
+    .map((option) => ({ option, score: scoreTrigger(option, intents, spaces, routines) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || a.option.label.localeCompare(b.option.label))
+    .map((item) => item.option);
+
+  const filled = fillRemaining(picked, remaining).slice(0, ONBOARDING_TRIGGER_COUNT);
+  return [...filled].sort(
+    (a, b) =>
+      scoreTrigger(b, intents, spaces, routines) - scoreTrigger(a, intents, spaces, routines) ||
+      a.label.localeCompare(b.label),
+  );
 }
 
 export function pruneOnboardingTriggerIds(draft: OnboardingDraft) {
