@@ -1,6 +1,12 @@
 "use client";
 
-import { useId, type TextareaHTMLAttributes } from "react";
+import {
+  useId,
+  useLayoutEffect,
+  useRef,
+  type Ref,
+  type TextareaHTMLAttributes,
+} from "react";
 
 import { cn } from "@/lib/utils/cn";
 
@@ -21,6 +27,8 @@ type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   hint?: string;
   size?: FieldSize;
   state?: FieldState;
+  autoSize?: boolean;
+  ref?: Ref<HTMLTextAreaElement>;
 };
 
 const minHeightClass: Record<FieldSize, string> = {
@@ -37,16 +45,36 @@ const fieldBlockPaddingClass: Record<FieldSize, string> = {
   xl: "py-[calc((var(--pp-control-height-xl)-var(--pp-text-body-leading))/2)]",
 };
 
+function assignRef<T>(ref: Ref<T> | undefined, value: T | null) {
+  if (typeof ref === "function") {
+    ref(value);
+  } else if (ref) {
+    ref.current = value;
+  }
+}
+
+function resizeTextarea(element: HTMLTextAreaElement | null) {
+  if (!element) {
+    return;
+  }
+
+  element.style.height = "0px";
+  element.style.height = `${element.scrollHeight}px`;
+}
+
 export function Textarea({
   label,
   labelClassName,
   hint,
   size = "md",
   state = "default",
+  autoSize = false,
   className,
   disabled,
   id,
+  ref,
   rows = 4,
+  onInput,
   ...props
 }: TextareaProps) {
   const generatedId = useId();
@@ -54,6 +82,15 @@ export function Textarea({
   const hintId = hint ? `${inputId}-hint` : undefined;
   const isDisabled = disabled || state === "disabled";
   const resolvedState: FieldState = isDisabled ? "disabled" : state;
+  const innerRef = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    if (!autoSize) {
+      return;
+    }
+
+    resizeTextarea(innerRef.current);
+  }, [autoSize, props.value]);
 
   return (
     <Field>
@@ -64,12 +101,23 @@ export function Textarea({
       ) : null}
       <textarea
         id={inputId}
+        ref={(node) => {
+          innerRef.current = node;
+          assignRef(ref, node);
+        }}
         disabled={isDisabled}
-        rows={rows}
+        rows={autoSize ? 1 : rows}
         aria-invalid={resolvedState === "error" || undefined}
         aria-describedby={hintId}
+        onInput={(event) => {
+          if (autoSize) {
+            resizeTextarea(event.currentTarget);
+          }
+          onInput?.(event);
+        }}
         className={cn(
-          "type-body pp-control w-full resize-y",
+          "type-body pp-control w-full wrap-break-word",
+          autoSize ? "field-sizing-content resize-none overflow-hidden" : "resize-y",
           fieldTextClass[size],
           fieldPaddingClass[size],
           fieldBlockPaddingClass[size],
