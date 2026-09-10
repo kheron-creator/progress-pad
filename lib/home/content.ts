@@ -115,8 +115,6 @@ export const HOME_WRITING_SECTIONS = [
 export const HOME_PILLAR_SECTION = {
   title: "Six Pillars of Personal Progression",
   description: "Rate each pillar and capture its dedicated context directly",
-  saved: "Progression ratings and context saved!",
-  saveLabel: "Save Progression",
 } as const;
 
 export const HOME_PILLARS = [

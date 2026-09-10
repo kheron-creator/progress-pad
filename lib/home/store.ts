@@ -85,6 +85,28 @@ export async function addWritingEntry(
   return data;
 }
 
+export async function updateWritingEntry(
+  supabase: Client,
+  id: string,
+  input: { title: string; notes?: string | null },
+) {
+  const title = input.title.trim();
+  if (!title) {
+    throw new Error("Title is required");
+  }
+
+  const patch: { title: string; notes?: string | null } = { title };
+  if ("notes" in input) {
+    patch.notes = input.notes?.trim() || null;
+  }
+
+  const { error } = await supabase.from("writing_entries").update(patch).eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function deleteWritingEntry(supabase: Client, id: string) {
   const { error } = await supabase.from("writing_entries").delete().eq("id", id);
 
@@ -120,6 +142,28 @@ export async function addMindSweepItem(
   }
 
   return data;
+}
+
+export async function updateMindSweepItem(
+  supabase: Client,
+  id: string,
+  input: { title: string; notes?: string | null },
+) {
+  const title = input.title.trim();
+  if (!title) {
+    throw new Error("Title is required");
+  }
+
+  const patch: { title: string; notes?: string | null } = { title };
+  if ("notes" in input) {
+    patch.notes = input.notes?.trim() || null;
+  }
+
+  const { error } = await supabase.from("mind_sweep_items").update(patch).eq("id", id);
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function setMindSweepStatus(supabase: Client, id: string, status: MindSweepStatus) {

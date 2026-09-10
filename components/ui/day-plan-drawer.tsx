@@ -25,7 +25,6 @@ type DayPlanDrawerProps = {
   triggerCount?: number;
   onRemoveScenario?: (id: string) => void;
   onRemoveTrigger?: (id: string) => void;
-  onAdd?: () => void;
   onClear?: () => void;
 };
 
@@ -52,11 +51,11 @@ function PlanRow({
     <article className="flex min-h-(--pp-trigger-item-height) w-full items-center gap-3 rounded-md border border-border bg-surface px-(--pp-space-16) py-(--pp-space-12)">
       {item.icon}
       <div className="min-w-0 flex-1">
-        <Text variant="bodySmall" className="truncate font-(--pp-font-weight-medium) text-foreground">
+        <Text variant="bodySmall" className="wrap-break-word whitespace-pre-wrap font-(--pp-font-weight-medium) text-foreground">
           {item.title}
         </Text>
         {item.meta ? (
-          <Text variant="caption" className="truncate text-foreground-muted">
+          <Text variant="caption" className="wrap-break-word whitespace-pre-wrap text-foreground-muted">
             {item.meta}
           </Text>
         ) : null}

@@ -5,10 +5,10 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils/cn";
 
 import { ChartLineIcon, ChevronDownIcon } from "./icon";
-import { DictateButton } from "./dictate-button";
+// import { DictateButton } from "./dictate-button";
 import { IconMark } from "./icon-mark";
-import { Input } from "./input";
 import { Text } from "./text";
+import { Textarea } from "./textarea";
 
 type PillarRowProps = {
   title: string;
@@ -19,6 +19,7 @@ type PillarRowProps = {
   onChange: (value: number) => void;
   notes?: string;
   onNotesChange?: (value: string) => void;
+  onNotesBlur?: () => void;
   max?: number;
   accent?: string;
   className?: string;
@@ -33,6 +34,7 @@ export function PillarRow({
   onChange,
   notes = "",
   onNotesChange,
+  onNotesBlur,
   max = 10,
   accent = "var(--pp-magenta-400)",
   className,
@@ -104,21 +106,23 @@ export function PillarRow({
             <ChevronDownIcon size={12} className={cn("transition-transform", open && "rotate-180")} />
           </button>
         </div>
-        <div className="flex min-w-0 flex-1 items-center gap-(--pp-space-16)">
+        <div className="flex min-w-0 flex-1 items-start gap-(--pp-space-16)">
           <div className="min-w-0 flex-1">
-            <Input
+            <Textarea
+              autoSize
               value={notes}
               onChange={(event) => onNotesChange?.(event.currentTarget.value)}
+              onBlur={() => onNotesBlur?.()}
               placeholder={placeholder}
               aria-label={placeholder ?? `${title} context`}
             />
           </div>
-          <DictateButton
+          {/* <DictateButton
             value={notes}
             onChange={onNotesChange}
             label={`Dictate ${title} context`}
             style={{ borderColor: accent, color: accent }}
-          />
+          /> */}
         </div>
       </div>
       {open ? (

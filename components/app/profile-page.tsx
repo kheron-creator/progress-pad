@@ -341,7 +341,7 @@ export function ProfilePage({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <div>
         <Text as="h1" variant="pageTitle">
           Profile

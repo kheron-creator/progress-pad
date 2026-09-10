@@ -135,6 +135,7 @@
   --pp-space-64: 4rem;
   --pp-space-80: 5rem;
   --pp-space-96: 6rem;
+  --pp-space-112: 7rem;
   --pp-space-128: 8rem;
 
   --pp-font-size-10: 0.625rem;
@@ -406,7 +407,7 @@
   --pp-text-status-leading: var(--pp-text-caption-leading);
   --pp-text-status-weight: var(--pp-font-weight-medium);
 
-  --pp-space-page-x: var(--pp-space-48);
+  --pp-space-page-x: var(--pp-space-112);
   --pp-space-page-y: var(--pp-space-32);
   --pp-space-section: var(--pp-space-32);
   --pp-space-card: var(--pp-space-32);
@@ -481,6 +482,7 @@
   --pp-banner-height-lg-mobile: 13.125rem;
   --pp-banner-height-sm-mobile: 10rem;
   --pp-trigger-item-height: 3.125rem;
+  --pp-library-list-max-height: calc(var(--pp-trigger-item-height) * 4 + var(--pp-space-12) * 5);
   --pp-toggle-track-width: 2.75rem;
   --pp-toggle-track-height: var(--pp-control-28);
   --pp-toggle-thumb: var(--pp-control-22);

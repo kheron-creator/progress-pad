@@ -31,6 +31,8 @@ type TriggerDropzoneProps = {
   title?: string;
   description?: string;
   id?: string;
+  compact?: boolean;
+  alwaysShowAddSelected?: boolean;
 };
 
 export function TriggerDropzone({
@@ -45,6 +47,8 @@ export function TriggerDropzone({
   title,
   description,
   id,
+  compact = false,
+  alwaysShowAddSelected = false,
 }: TriggerDropzoneProps) {
   const count = items.length;
   const added = state === "added" || count > 0;
@@ -89,6 +93,7 @@ export function TriggerDropzone({
   function handleDrop(event: DragEvent<HTMLDivElement>) {
     if (!onDropTrigger) return;
     event.preventDefault();
+    event.stopPropagation();
     setDragging(false);
     for (const item of readDroppedTriggers(event)) {
       onDropTrigger(item);
@@ -112,10 +117,14 @@ export function TriggerDropzone({
       className={cn(
         "flex w-full flex-col rounded-lg border-2 border-dashed border-primary px-4",
         highlight ? "bg-primary-muted" : "bg-surface",
-        "max-lg:py-5",
+        !compact && "max-lg:py-5",
         added
-          ? "gap-4 py-5 max-lg:gap-2"
-          : "gap-2.5 py-15 max-lg:h-52 max-lg:justify-center",
+          ? compact
+            ? "gap-3 py-4"
+            : "gap-4 py-5 max-lg:gap-2"
+          : compact
+            ? "gap-2 py-6"
+            : "gap-2.5 py-15 max-lg:h-52 max-lg:justify-center",
         className,
       )}
     >
@@ -151,7 +160,7 @@ export function TriggerDropzone({
         {onAddSelected && (emptyCopy || canAddSelected) ? (
           <Button
             size="md"
-            className="lg:hidden"
+            className={alwaysShowAddSelected ? undefined : "lg:hidden"}
             disabled={!canAddSelected}
             onClick={onAddSelected}
           >
@@ -174,7 +183,7 @@ export function TriggerDropzone({
               {item.icon}
               <Text
                 variant="bodySmall"
-                className="min-w-0 flex-1 truncate font-(--pp-font-weight-medium) text-foreground"
+                className="min-w-0 flex-1 wrap-break-word whitespace-pre-wrap font-(--pp-font-weight-medium) text-foreground"
               >
                 {item.name}
               </Text>

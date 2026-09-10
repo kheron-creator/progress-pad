@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { AddScenarioDrawer } from "@/components/ui/add-scenario-drawer";
+import { AddTriggerDrawer } from "@/components/ui/add-trigger-drawer";
 import { CalendarStrip, isoDate, type CalendarMarker } from "@/components/ui/calendar-strip";
 import { DayPlanDrawer } from "@/components/ui/day-plan-drawer";
 import { Dialog, DialogConfirmActions } from "@/components/ui/dialog";
@@ -12,9 +14,8 @@ import { ToastRegion, useToasts } from "@/components/ui/toast-region";
 import { type DroppedTrigger } from "@/components/ui/trigger-dropzone";
 import { TriggersLibrary, type LibraryTrigger } from "@/components/ui/triggers-library";
 import { useSessionStore } from "@/components/app/session-store-provider";
-import { useRegisterUnsavedLeave } from "@/components/app/unsaved-leave-provider";
 import { createClient } from "@/lib/supabase/client";
-import { TRIGGERS_HEADING } from "@/lib/triggers/content";
+import { SUGGESTED_TRIGGERS, TRIGGERS_HEADING } from "@/lib/triggers/content";
 import { type LibraryDragPayload } from "@/lib/triggers/drag";
 import {
   addLibraryScenario,
@@ -149,11 +150,7 @@ export function TriggersPage() {
   const [scenarioDescription, setScenarioDescription] = useState("");
   const [scenarioIcon, setScenarioIcon] = useState<string>();
   const [scenarioTriggers, setScenarioTriggers] = useState<DroppedTrigger[]>([]);
-  const [assigning, setAssigning] = useState(false);
   const [assignments, setAssignments] = useState<Record<string, DayAssignment[]>>(
-    () => savedAssignments,
-  );
-  const [assignmentBaseline, setAssignmentBaseline] = useState<Record<string, DayAssignment[]>>(
     () => savedAssignments,
   );
   const [date, setDate] = useState(() => new Date());
@@ -161,10 +158,27 @@ export function TriggersPage() {
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
   const [savingTrigger, setSavingTrigger] = useState(false);
   const [savingScenario, setSavingScenario] = useState(false);
-  const [savingAssign, setSavingAssign] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
   const [assignSelection, setAssignSelection] = useState<LibraryDragPayload[]>([]);
+  const [hiddenSuggestionIds, setHiddenSuggestionIds] = useState<Set<string>>(() => new Set());
   const { toasts, showToast, dismissToast } = useToasts();
+
+  const suggestedTriggers = useMemo(() => {
+    const keys = new Set(
+      libraryTriggers.map((item) => item.source_key).filter((key): key is string => Boolean(key)),
+    );
+    const names = new Set(libraryTriggers.map((item) => item.name.trim().toLowerCase()));
+    return SUGGESTED_TRIGGERS.filter(
+      (item) =>
+        !keys.has(item.id) &&
+        !names.has(item.name.toLowerCase()) &&
+        !hiddenSuggestionIds.has(item.id),
+    ).map((item) => ({
+      id: item.id,
+      name: item.name,
+      icon: <EmojiMark>{item.emoji}</EmojiMark>,
+    }));
+  }, [hiddenSuggestionIds, libraryTriggers]);
 
   function cancelTrigger() {
     setTriggerName("");
@@ -234,6 +248,62 @@ export function TriggersPage() {
     }
   }
 
+  async function addSuggestedTrigger(id: string) {
+    const suggestion = SUGGESTED_TRIGGERS.find((item) => item.id === id);
+    if (!suggestion) return;
+    if (
+      hiddenSuggestionIds.has(id) ||
+      libraryTriggers.some((item) => item.source_key === id || item.name.trim().toLowerCase() === suggestion.name.toLowerCase())
+    ) {
+      return;
+    }
+
+    const pendingId = `pending:${suggestion.id}`;
+    const pending: StoredTrigger = {
+      id: pendingId,
+      name: suggestion.name,
+      emoji: suggestion.emoji,
+      source_key: suggestion.id,
+    };
+
+    setHiddenSuggestionIds((current) => new Set(current).add(id));
+    addLibraryTriggerToStore(pending);
+
+    try {
+      const supabase = createClient();
+      const created = await addLibraryTrigger(supabase, {
+        name: suggestion.name,
+        emoji: suggestion.emoji,
+        sourceKey: suggestion.id,
+      });
+      addLibraryTriggerToStore(created);
+      if (created.id !== pendingId) {
+        setAssignments((current) => {
+          let changed = false;
+          const next: Record<string, DayAssignment[]> = {};
+          for (const [onDate, items] of Object.entries(current)) {
+            next[onDate] = items.map((item) => {
+              if (item.kind !== "trigger" || item.id !== pendingId) {
+                return item;
+              }
+              changed = true;
+              return { ...item, id: created.id };
+            });
+          }
+          return changed ? next : current;
+        });
+      }
+    } catch {
+      removeLibraryTriggerFromStore(pendingId);
+      setHiddenSuggestionIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+      showToast("Couldn't add that trigger. Please try again.", "error");
+    }
+  }
+
   async function saveScenario() {
     const title = scenarioName.trim();
     if (!title || !scenarioIcon || scenarioTriggers.length === 0 || savingScenario) return;
@@ -295,53 +365,24 @@ export function TriggersPage() {
     });
   }
 
+  function setKindSelection(kind: LibraryDragPayload["kind"], items: LibraryDragPayload[], selected: boolean) {
+    setAssignSelection((current) => {
+      const rest = current.filter((entry) => entry.kind !== kind);
+      if (!selected) return rest;
+      const seen = new Set(rest.map((entry) => `${entry.kind}:${entry.id}`));
+      const next = [...rest];
+      for (const item of items) {
+        const key = `${item.kind}:${item.id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        next.push(item);
+      }
+      return next;
+    });
+  }
+
   function clearAssignSelection() {
     setAssignSelection([]);
-  }
-
-  const canSaveAssign = JSON.stringify(assignments) !== JSON.stringify(assignmentBaseline);
-  useRegisterUnsavedLeave(assigning && canSaveAssign);
-
-  function startAssigning() {
-    if (savingAssign) return;
-    cancelTrigger();
-    cancelScenario();
-    setAssignmentBaseline(assignments);
-    clearAssignSelection();
-    setAssigning(true);
-  }
-
-  function cancelAssigning() {
-    if (savingAssign) return;
-    setAssignments(assignmentBaseline);
-    clearAssignSelection();
-    setAssigning(false);
-  }
-
-  async function saveAssigning() {
-    if (!canSaveAssign || savingAssign) return;
-
-    setSavingAssign(true);
-    try {
-      const supabase = createClient();
-      await saveDateAssignments(supabase, assignmentBaseline, assignments);
-      setSavedAssignments(assignments);
-      setStates((current) =>
-        pruneStatesToAssignments(
-          current,
-          assignments,
-          (scenarioId) => scenarioById.get(scenarioId)?.triggerIds,
-        ),
-      );
-      setAssignmentBaseline(assignments);
-      clearAssignSelection();
-      setAssigning(false);
-      showToast("Triggers assigned to your calendar.");
-    } catch {
-      showToast("Couldn't save those assignments. Please try again.", "error");
-    } finally {
-      setSavingAssign(false);
-    }
   }
 
   function assignToDate(day: Date, items: LibraryDragPayload[]) {
@@ -374,7 +415,8 @@ export function TriggersPage() {
     }
 
     if (added > 0) {
-      setAssignments((current) => ({ ...current, [key]: nextList }));
+      const next = { ...assignments, [key]: nextList };
+      void persistDayChange(next, () => saveDateAssignments(createClient(), assignments, next));
     }
 
     if (blocked) {
@@ -385,12 +427,7 @@ export function TriggersPage() {
   const markers = useMemo(() => {
     const next: Record<string, CalendarMarker> = {};
     for (const [key, items] of Object.entries(assignments)) {
-      const baselineItems = assignmentBaseline[key] ?? [];
       const assigned = items.map((item) => {
-        const addedThisPass = !baselineItems.some(
-          (entry) => entry.kind === item.kind && entry.id === item.id,
-        );
-
         if (item.kind === "trigger") {
           const trigger = triggerById.get(item.id);
           return {
@@ -398,7 +435,6 @@ export function TriggersPage() {
             id: item.id,
             name: trigger?.name,
             icon: trigger?.icon,
-            addedThisPass,
           };
         }
 
@@ -408,7 +444,6 @@ export function TriggersPage() {
           id: item.id,
           name: scenario?.title,
           icon: scenario?.icon,
-          addedThisPass,
         };
       });
 
@@ -419,7 +454,7 @@ export function TriggersPage() {
       };
     }
     return next;
-  }, [assignmentBaseline, assignments, scenarioById, triggerById]);
+  }, [assignments, scenarioById, triggerById]);
 
   async function persistDayChange(
     next: Record<string, DayAssignment[]>,
@@ -427,11 +462,6 @@ export function TriggersPage() {
   ) {
     const previous = assignments;
     setAssignments(next);
-    if (assigning) {
-      return;
-    }
-
-    setAssignmentBaseline(next);
     setSavedAssignments(next);
     try {
       await write();
@@ -444,7 +474,6 @@ export function TriggersPage() {
       );
     } catch {
       setAssignments(previous);
-      setAssignmentBaseline(previous);
       setSavedAssignments(previous);
       showToast("Couldn't update that date. Please try again.", "error");
     }
@@ -475,7 +504,6 @@ export function TriggersPage() {
     const previous = assignments;
     const next: Record<string, DayAssignment[]> = {};
     setAssignments(next);
-    setAssignmentBaseline(next);
     setSavedAssignments(next);
 
     try {
@@ -486,7 +514,6 @@ export function TriggersPage() {
       showToast("Calendar cleared.");
     } catch {
       setAssignments(previous);
-      setAssignmentBaseline(previous);
       setSavedAssignments(previous);
       showToast("Couldn't clear the calendar. Please try again.", "error");
     }
@@ -608,119 +635,145 @@ export function TriggersPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 md:gap-6">
+    <div className="flex w-full flex-col gap-4 md:gap-6">
       <section className="flex flex-col items-center gap-1 py-2 text-center">
-        <Text as="h1" variant="display" className="text-center">
+        <Text as="h1" variant="pageTitle" className="text-center">
           {TRIGGERS_HEADING.title}
         </Text>
-        <Text as="p" variant="sectionTitle" className="text-center font-normal text-secondary">
+        <Text as="p" variant="subtitle" className="text-center font-normal text-secondary">
           {TRIGGERS_HEADING.subtitle}
         </Text>
       </section>
 
-      <div className="grid grid-cols-1 items-stretch gap-4 md:gap-6 lg:grid-cols-2">
-        <TriggersLibrary
-          columns={2}
-          className="h-full"
-          assigning={assigning}
-          state={addingTrigger ? "add" : addingScenario || assigning ? "pick" : "default"}
-          items={triggers}
-          selectedIds={selectedTriggerIds}
-          onSelectedChange={(id, checked) => {
-            const trigger = triggers.find((entry) => entry.id === id);
-            if (!trigger) return;
-            toggleAssignSelection({ kind: "trigger", id, name: trigger.name }, checked);
-          }}
-          selection={assignSelection}
-          name={triggerName}
-          onNameChange={setTriggerName}
-          selectedIcon={triggerIcon}
-          onIconSelect={setTriggerIcon}
-          onAdd={() => {
-            cancelScenario();
-            cancelAssigning();
-            setAddingTrigger(true);
-          }}
-          onSave={() => void saveTrigger()}
-          onCancel={() => {
-            if (!savingTrigger) cancelTrigger();
-          }}
-          saving={savingTrigger}
-          onDelete={(id) => {
-            const item = triggers.find((trigger) => trigger.id === id);
-            if (!item) return;
-            setPendingDelete({ kind: "library-trigger", id, name: item.name });
-          }}
-        />
-        <ScenariosLibrary
-          className="h-full"
-          assigning={assigning}
-          state={addingScenario ? "add" : assigning ? "pick" : "default"}
-          items={scenarios}
-          selectedIds={selectedScenarioIds}
-          onSelectedChange={(id, checked) => {
-            const scenario = scenarios.find((entry) => entry.id === id);
-            if (!scenario) return;
-            toggleAssignSelection({ kind: "scenario", id, name: scenario.title }, checked);
-          }}
-          selection={assignSelection}
-          name={scenarioName}
-          onNameChange={setScenarioName}
-          description={scenarioDescription}
-          onDescriptionChange={setScenarioDescription}
-          selectedIcon={scenarioIcon}
-          onIconSelect={setScenarioIcon}
-          droppedTriggers={scenarioTriggers}
-          pendingCount={pendingScenarioTriggerCount}
-          onAddSelected={addSelectedTriggersToScenario}
-          onDropTrigger={dropScenarioTrigger}
-          onRemoveTrigger={removeScenarioTrigger}
-          onAdd={() => {
+      <div className="grid grid-cols-1 items-start gap-3 md:gap-4 lg:grid-cols-2">
+        <div className="flex flex-col gap-3 md:gap-4">
+          <TriggersLibrary
+            columns={2}
+            items={triggers}
+            selectedIds={selectedTriggerIds}
+            onSelectedChange={(id, checked) => {
+              const trigger = triggers.find((entry) => entry.id === id);
+              if (!trigger) return;
+              toggleAssignSelection({ kind: "trigger", id, name: trigger.name }, checked);
+            }}
+            onSelectAll={(selected) =>
+              setKindSelection(
+                "trigger",
+                triggers.map((trigger) => ({ kind: "trigger", id: trigger.id, name: trigger.name })),
+                selected,
+              )
+            }
+            selection={assignSelection}
+            onAdd={() => {
+              cancelScenario();
+              setDayDrawerOpen(false);
+              setAddingTrigger(true);
+            }}
+            onDelete={(id) => {
+              const item = triggers.find((trigger) => trigger.id === id);
+              if (!item) return;
+              setPendingDelete({ kind: "library-trigger", id, name: item.name });
+            }}
+            suggestions={suggestedTriggers}
+            onAddSuggestion={(id) => void addSuggestedTrigger(id)}
+          />
+          <ScenariosLibrary
+            columns={2}
+            items={scenarios}
+            selectedIds={selectedScenarioIds}
+            onSelectedChange={(id, checked) => {
+              const scenario = scenarios.find((entry) => entry.id === id);
+              if (!scenario) return;
+              toggleAssignSelection({ kind: "scenario", id, name: scenario.title }, checked);
+            }}
+            onSelectAll={(selected) =>
+              setKindSelection(
+                "scenario",
+                scenarios.map((scenario) => ({ kind: "scenario", id: scenario.id, name: scenario.title })),
+                selected,
+              )
+            }
+            selection={assignSelection}
+            onAdd={() => {
+              cancelTrigger();
+              setDayDrawerOpen(false);
+              setAddingScenario(true);
+            }}
+            onDelete={(id) => {
+              const item = scenarios.find((scenario) => scenario.id === id);
+              if (!item) return;
+              setPendingDelete({ kind: "library-scenario", id, name: item.title });
+            }}
+          />
+        </div>
+
+        <CalendarStrip
+          look="intention"
+          view="month"
+          value={date}
+          onChange={setDate}
+          className="max-w-none self-start"
+          selectionCount={addingScenario ? 0 : assignSelection.length}
+          markers={markers}
+          onDropOnDate={addingScenario ? undefined : assignToDate}
+          onDayClick={(day) => {
+            if (addingScenario) return;
+            if (assignSelection.length > 0) {
+              assignToDate(day, assignSelection);
+              return;
+            }
             cancelTrigger();
-            cancelAssigning();
-            setAddingScenario(true);
+            setDayDrawerOpen(true);
           }}
-          onSave={() => void saveScenario()}
-          onCancel={cancelScenario}
-          saving={savingScenario}
-          onDelete={(id) => {
-            const item = scenarios.find((scenario) => scenario.id === id);
-            if (!item) return;
-            setPendingDelete({ kind: "library-scenario", id, name: item.title });
-          }}
+          onClear={() => setPendingDelete({ kind: "calendar-clear" })}
         />
       </div>
 
-      <CalendarStrip
-        look="intention"
-        view="month"
-        value={date}
-        onChange={setDate}
-        className="max-w-none"
-        assigning={assigning}
-        canSaveAssign={canSaveAssign}
-        assignSaving={savingAssign}
-        selectionCount={assignSelection.length}
-        markers={markers}
-        onAssign={startAssigning}
-        onCancelAssign={cancelAssigning}
-        onSaveAssign={() => void saveAssigning()}
-        onDropOnDate={assignToDate}
-        onRemoveFromDate={(day, item) => {
-          void removeFromDate(item.kind, item.id, day);
-        }}
-        onEditDate={(day) => {
-          setDate(day);
-          setDayDrawerOpen(true);
-        }}
-        onDayClick={(day) => {
-          if (assigning) {
-            if (assignSelection.length > 0) assignToDate(day, assignSelection);
+      <AddScenarioDrawer
+        open={addingScenario}
+        onOpenChange={(open) => {
+          if (open) {
+            cancelTrigger();
+            setDayDrawerOpen(false);
+            setAddingScenario(true);
             return;
           }
-          setDayDrawerOpen(true);
+          cancelScenario();
         }}
-        onClear={() => setPendingDelete({ kind: "calendar-clear" })}
+        name={scenarioName}
+        onNameChange={setScenarioName}
+        description={scenarioDescription}
+        onDescriptionChange={setScenarioDescription}
+        selectedIcon={scenarioIcon}
+        onIconSelect={setScenarioIcon}
+        droppedTriggers={scenarioTriggers}
+        libraryTriggers={triggers}
+        pendingCount={pendingScenarioTriggerCount}
+        onAddSelected={addSelectedTriggersToScenario}
+        onDropTrigger={dropScenarioTrigger}
+        onAddTriggers={addTriggersToScenario}
+        onRemoveTrigger={removeScenarioTrigger}
+        onSave={() => void saveScenario()}
+        saving={savingScenario}
+      />
+
+      <AddTriggerDrawer
+        open={addingTrigger}
+        onOpenChange={(open) => {
+          if (open) {
+            cancelScenario();
+            setDayDrawerOpen(false);
+            setAddingTrigger(true);
+            return;
+          }
+          if (!savingTrigger) cancelTrigger();
+        }}
+        name={triggerName}
+        onNameChange={setTriggerName}
+        selectedIcon={triggerIcon}
+        onIconSelect={setTriggerIcon}
+        onSave={() => void saveTrigger()}
+        saving={savingTrigger}
       />
 
       <DayPlanDrawer
@@ -733,30 +786,14 @@ export function TriggersPage() {
         onRemoveScenario={(id) => {
           const item = dayScenarios.find((scenario) => scenario.id === id);
           if (!item) return;
-          if (assigning) {
-            void removeFromDate("scenario", id);
-            return;
-          }
           setPendingDelete({ kind: "date-scenario", id, name: item.title });
         }}
         onRemoveTrigger={(id) => {
           const item = dayTriggers.find((trigger) => trigger.id === id);
           if (!item) return;
-          if (assigning) {
-            void removeFromDate("trigger", id);
-            return;
-          }
           setPendingDelete({ kind: "date-trigger", id, name: item.title });
         }}
-        onAdd={() => {
-          setDayDrawerOpen(false);
-          startAssigning();
-        }}
         onClear={() => {
-          if (assigning) {
-            void clearDate();
-            return;
-          }
           setPendingDelete({ kind: "date-clear" });
         }}
       />

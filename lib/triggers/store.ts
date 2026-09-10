@@ -113,13 +113,53 @@ export async function loadLibraryTriggers(supabase: Client) {
   return data ?? [];
 }
 
-export async function addLibraryTrigger(supabase: Client, input: { name: string; emoji: string }) {
+export async function addLibraryTrigger(
+  supabase: Client,
+  input: { name: string; emoji: string; sourceKey?: string },
+) {
   const userId = await requireUserId(supabase);
   const name = input.name.trim();
   const emoji = input.emoji.trim();
+  const sourceKey = input.sourceKey?.trim() || undefined;
 
   if (!name || !emoji) {
     throw new Error("Name and emoji are required");
+  }
+
+  if (sourceKey) {
+    const { data: existing, error: readError } = await supabase
+      .from("triggers")
+      .select("id, name, emoji, source_key, deleted_at")
+      .eq("source_key", sourceKey)
+      .maybeSingle();
+
+    if (readError) {
+      throw readError;
+    }
+
+    if (existing) {
+      if (!existing.deleted_at) {
+        return {
+          id: existing.id,
+          name: existing.name,
+          emoji: existing.emoji,
+          source_key: existing.source_key,
+        };
+      }
+
+      const { data, error } = await supabase
+        .from("triggers")
+        .update({ deleted_at: null, name, emoji })
+        .eq("id", existing.id)
+        .select("id, name, emoji, source_key")
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    }
   }
 
   const { data, error } = await supabase
@@ -128,6 +168,7 @@ export async function addLibraryTrigger(supabase: Client, input: { name: string;
       user_id: userId,
       name,
       emoji,
+      source_key: sourceKey ?? null,
     })
     .select("id, name, emoji, source_key")
     .single();

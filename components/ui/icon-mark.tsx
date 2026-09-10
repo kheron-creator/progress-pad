@@ -65,7 +65,7 @@ export function IconMark({
     <span
       className={cn(
         "inline-flex shrink-0 items-center justify-center",
-        shape === "circle" ? "rounded-full" : "rounded-sm",
+        shape === "circle" ? "rounded-full" : "rounded-xs",
         sizeClass[size],
         look === "outline" ? cn("border", outlineToneClass[tone]) : filledToneClass[tone],
         className,

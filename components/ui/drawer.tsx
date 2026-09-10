@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils/cn";
 
@@ -10,12 +11,21 @@ type DrawerProps = {
   labelledBy?: string;
   children: ReactNode;
   className?: string;
+  modal?: boolean;
 };
 
-export function Drawer({ open, onOpenChange, labelledBy, children, className }: DrawerProps) {
+export function Drawer({
+  open,
+  onOpenChange,
+  labelledBy,
+  children,
+  className,
+  modal = true,
+}: DrawerProps) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
+    if (!modal) return;
     const node = ref.current;
     if (!node) return;
 
@@ -26,10 +36,21 @@ export function Drawer({ open, onOpenChange, labelledBy, children, className }: 
     if (!open && node.open) {
       node.close();
     }
-  }, [open]);
+  }, [open, modal]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || modal) return;
+
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onOpenChange(false);
+    }
+
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, modal, onOpenChange]);
+
+  useEffect(() => {
+    if (!open || !modal) return;
 
     const html = document.documentElement;
     const { body } = document;
@@ -56,7 +77,26 @@ export function Drawer({ open, onOpenChange, labelledBy, children, className }: 
       body.style.width = previous.bodyWidth;
       window.scrollTo(0, scrollY);
     };
-  }, [open]);
+  }, [open, modal]);
+
+  if (!modal) {
+    if (!open || typeof document === "undefined") return null;
+
+    return createPortal(
+      <aside
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby={labelledBy}
+        className={cn(
+          "fixed inset-y-0 right-0 z-50 flex h-dvh max-h-dvh w-[min(100%,26.25rem)] flex-col overflow-hidden border-l border-border bg-surface shadow-lg",
+          className,
+        )}
+      >
+        {children}
+      </aside>,
+      document.body,
+    );
+  }
 
   return (
     <dialog
