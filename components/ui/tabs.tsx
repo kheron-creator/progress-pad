@@ -13,8 +13,14 @@ type TabsProps = {
   onChange: (value: string) => void;
   label: string;
   tone?: "neutral" | "primary";
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
 };
+
+const sizeClass = {
+  sm: "font-(--pp-font-weight-medium) text-(length:--pp-text-overline-size) leading-(--pp-text-overline-leading) px-3 py-1",
+  md: "type-label px-3 py-1",
+  lg: "type-overline h-full px-4",
+} as const;
 
 export function Tabs({
   options,
@@ -28,7 +34,12 @@ export function Tabs({
     <div
       role="tablist"
       aria-label={label}
-      className="inline-flex rounded-sm bg-background-subtle p-0.5"
+      className={cn(
+        "inline-flex bg-background-subtle",
+        size === "lg"
+          ? "h-10 max-h-10 items-stretch rounded-md p-1"
+          : "rounded-xs p-0.5",
+      )}
     >
       {options.map((option) => {
         const selected = option.value === value;
@@ -40,10 +51,9 @@ export function Tabs({
             role="tab"
             aria-selected={selected}
             className={cn(
-              "cursor-pointer rounded-sm px-3 py-1 transition-colors",
-              size === "sm"
-                ? "font-(--pp-font-weight-medium) text-(length:--pp-text-overline-size) leading-(--pp-text-overline-leading)"
-                : "type-label",
+              "cursor-pointer transition-colors",
+              size === "lg" ? "rounded-md" : "rounded-sm",
+              sizeClass[size],
               selected
                 ? tone === "primary"
                   ? "bg-primary text-primary-foreground"

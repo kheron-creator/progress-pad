@@ -75,6 +75,12 @@ export function AppFlowNavigator() {
   selectedRef.current = selected;
 
   useEffect(() => {
+    if (pathname !== "/home") {
+      setOpen(false);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
     const nodes = FLOW_SECTIONS.map((item) => document.getElementById(flowSectionDomId(item.id))).filter(
       (node): node is HTMLElement => node != null,
     );
@@ -146,6 +152,10 @@ export function AppFlowNavigator() {
     if (next) {
       goTo(next.id);
     }
+  }
+
+  if (pathname !== "/home") {
+    return null;
   }
 
   return (

@@ -174,6 +174,122 @@ export async function setMindSweepStatus(supabase: Client, id: string, status: M
   }
 }
 
+export async function setMindSweepDate(supabase: Client, id: string, onDate: string) {
+  const { error } = await supabase.from("mind_sweep_items").update({ on_date: onDate }).eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export function formatIsoDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function parseIsoDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.slice(0, 10));
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    return null;
+  }
+
+  return date;
+}
+
+export function flattenMindSweepItems(byDate: MindSweepByDate) {
+  const items: StoredMindSweepItem[] = [];
+  for (const list of Object.values(byDate)) {
+    items.push(...list);
+  }
+  return items;
+}
+
+export function incompleteMindSweepItems(byDate: MindSweepByDate, today: string) {
+  return flattenMindSweepItems(byDate)
+    .filter((item) => item.status !== "achieved")
+    .sort((a, b) => compareMindSweepItems(a, b, today));
+}
+
+function compareMindSweepItems(a: StoredMindSweepItem, b: StoredMindSweepItem, today: string) {
+  const aToday = a.on_date === today ? 0 : 1;
+  const bToday = b.on_date === today ? 0 : 1;
+  if (aToday !== bToday) {
+    return aToday - bToday;
+  }
+  const dateCmp = a.on_date.localeCompare(b.on_date);
+  if (dateCmp !== 0) {
+    return dateCmp;
+  }
+  return a.created_at.localeCompare(b.created_at);
+}
+
+export function mapMindSweepItem(
+  byDate: MindSweepByDate,
+  id: string,
+  patch: Partial<StoredMindSweepItem>,
+): MindSweepByDate {
+  let changed = false;
+  const next: MindSweepByDate = { ...byDate };
+  for (const [date, items] of Object.entries(next)) {
+    if (!items.some((item) => item.id === id)) {
+      continue;
+    }
+    changed = true;
+    next[date] = items.map((item) => (item.id === id ? { ...item, ...patch } : item));
+  }
+  return changed ? next : byDate;
+}
+
+export function relocateMindSweepItem(byDate: MindSweepByDate, id: string, onDate: string): MindSweepByDate {
+  let found: StoredMindSweepItem | undefined;
+  const next: MindSweepByDate = {};
+  for (const [date, items] of Object.entries(byDate)) {
+    next[date] = items.filter((item) => {
+      if (item.id !== id) {
+        return true;
+      }
+      found = item;
+      return false;
+    });
+  }
+
+  if (!found) {
+    return byDate;
+  }
+
+  const key = onDate.slice(0, 10);
+  next[key] = [...(next[key] ?? []), { ...found, on_date: key }];
+  return next;
+}
+
+export function removeMindSweepItem(byDate: MindSweepByDate, id: string): MindSweepByDate {
+  const next: MindSweepByDate = {};
+  for (const [date, items] of Object.entries(byDate)) {
+    next[date] = items.filter((item) => item.id !== id);
+  }
+  return next;
+}
+
+export function mergeMindSweepItems(byDate: MindSweepByDate, rows: StoredMindSweepItem[]): MindSweepByDate {
+  const next: MindSweepByDate = { ...byDate };
+  for (const row of rows) {
+    const onDate = row.on_date.slice(0, 10);
+    const item = { ...row, on_date: onDate };
+    next[onDate] = [...(next[onDate] ?? []).filter((entry) => entry.id !== item.id), item];
+  }
+  return next;
+}
+
 export async function deleteMindSweepItem(supabase: Client, id: string) {
   const { error } = await supabase.from("mind_sweep_items").delete().eq("id", id);
 

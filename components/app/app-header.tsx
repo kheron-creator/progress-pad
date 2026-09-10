@@ -22,7 +22,7 @@ import { useUnsavedLeave } from "./unsaved-leave-provider";
 
 const navHrefs: Record<string, string> = {
   dashboard: "/dashboard",
-  "habit-sweep": "/habit-sweep",
+  "active-mind-sweep": "/active-mind-sweep",
   "progress-today": "/home",
   triggers: "/triggers",
   assistant: "/assistant",
@@ -35,8 +35,8 @@ function selectedNavId(pathname: string) {
   if (pathname.startsWith("/dashboard")) {
     return "dashboard";
   }
-  if (pathname.startsWith("/habit-sweep")) {
-    return "habit-sweep";
+  if (pathname.startsWith("/active-mind-sweep")) {
+    return "active-mind-sweep";
   }
   if (pathname.startsWith("/assistant")) {
     return "assistant";

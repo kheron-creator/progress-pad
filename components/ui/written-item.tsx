@@ -15,8 +15,10 @@ import {
 import { cn } from "@/lib/utils/cn";
 
 import { Checkbox } from "./checkbox";
+import { Chip } from "./chip";
+import { DatePicker } from "./date-picker";
 import { IconButton } from "./icon-button";
-import { CheckIcon, TrashIcon } from "./icon";
+import { CalendarBlankIcon, CheckIcon, TrashIcon } from "./icon";
 import { Tag } from "./tag";
 import { Text } from "./text";
 import { Textarea } from "./textarea";
@@ -42,6 +44,9 @@ type WrittenItemProps = Omit<HTMLAttributes<HTMLElement>, "title" | "onChange"> 
   onChange?: (next: WrittenItemChange) => void;
   onDirtyChange?: (dirty: boolean) => void;
   onDelete?: () => void;
+  dateLabel?: string;
+  dateValue?: string;
+  onDateChange?: (value: string) => void;
   accent?: string;
   checkboxLocked?: boolean;
 };
@@ -62,6 +67,9 @@ export function WrittenItem({
   onChange,
   onDirtyChange,
   onDelete,
+  dateLabel,
+  dateValue,
+  onDateChange,
   accent,
   checkboxLocked = false,
   className,
@@ -240,124 +248,172 @@ export function WrittenItem({
     }
   }
 
+  const checkboxControl = checkbox ? (
+    <Checkbox
+      size="xl"
+      tone="accent"
+      checked={checked ?? achieved}
+      disabled={checkboxLocked}
+      onChange={
+        checkboxLocked ? undefined : (event) => onCheckedChange?.(event.currentTarget.checked)
+      }
+      aria-label={title}
+      className="size-6.5! shrink-0"
+      boxClassName={
+        accent || isDone
+          ? cn(
+              "rounded-sm text-white",
+              isDone
+                ? "border-transparent! bg-(--pp-spring-green-600)! peer-checked:border-transparent peer-checked:bg-(--pp-spring-green-600) peer-disabled:border-transparent! peer-disabled:bg-(--pp-spring-green-600)!"
+                : "border-(--pp-item-accent) peer-checked:border-transparent peer-checked:bg-(--pp-spring-green-600)",
+            )
+          : undefined
+      }
+    />
+  ) : null;
+
+  const dateControl = dateLabel ? (
+    onDateChange && dateValue ? (
+      <DatePicker
+        variant="chip"
+        showLabel={false}
+        value={dateValue}
+        displayLabel={dateLabel}
+        onChange={onDateChange}
+      />
+    ) : (
+      <Chip
+        size="sm"
+        state="outlined"
+        leftIcon={<CalendarBlankIcon size={12} />}
+        className="pointer-events-none shrink-0"
+        aria-label={dateLabel}
+      >
+        {dateLabel}
+      </Chip>
+    )
+  ) : null;
+
+  const deleteControl = onDelete ? (
+    <IconButton label={`Delete ${title}`} variant="danger" look="clear" size="md" className="shrink-0" onClick={onDelete}>
+      <TrashIcon />
+    </IconButton>
+  ) : null;
+
+  const achievedControl = isDone ? (
+    <Tag
+      size="xs"
+      className="shrink-0 border-transparent! bg-(--pp-spring-green-600)! text-white!"
+      leftIcon={<CheckIcon size={8} weight="bold" />}
+    >
+      ACHIEVED
+    </Tag>
+  ) : null;
+
   return (
     <article
       className={cn(
-        "flex items-center gap-3 rounded-md border bg-surface px-(--pp-space-16) py-(--pp-space-12)",
-        editing && "items-start",
+        "flex rounded-md border bg-surface px-(--pp-space-16) py-(--pp-space-12)",
+        editing ? "flex-col gap-2" : "items-center gap-3",
         isDone ? "border-(--pp-spring-green-600)" : accent ? undefined : "border-border",
         className,
       )}
       style={itemStyle}
+      onBlur={editing ? handleEditorBlur : undefined}
       {...props}
     >
-      {checkbox ? (
-        <Checkbox
-          size="xl"
-          tone="accent"
-          checked={checked ?? achieved}
-          disabled={checkboxLocked}
-          onChange={
-            checkboxLocked ? undefined : (event) => onCheckedChange?.(event.currentTarget.checked)
-          }
-          aria-label={title}
-          className="size-6.5! shrink-0"
-          boxClassName={
-            accent || isDone
-              ? cn(
-                "rounded-sm text-white",
-                isDone
-                  ? "border-transparent! bg-(--pp-spring-green-600)! peer-checked:border-transparent peer-checked:bg-(--pp-spring-green-600) peer-disabled:border-transparent! peer-disabled:bg-(--pp-spring-green-600)!"
-                  : "border-(--pp-item-accent) peer-checked:border-transparent peer-checked:bg-(--pp-spring-green-600)",
-              )
-              : undefined
-          }
-        />
-      ) : null}
-      {leftIcon}
       {editing ? (
-        <div className="flex min-w-0 flex-1 flex-col gap-2" onBlur={handleEditorBlur}>
-          <Textarea
-            ref={titleRef}
-            autoSize
-            value={draftTitle}
-            onChange={(event) => {
-              setDraftTitle(event.currentTarget.value);
-              scheduleSave();
-            }}
-            onKeyDown={handleTitleKeyDown}
-            aria-label="Edit entry"
-          />
+        <>
+          <div className="flex items-center gap-3">
+            {checkboxControl}
+            {leftIcon}
+            <div className="min-w-0 flex-1">
+              <Textarea
+                ref={titleRef}
+                autoSize
+                value={draftTitle}
+                onChange={(event) => {
+                  setDraftTitle(event.currentTarget.value);
+                  scheduleSave();
+                }}
+                onKeyDown={handleTitleKeyDown}
+                aria-label="Edit entry"
+              />
+            </div>
+            {achievedControl}
+            {dateControl}
+            {deleteControl}
+          </div>
           {notesEditable ? (
-            <Textarea
-              ref={notesRef}
-              autoSize
-              value={draftNotes}
-              onChange={(event) => {
-                setDraftNotes(event.currentTarget.value);
-                scheduleSave();
-              }}
-              onKeyDown={handleNotesKeyDown}
-              placeholder={notesPlaceholder}
-              aria-label={notesPlaceholder}
-            />
+            <div className="flex gap-3">
+              {checkboxControl ? <span className="size-6.5 shrink-0" aria-hidden /> : null}
+              <div className="min-w-0 flex-1">
+                <Textarea
+                  ref={notesRef}
+                  autoSize
+                  value={draftNotes}
+                  onChange={(event) => {
+                    setDraftNotes(event.currentTarget.value);
+                    scheduleSave();
+                  }}
+                  onKeyDown={handleNotesKeyDown}
+                  placeholder={notesPlaceholder}
+                  aria-label={notesPlaceholder}
+                />
+              </div>
+            </div>
           ) : null}
-        </div>
-      ) : editable ? (
-        <div className="min-w-0 flex-1">
-          <button
-            type="button"
-            className="block w-full min-w-0 cursor-text text-left"
-            onClick={() => beginEdit("title")}
-          >
-            <Text variant="label" className={cn("wrap-break-word whitespace-pre-wrap", striked && doneText)}>
-              {title}
-            </Text>
-          </button>
-          {notes ? (
-            <button
-              type="button"
-              className="block w-full min-w-0 cursor-text text-left"
-              onClick={() => beginEdit("notes")}
-            >
-              <Text
-                variant="caption"
-                className={cn("wrap-break-word whitespace-pre-wrap", striked ? doneText : "text-foreground-muted")}
-              >
-                {notes}
-              </Text>
-            </button>
-          ) : null}
-        </div>
+        </>
       ) : (
-        <div className="min-w-0 flex-1">
-          <Text variant="label" className={cn("wrap-break-word whitespace-pre-wrap", striked && doneText)}>
-            {title}
-          </Text>
-          {notes ? (
-            <Text
-              variant="caption"
-              className={cn("wrap-break-word whitespace-pre-wrap", striked ? doneText : "text-foreground-muted")}
-            >
-              {notes}
-            </Text>
-          ) : null}
-        </div>
+        <>
+          {checkboxControl}
+          {leftIcon}
+          {editable ? (
+            <div className="min-w-0 flex-1">
+              <button
+                type="button"
+                className="block w-full min-w-0 cursor-text text-left"
+                onClick={() => beginEdit("title")}
+              >
+                <Text variant="label" className={cn("wrap-break-word whitespace-pre-wrap", striked && doneText)}>
+                  {title}
+                </Text>
+              </button>
+              {notes ? (
+                <button
+                  type="button"
+                  className="block w-full min-w-0 cursor-text text-left"
+                  onClick={() => beginEdit("notes")}
+                >
+                  <Text
+                    variant="caption"
+                    className={cn("wrap-break-word whitespace-pre-wrap", striked ? doneText : "text-foreground-muted")}
+                  >
+                    {notes}
+                  </Text>
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="min-w-0 flex-1">
+              <Text variant="label" className={cn("wrap-break-word whitespace-pre-wrap", striked && doneText)}>
+                {title}
+              </Text>
+              {notes ? (
+                <Text
+                  variant="caption"
+                  className={cn("wrap-break-word whitespace-pre-wrap", striked ? doneText : "text-foreground-muted")}
+                >
+                  {notes}
+                </Text>
+              ) : null}
+            </div>
+          )}
+          {achievedControl}
+          {dateControl}
+          {deleteControl}
+        </>
       )}
-      {isDone ? (
-        <Tag
-          size="xs"
-          className="shrink-0 border-transparent! bg-(--pp-spring-green-600)! text-white!"
-          leftIcon={<CheckIcon size={8} weight="bold" />}
-        >
-          ACHIEVED
-        </Tag>
-      ) : null}
-      {onDelete ? (
-        <IconButton label={`Delete ${title}`} variant="danger" look="clear" size="md" className="shrink-0" onClick={onDelete}>
-          <TrashIcon />
-        </IconButton>
-      ) : null}
     </article>
   );
 }

@@ -20,7 +20,7 @@ type DropdownProps = {
   onChange: (value: string) => void;
   placeholder?: string;
   size?: FieldSize;
-  look?: "field" | "chip";
+  look?: "field" | "chip" | "pill";
   disabled?: boolean;
   className?: string;
   "aria-label"?: string;
@@ -67,7 +67,7 @@ export function Dropdown({
   }, []);
 
   return (
-    <Field className={cn(look === "chip" && "w-auto!", className)}>
+    <Field className={cn(look !== "field" && "w-auto!", className)}>
       {label ? (
         <FieldLabel htmlFor={buttonId} className={labelClassName}>
           {label}
@@ -85,7 +85,13 @@ export function Dropdown({
           className={
             look === "chip"
               ? "inline-flex h-auto min-h-0 cursor-pointer items-center justify-between gap-(--pp-space-4) rounded-full border border-(--pp-bondi-blue-600) bg-(--pp-bondi-blue-50) px-(--pp-space-16) py-(--pp-space-4) text-(length:--pp-font-size-12) font-(--pp-font-weight-semibold) leading-none text-(--pp-bondi-blue-600) disabled:cursor-not-allowed disabled:opacity-50"
-              : cn(
+              : look === "pill"
+                ? cn(
+                  "inline-flex h-8 min-w-28 cursor-pointer items-center justify-between gap-1.5 rounded-full border border-border bg-surface px-3 text-(length:--pp-text-control-sm-size) leading-none text-foreground shadow-sm",
+                  open && "border-primary",
+                  disabled && "cursor-not-allowed opacity-50",
+                )
+                : cn(
                   "type-body pp-control flex cursor-pointer items-center justify-between gap-2 text-left",
                   fieldSizeClass[size],
                   fieldPaddingClass[size],
@@ -101,13 +107,16 @@ export function Dropdown({
           >
             {selected?.label ?? placeholder}
           </span>
-          <ChevronDownIcon size={look === "chip" ? 12 : undefined} />
+          <ChevronDownIcon
+            size={look === "field" ? undefined : 12}
+            className={look === "pill" ? "text-foreground-muted" : undefined}
+          />
         </button>
         {open ? (
           <ul
             id={listId}
             role="listbox"
-            className="absolute z-10 mt-1 w-full overflow-hidden rounded-sm border border-border bg-surface py-1 shadow-md"
+            className="absolute z-20 mt-1 w-full overflow-hidden rounded-sm border border-border bg-surface py-1 shadow-md"
           >
             {options.map((option) => {
               const isSelected = option.value === value;
@@ -117,7 +126,10 @@ export function Dropdown({
                   <button
                     type="button"
                     className={cn(
-                      "type-body flex w-full px-3 py-2 text-left text-foreground-muted hover:bg-primary-muted",
+                      "flex w-full text-left text-foreground-muted hover:bg-primary-muted",
+                      look === "pill"
+                        ? "px-2.5 py-1.5 text-(length:--pp-text-control-sm-size) leading-snug"
+                        : "type-body px-3 py-2",
                       isSelected && "bg-primary-muted",
                     )}
                     onClick={() => {

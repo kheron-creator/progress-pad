@@ -40,6 +40,7 @@ type CalendarStripProps = {
   selectionCount?: number;
   onDayClick?: (date: Date) => void;
   onClear?: () => void;
+  compact?: boolean;
   className?: string;
 };
 
@@ -120,6 +121,7 @@ export function CalendarStrip({
   selectionCount = 0,
   onDayClick,
   onClear,
+  compact = false,
   className,
 }: CalendarStripProps) {
   const selected = startOfDay(value);
@@ -156,7 +158,7 @@ export function CalendarStrip({
   }, [selected, weekStartsOn]);
 
   function shift(amount: number) {
-    if (look !== "intention" && view === "week") {
+    if (!compact && look !== "intention" && view === "week") {
       onChange(addDays(selected, amount * 7));
       return;
     }
@@ -213,6 +215,15 @@ export function CalendarStrip({
         >
           <ChevronRightIcon size={16} />
         </button>
+        {compact ? (
+          <button
+            type="button"
+            className="type-label ml-auto cursor-pointer text-primary"
+            onClick={() => onChange(today)}
+          >
+            Today
+          </button>
+        ) : null}
       </div>
       <div
         className={cn(
@@ -333,7 +344,7 @@ export function CalendarStrip({
         >
           Clear calendar
         </button>
-      ) : (
+      ) : compact ? null : (
         <Text variant="caption" className="text-foreground-muted">
           Selected Date:{" "}
           <span className="font-(--pp-font-weight-semibold) text-secondary">{isoDate(selected)}</span>
@@ -349,7 +360,9 @@ export function CalendarStrip({
         className,
       )}
     >
-      {look === "intention" ? (
+      {compact ? (
+        monthGrid
+      ) : look === "intention" ? (
         <>
           <div className="flex flex-col gap-2">
             <Text as="h2" variant="cardTitle" className="min-w-0 truncate font-(--pp-font-weight-semibold)">

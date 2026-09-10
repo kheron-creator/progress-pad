@@ -1,12 +1,5 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { ComingSoonPage } from "@/components/app/status-page";
-
-export const metadata: Metadata = {
-  title: "Active Mind Sweep · Progress Pad",
-  description: "Active Mind Sweep is coming soon.",
-};
-
-export default function HabitSweepRoute() {
-  return <ComingSoonPage />;
+export default function HabitSweepRedirect() {
+  redirect("/active-mind-sweep");
 }

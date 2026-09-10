@@ -20,6 +20,7 @@ const protectedPrefixes = [
   "/onboarding",
   "/dashboard",
   "/assistant",
+  "/active-mind-sweep",
   "/habit-sweep",
   "/coming-soon",
   "/api",

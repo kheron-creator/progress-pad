@@ -155,3 +155,23 @@ export const HOME_PILLARS = [
     placeholder: "How have your romantic relationships or connections felt lately?",
   },
 ] as const;
+
+export const ACTIVE_MIND_SWEEP = {
+  title: "Active Mind Sweep",
+  kicker: "Global mental RAM",
+  description:
+    "Your unified repository of mental clutter, uncataloged ideas, and stream-of-consciousness captures across all days. Unload your mind, elaborate notes, and promote thoughts into structured tasks or recurring triggers.",
+  newLabel: "New mind sweep",
+  captureTitle: "Capture new thought / mind sweep",
+  searchPlaceholder: "Search mind sweeps, notes…",
+  addLabel: "Save to mind sweep",
+  placeholder: "Unload a thought, idea, or mental clutter...",
+  notesPlaceholder: "Notes or Context (Optional)...",
+  changeDateTitle: "Change date",
+  changeDateDescription: "This item will move to that day’s Mind Sweep.",
+  stats: {
+    active: "Active",
+    today: "Today",
+    achieved: "Achieved",
+  },
+} as const;
