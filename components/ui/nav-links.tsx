@@ -26,7 +26,7 @@ export type NavLinkItem = {
 
 export const defaultNavItems: NavLinkItem[] = [
   { id: "dashboard", label: "Dashboard", icon: <GridIcon size={14} /> },
-  { id: "habit-sweep", label: "Active Mind Sweep", icon: <ListBulletsIcon size={14} /> },
+  { id: "active-mind-sweep", label: "Active Mind Sweep", icon: <ListBulletsIcon size={14} /> },
   {
     id: "progress-today",
     label: "PROGRESS TODAY",
