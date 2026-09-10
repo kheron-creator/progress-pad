@@ -87,16 +87,16 @@ export function Dropdown({
               ? "inline-flex h-auto min-h-0 cursor-pointer items-center justify-between gap-(--pp-space-4) rounded-full border border-(--pp-bondi-blue-600) bg-(--pp-bondi-blue-50) px-(--pp-space-16) py-(--pp-space-4) text-(length:--pp-font-size-12) font-(--pp-font-weight-semibold) leading-none text-(--pp-bondi-blue-600) disabled:cursor-not-allowed disabled:opacity-50"
               : look === "pill"
                 ? cn(
-                    "inline-flex h-8 min-w-28 cursor-pointer items-center justify-between gap-1.5 rounded-full border border-border bg-surface px-3 text-[length:var(--pp-text-control-sm-size)] leading-none text-foreground shadow-sm",
-                    open && "border-primary",
-                    disabled && "cursor-not-allowed opacity-50",
-                  )
+                  "inline-flex h-8 min-w-28 cursor-pointer items-center justify-between gap-1.5 rounded-full border border-border bg-surface px-3 text-(length:--pp-text-control-sm-size) leading-none text-foreground shadow-sm",
+                  open && "border-primary",
+                  disabled && "cursor-not-allowed opacity-50",
+                )
                 : cn(
-                    "type-body pp-control flex cursor-pointer items-center justify-between gap-2 text-left",
-                    fieldSizeClass[size],
-                    fieldPaddingClass[size],
-                    fieldStateClass[disabled ? "disabled" : open ? "focus" : "default"],
-                  )
+                  "type-body pp-control flex cursor-pointer items-center justify-between gap-2 text-left",
+                  fieldSizeClass[size],
+                  fieldPaddingClass[size],
+                  fieldStateClass[disabled ? "disabled" : open ? "focus" : "default"],
+                )
           }
           onClick={() => setOpen((current) => !current)}
         >
@@ -128,7 +128,7 @@ export function Dropdown({
                     className={cn(
                       "flex w-full text-left text-foreground-muted hover:bg-primary-muted",
                       look === "pill"
-                        ? "px-2.5 py-1.5 text-[length:var(--pp-text-control-sm-size)] leading-snug"
+                        ? "px-2.5 py-1.5 text-(length:--pp-text-control-sm-size) leading-snug"
                         : "type-body px-3 py-2",
                       isSelected && "bg-primary-muted",
                     )}
