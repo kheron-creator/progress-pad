@@ -45,8 +45,9 @@ import {
   SunIcon,
 } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
 import { NavLinks, defaultNavItems } from "@/components/ui/nav-links";
+import { Pagination } from "@/components/ui/pagination";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Progress } from "@/components/ui/progress";
 import { ProgressSection } from "@/components/ui/progress-section";
 import { QuestionField } from "@/components/ui/question-field";
@@ -172,6 +173,8 @@ export function ComponentGallery() {
   const [featureId, setFeatureId] = useState("today");
   const [scenarioName, setScenarioName] = useState("Productive Morning");
   const [scenarioDescription, setScenarioDescription] = useState("");
+  const [galleryPage, setGalleryPage] = useState(1);
+  const [galleryPageSize, setGalleryPageSize] = useState(6);
 
   return (
     <>
@@ -237,7 +240,7 @@ export function ComponentGallery() {
           <div className="flex flex-col gap-2">
             <Text variant="caption">Nav links — selected item</Text>
             <div className="flex w-full flex-col gap-2">
-              {["dashboard", "habit-sweep", "progress-today", "triggers", "assistant"].map((id) => (
+              {["dashboard", "active-mind-sweep", "progress-today", "triggers", "assistant"].map((id) => (
                 <NavLinks key={id} selected={id} items={DEMO_NAV_ITEMS} />
               ))}
             </div>
@@ -933,6 +936,18 @@ export function ComponentGallery() {
               { value: "list", label: "List" },
               { value: "board", label: "Board" },
             ]}
+          />
+          <Pagination
+            page={galleryPage}
+            pageCount={Math.max(1, Math.ceil(24 / galleryPageSize))}
+            total={24}
+            pageSize={galleryPageSize}
+            onPageChange={setGalleryPage}
+            onPageSizeChange={(size) => {
+              setGalleryPageSize(size);
+              setGalleryPage(1);
+            }}
+            itemLabel="ideas"
           />
           <div className="flex flex-wrap items-center gap-3">
             <Avatar initials="PP" size="sm" />
