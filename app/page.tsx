@@ -62,7 +62,7 @@ export default function HomePage() {
 
           </div>
           <div className="hidden min-h-64 items-end justify-center lg:flex">
-            <MountainIllustration className="h-full max-h-[28rem] w-full" />
+            <MountainIllustration className="h-full max-h-112 w-full" />
           </div>
         </section>
 
