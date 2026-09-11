@@ -21,7 +21,6 @@ type PillarRowProps = {
   onNotesChange?: (value: string) => void;
   onNotesBlur?: () => void;
   max?: number;
-  accent?: string;
   className?: string;
 };
 
@@ -36,7 +35,6 @@ export function PillarRow({
   onNotesChange,
   onNotesBlur,
   max = 10,
-  accent = "var(--pp-magenta-400)",
   className,
 }: PillarRowProps) {
   const [open, setOpen] = useState(false);
@@ -121,7 +119,6 @@ export function PillarRow({
             value={notes}
             onChange={onNotesChange}
             label={`Dictate ${title} context`}
-            style={{ borderColor: accent, color: accent }}
           /> */}
         </div>
       </div>

@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { TRIGGERS_PICK_COPY } from "@/lib/triggers/content";
 import { cn } from "@/lib/utils/cn";
 
-import { Card } from "./card";
 import { IconMark } from "./icon-mark";
 import { LightningIcon } from "./icon";
 import { Text } from "./text";
