@@ -168,8 +168,9 @@ export const ARCHIVE = {
   emptyAction: "Go to Progress Today",
   noPeriodsTitle: "No archive yet",
   noPeriodsDescription: "Start logging on Progress Today. Your history will collect here, period by period.",
-  previousPeriod: "Previous period",
-  nextPeriod: "Next period",
+  searchPlaceholder: "Search entries, notes…",
+  searchEmptyTitle: "No matching entries",
+  searchEmptyDescription: "Try a different search.",
 } as const;
 
 export const ACTIVE_MIND_SWEEP = {
@@ -183,8 +184,10 @@ export const ACTIVE_MIND_SWEEP = {
   addLabel: "Save to mind sweep",
   placeholder: "Unload a thought, idea, or mental clutter...",
   notesPlaceholder: "Notes or Context (Optional)...",
-  changeDateTitle: "Change date",
-  changeDateDescription: "This item will move to that day’s Mind Sweep.",
+  emptyTitle: "Nothing here",
+  emptyDescription: "Unload a thought, idea, or mental clutter. It will stay here until you achieve it.",
+  searchEmptyTitle: "No matching mind sweeps",
+  searchEmptyDescription: "Try a different search.",
   stats: {
     active: "Active",
     today: "Today",

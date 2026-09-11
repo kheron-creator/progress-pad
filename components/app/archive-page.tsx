@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/components/app/session-store-provider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   BookOpenIcon,
@@ -21,9 +21,11 @@ import {
   LightbulbIcon,
   LightningIcon,
   QuotesIcon,
+  SearchIcon,
   SparkleIcon,
 } from "@/components/ui/icon";
 import { IconMark } from "@/components/ui/icon-mark";
+import { Input } from "@/components/ui/input";
 import { Tabs } from "@/components/ui/tabs";
 import { Tag } from "@/components/ui/tag";
 import { Text } from "@/components/ui/text";
@@ -94,6 +96,14 @@ const CATEGORY_CHIP: Record<ArchiveCategory, { chip: string; icon: ReactNode }> 
     icon: <ChartLineIcon size={14} />,
   },
 };
+
+function entryMatchesQuery(entry: ArchiveTimelineEntry, needle: string) {
+  return (
+    entry.title.toLowerCase().includes(needle) ||
+    entry.notes.toLowerCase().includes(needle) ||
+    (entry.value ?? "").toLowerCase().includes(needle)
+  );
+}
 
 function entryCountLabel(count: number) {
   return count === 1 ? "1 entry" : `${count} entries`;
@@ -266,7 +276,9 @@ export function ArchivePage() {
   const [range, setRange] = useState(defaultArchiveRange);
   const [periodIndex, setPeriodIndex] = useState(0);
   const [periodOpen, setPeriodOpen] = useState(true);
+  const [rangeOpen, setRangeOpen] = useState(false);
   const [openDays, setOpenDays] = useState<Set<string> | null>(null);
+  const [query, setQuery] = useState("");
 
   const triggersByDate = useMemo(() => {
     const next: Record<string, ReturnType<typeof flattenDayTriggers>> = {};
@@ -313,12 +325,33 @@ export function ArchivePage() {
     ).map((day) => ({ day, entries: dayTimeline(day) }));
   }, [filter, mindSweepByDate, pillarsByDate, selectedPeriod, triggersByDate, writingByDate]);
 
+  const visibleDays = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) {
+      return days;
+    }
+    return days
+      .map(({ day, entries }) => ({
+        day,
+        entries: entries.filter((entry) => entryMatchesQuery(entry, needle)),
+      }))
+      .filter(({ entries }) => entries.length > 0);
+  }, [days, query]);
+
   useEffect(() => {
     setPeriodOpen(true);
     setOpenDays(null);
-  }, [selectedPeriod?.id, filter]);
+  }, [selectedPeriod?.id, filter, query]);
 
-  const resolvedOpenDays = openDays ?? new Set(days[0] ? [days[0].day.date] : []);
+  const resolvedOpenDays =
+    openDays ??
+    new Set(
+      query.trim()
+        ? visibleDays.map(({ day }) => day.date)
+        : visibleDays[0]
+          ? [visibleDays[0].day.date]
+          : [],
+    );
 
   function toggleDay(date: string) {
     setOpenDays((current) => {
@@ -353,8 +386,8 @@ export function ArchivePage() {
         </div>
       </Card>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 overflow-x-auto">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 overflow-x-auto overscroll-x-contain scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <Tabs
             label={ARCHIVE.categoryLabel}
             tone="primary"
@@ -364,36 +397,39 @@ export function ArchivePage() {
             options={CATEGORY_TABS}
           />
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-3 self-end">
+        <div className="relative flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:items-end">
           <Tabs
             label={ARCHIVE.grainLabel}
             tone="primary"
             size="lg"
+            fullWidth
+            className="sm:w-auto sm:inline-flex"
             value={grain}
-            onChange={(next) => setGrain(next as ArchiveGrain)}
+            onChange={(next) => {
+              const value = next as ArchiveGrain;
+              setGrain(value);
+              setRangeOpen(value === "range");
+            }}
             options={GRAIN_TABS}
           />
-          {grain === "range" ? (
-            <div className="flex flex-wrap justify-end gap-3">
-              <DatePicker
-                showLabel={false}
-                placeholder="From"
-                aria-label="From"
-                value={range.from}
-                onChange={(from) => setRange((current) => ({ ...current, from }))}
-                className="w-44"
-              />
-              <DatePicker
-                showLabel={false}
-                placeholder="To"
-                aria-label="To"
-                value={range.to}
-                onChange={(to) => setRange((current) => ({ ...current, to }))}
-                className="w-44"
-              />
-            </div>
-          ) : null}
+          <DateRangePicker
+            from={range.from}
+            to={range.to}
+            open={grain === "range" && rangeOpen}
+            onOpenChange={setRangeOpen}
+            onApply={setRange}
+          />
         </div>
+      </div>
+
+      <div className="w-full sm:max-w-sm sm:self-end">
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.currentTarget.value)}
+          placeholder={ARCHIVE.searchPlaceholder}
+          aria-label={ARCHIVE.searchPlaceholder}
+          leftIcon={<SearchIcon size={16} />}
+        />
       </div>
 
 
@@ -427,21 +463,26 @@ export function ArchivePage() {
           </button>
 
           {periodOpen ? (
-            days.length === 0 ? (
+            visibleDays.length === 0 ? (
               <div className="px-4 py-6">
                 <EmptyState
-                  title={ARCHIVE.emptyTitle}
-                  description={ARCHIVE.emptyDescription}
+                  media={<FolderIcon size="xl" className="text-(--pp-spring-green-700)" />}
+                  title={query.trim() ? ARCHIVE.searchEmptyTitle : ARCHIVE.emptyTitle}
+                  description={
+                    query.trim() ? ARCHIVE.searchEmptyDescription : ARCHIVE.emptyDescription
+                  }
                   action={
-                    <Button size="md" onClick={() => router.push("/home")}>
-                      {ARCHIVE.emptyAction}
-                    </Button>
+                    query.trim() ? undefined : (
+                      <Button size="md" onClick={() => router.push("/home")}>
+                        {ARCHIVE.emptyAction}
+                      </Button>
+                    )
                   }
                 />
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {days.map(({ day, entries }) => {
+                {visibleDays.map(({ day, entries }) => {
                   const open = resolvedOpenDays.has(day.date);
                   return (
                     <section key={day.date} className="px-3 sm:px-5">
@@ -483,6 +524,7 @@ export function ArchivePage() {
         </div>
       ) : (
         <EmptyState
+          media={<FolderIcon size="xl" className="text-(--pp-spring-green-700)" />}
           title={ARCHIVE.noPeriodsTitle}
           description={ARCHIVE.noPeriodsDescription}
           action={
