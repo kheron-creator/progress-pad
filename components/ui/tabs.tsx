@@ -39,7 +39,7 @@ export function Tabs({
       role="tablist"
       aria-label={label}
       className={cn(
-        "bg-(--pp-grey-25)",
+        "bg-background-subtle",
         size === "lg"
           ? "h-8 max-h-8 rounded-md p-0.5 sm:h-10 sm:max-h-10 sm:p-1"
           : "rounded-sm p-0.5",

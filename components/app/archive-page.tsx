@@ -64,31 +64,31 @@ const CATEGORY_TABS: { value: ArchiveFilter; label: string }[] = [
 
 const CATEGORY_CHIP: Record<ArchiveCategory, { chip: string; icon: ReactNode }> = {
   gratitude: {
-    chip: "border-(--pp-bondi-blue-400) bg-(--pp-bondi-blue-10) text-(--pp-bondi-blue-600)",
+    chip: "border-(--pp-bondi-blue-400) bg-(--pp-bondi-blue-10) text-(--pp-bondi-blue-600) in-data-[theme=dark]:bg-(--pp-bondi-blue-900) in-data-[theme=dark]:text-(--pp-bondi-blue-200)",
     icon: <SparkleIcon size={14} />,
   },
   "mind-sweep": {
-    chip: "border-(--pp-magenta-400) bg-(--pp-magenta-10) text-(--pp-magenta-600)",
+    chip: "border-(--pp-magenta-400) bg-(--pp-magenta-10) text-(--pp-magenta-600) in-data-[theme=dark]:bg-(--pp-magenta-900) in-data-[theme=dark]:text-(--pp-magenta-200)",
     icon: <HeadCircuitIcon size={14} />,
   },
   "done-list": {
-    chip: "border-(--pp-spring-green-600) bg-(--pp-spring-green-10) text-(--pp-spring-green-700)",
+    chip: "border-(--pp-spring-green-600) bg-(--pp-spring-green-10) text-(--pp-spring-green-700) in-data-[theme=dark]:bg-(--pp-spring-green-900) in-data-[theme=dark]:text-(--pp-spring-green-200)",
     icon: <ChecksIcon size={14} />,
   },
   quotes: {
-    chip: "border-(--pp-purple-500) bg-(--pp-purple-500)/8 text-(--pp-purple-500)",
+    chip: "border-(--pp-purple-500) bg-(--pp-purple-500)/8 text-(--pp-purple-500) in-data-[theme=dark]:bg-background-subtle",
     icon: <QuotesIcon size={14} />,
   },
   journal: {
-    chip: "border-(--pp-pink-500) bg-(--pp-pink-500)/8 text-(--pp-pink-500)",
+    chip: "border-(--pp-pink-500) bg-(--pp-pink-500)/8 text-(--pp-pink-500) in-data-[theme=dark]:bg-background-subtle",
     icon: <BookOpenIcon size={14} />,
   },
   reflections: {
-    chip: "border-(--pp-cobalt-500) bg-(--pp-cobalt-500)/8 text-(--pp-cobalt-500)",
+    chip: "border-(--pp-cobalt-500) bg-(--pp-cobalt-500)/8 text-(--pp-cobalt-500) in-data-[theme=dark]:bg-background-subtle",
     icon: <LightbulbIcon size={14} />,
   },
   triggers: {
-    chip: "border-(--pp-yellow-600) bg-(--pp-yellow-25) text-(--pp-yellow-700)",
+    chip: "border-(--pp-yellow-600) bg-(--pp-yellow-25) text-(--pp-yellow-700) in-data-[theme=dark]:bg-(--pp-yellow-900) in-data-[theme=dark]:text-(--pp-yellow-200)",
     icon: <LightningIcon size={14} />,
   },
   pillars: {
@@ -249,7 +249,7 @@ function ArchiveCategoryGroup({
       </span>
       <div
         className={cn(
-          "flex min-w-0 flex-1 flex-col divide-y divide-border overflow-hidden rounded-md border bg-background",
+          "flex min-w-0 flex-1 flex-col divide-y divide-border overflow-hidden rounded-md border bg-background-subtle",
           allAchieved ? "border-(--pp-spring-green-600)" : "border-border",
         )}
       >
@@ -483,29 +483,32 @@ export function ArchivePage() {
             ) : (
               <div className="divide-y divide-border">
                 {visibleDays.map(({ day, entries }) => {
-                  const open = resolvedOpenDays.has(day.date);
+                  const singleDay = selectedPeriod.start === selectedPeriod.end;
+                  const open = singleDay || resolvedOpenDays.has(day.date);
                   return (
                     <section key={day.date} className="px-3 sm:px-5">
-                      <button
-                        type="button"
-                        aria-expanded={open}
-                        onClick={() => toggleDay(day.date)}
-                        className="flex w-full items-center gap-3 py-3.5 text-left outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-primary/25"
-                      >
-                        <span className="min-w-0 flex-1">
-                          <Text as="h3" variant="subtitle">
-                            {formatDayLabel(day.date)}
-                          </Text>
-                          <Text variant="caption" className="mt-0.5 block text-foreground-muted">
-                            {entryCountLabel(entries.length)}
-                          </Text>
-                        </span>
-                        <span className="inline-flex size-9 shrink-0 items-center justify-center text-foreground-muted">
-                          {open ? <ChevronUpIcon size={20} /> : <ChevronDownIcon size={20} />}
-                        </span>
-                      </button>
+                      {singleDay ? null : (
+                        <button
+                          type="button"
+                          aria-expanded={open}
+                          onClick={() => toggleDay(day.date)}
+                          className="flex w-full items-center gap-3 py-3.5 text-left outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-primary/25"
+                        >
+                          <span className="min-w-0 flex-1">
+                            <Text as="h3" variant="subtitle">
+                              {formatDayLabel(day.date)}
+                            </Text>
+                            <Text variant="caption" className="mt-0.5 block text-foreground-muted">
+                              {entryCountLabel(entries.length)}
+                            </Text>
+                          </span>
+                          <span className="inline-flex size-9 shrink-0 items-center justify-center text-foreground-muted">
+                            {open ? <ChevronUpIcon size={20} /> : <ChevronDownIcon size={20} />}
+                          </span>
+                        </button>
+                      )}
                       {open ? (
-                        <div className="flex flex-col gap-4 pb-5">
+                        <div className={cn("flex flex-col gap-4", singleDay ? "py-5" : "pb-5")}>
                           {groupArchiveEntries(entries).map((group) => (
                             <ArchiveCategoryGroup
                               key={group.category}
