@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { HomePage } from "@/components/app/home-page";
 
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function AppHomePage() {
-  return <HomePage />;
+  return (
+    <Suspense>
+      <HomePage />
+    </Suspense>
+  );
 }

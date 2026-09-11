@@ -8,6 +8,7 @@ import { AddMindSweepForm } from "@/components/ui/add-mind-sweep-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogConfirmActions } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import { CalendarBlankIcon, CheckCircleIcon, HeadCircuitIcon, ListBulletsIcon, PlusIcon, SearchIcon } from "@/components/ui/icon";
 import { IconMark, type IconMarkTone } from "@/components/ui/icon-mark";
 import { Input } from "@/components/ui/input";
@@ -470,7 +471,27 @@ export function ActiveMindSweepPage() {
             />
           </div>
         </Card>
-      ) : null}
+      ) : composerOpen ? null : (
+        <EmptyState
+          media={<HeadCircuitIcon size="xl" className="text-(--pp-spring-green-700)" />}
+          title={
+            query.trim() ? ACTIVE_MIND_SWEEP.searchEmptyTitle : ACTIVE_MIND_SWEEP.emptyTitle
+          }
+          description={
+            query.trim()
+              ? ACTIVE_MIND_SWEEP.searchEmptyDescription
+              : ACTIVE_MIND_SWEEP.emptyDescription
+          }
+          action={
+            query.trim() ? undefined : (
+              <Button size="md" onClick={openComposer}>
+                <PlusIcon size={16} />
+                {ACTIVE_MIND_SWEEP.newLabel}
+              </Button>
+            )
+          }
+        />
+      )}
 
       <Dialog
         open={pendingDelete !== null}

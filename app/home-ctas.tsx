@@ -2,18 +2,31 @@
 
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonSize } from "@/components/ui/button";
+import { LANDING } from "@/lib/marketing/content";
+import { cn } from "@/lib/utils/cn";
 
-export function HomeCtas() {
+type HomeCtasProps = {
+  size?: ButtonSize;
+  className?: string;
+  compact?: boolean;
+};
+
+export function HomeCtas({ size = "lg", className, compact = false }: HomeCtasProps) {
   const router = useRouter();
 
   return (
-    <div className="mt-8 flex w-full max-w-xs flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center">
-      <Button size="lg" onClick={() => router.push("/signup")}>
-        Sign up
+    <div className={cn("flex flex-wrap items-center gap-3", className)}>
+      <Button size={size} onClick={() => router.push("/signup")}>
+        {LANDING.primaryCta}
       </Button>
-      <Button size="lg" look="outline" onClick={() => router.push("/login")}>
-        Sign in
+      <Button
+        size={size}
+        look="outline"
+        className={cn(compact && "max-sm:hidden")}
+        onClick={() => router.push("/login")}
+      >
+        {LANDING.secondaryCta}
       </Button>
     </div>
   );

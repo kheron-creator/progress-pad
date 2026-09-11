@@ -6,9 +6,9 @@ import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 
 import {
-  ChatIcon,
   CheckCircleIcon,
   ChevronRightIcon,
+  FolderIcon,
   GridIcon,
   LightningIcon,
   ListBulletsIcon,
@@ -34,7 +34,7 @@ export const defaultNavItems: NavLinkItem[] = [
     featured: true,
   },
   { id: "triggers", label: "Triggers", icon: <LightningIcon size={14} weight="regular" /> },
-  { id: "assistant", label: "Assistant", icon: <ChatIcon size={14} /> },
+  { id: "archive", label: "Archive", icon: <FolderIcon size={14} /> },
 ];
 
 type NavLinksProps = {

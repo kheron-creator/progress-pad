@@ -24,6 +24,7 @@ import {
   DotsSixVerticalIcon,
   HeadCircuitIcon as PhosphorHeadCircuitIcon,
   HeartIcon as PhosphorHeartIcon,
+  LeafIcon as PhosphorLeafIcon,
   LightbulbIcon as PhosphorLightbulbIcon,
   LightningIcon as PhosphorLightningIcon,
   ListBulletsIcon as PhosphorListBulletsIcon,
@@ -128,6 +129,7 @@ export const LightbulbIcon = withIcon(PhosphorLightbulbIcon);
 export const LightningIcon = withIcon(PhosphorLightningIcon);
 export const HeadCircuitIcon = withIcon(PhosphorHeadCircuitIcon);
 export const HeartIcon = withIcon(PhosphorHeartIcon);
+export const LeafIcon = withIcon(PhosphorLeafIcon);
 export const TrashIcon = withIcon(PhosphorTrashIcon);
 export const BellIcon = withIcon(PhosphorBellIcon);
 export const BookOpenIcon = withIcon(PhosphorBookOpenIcon);

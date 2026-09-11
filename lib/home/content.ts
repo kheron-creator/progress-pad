@@ -156,6 +156,23 @@ export const HOME_PILLARS = [
   },
 ] as const;
 
+export const ARCHIVE = {
+  title: "Archive",
+  kicker: "Look back",
+  description:
+    "Browse what you logged over time — triggers, gratitude, mind sweep, done list, quotes, journal, reflections, and six pillars — one week, month, or date range at a time.",
+  grainLabel: "View by",
+  categoryLabel: "Filter entries",
+  emptyTitle: "Nothing logged here",
+  emptyDescription: "Entries you capture on Progress Today will show up in this period.",
+  emptyAction: "Go to Progress Today",
+  noPeriodsTitle: "No archive yet",
+  noPeriodsDescription: "Start logging on Progress Today. Your history will collect here, period by period.",
+  searchPlaceholder: "Search entries, notes…",
+  searchEmptyTitle: "No matching entries",
+  searchEmptyDescription: "Try a different search.",
+} as const;
+
 export const ACTIVE_MIND_SWEEP = {
   title: "Active Mind Sweep",
   kicker: "Global mental RAM",
@@ -167,8 +184,10 @@ export const ACTIVE_MIND_SWEEP = {
   addLabel: "Save to mind sweep",
   placeholder: "Unload a thought, idea, or mental clutter...",
   notesPlaceholder: "Notes or Context (Optional)...",
-  changeDateTitle: "Change date",
-  changeDateDescription: "This item will move to that day’s Mind Sweep.",
+  emptyTitle: "Nothing here",
+  emptyDescription: "Unload a thought, idea, or mental clutter. It will stay here until you achieve it.",
+  searchEmptyTitle: "No matching mind sweeps",
+  searchEmptyDescription: "Try a different search.",
   stats: {
     active: "Active",
     today: "Today",

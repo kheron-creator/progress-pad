@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,7 @@ import {
   deleteWritingEntry,
   emptyWritingDay,
   emptyPillarDay,
+  parseIsoDate,
   pillarDaysEqual,
   pillarsByDateEqual,
   savePillarEntries,
@@ -217,6 +219,7 @@ function ItemIcon({ children }: { children: ReactNode }) {
 }
 
 export function HomePage() {
+  const searchParams = useSearchParams();
   const [date, setDate] = useState(() => new Date());
   const [calendarView, setCalendarView] = useState<"week" | "month">("week");
   const assignments = useSessionStore((state) => state.assignments);
@@ -253,6 +256,13 @@ export function HomePage() {
   } | null>(null);
   const { toasts, showToast, dismissToast } = useToasts();
   const [celebrateName, setCelebrateName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const parsed = parseIsoDate(searchParams.get("date") ?? "");
+    if (parsed) {
+      setDate(parsed);
+    }
+  }, [searchParams]);
   const celebrateNoteRef = useRef<HTMLParagraphElement>(null);
   const celebrateTimer = useRef(0);
   const pillarsByDateRef = useRef(pillarsByDate);

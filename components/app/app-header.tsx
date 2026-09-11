@@ -10,7 +10,7 @@ import { Header } from "@/components/ui/header";
 import { MoonIcon, SignOutIcon, SunIcon, UserIcon } from "@/components/ui/icon";
 import { defaultNavItems } from "@/components/ui/nav-links";
 import { Text } from "@/components/ui/text";
-import type { Theme } from "@/lib/theme";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { flattenDayTriggers } from "@/lib/triggers/store";
 
 import { useCurrentUser } from "./current-user-provider";
@@ -25,7 +25,7 @@ const navHrefs: Record<string, string> = {
   "active-mind-sweep": "/active-mind-sweep",
   "progress-today": "/home",
   triggers: "/triggers",
-  assistant: "/assistant",
+  archive: "/archive",
 };
 
 function selectedNavId(pathname: string) {
@@ -38,8 +38,8 @@ function selectedNavId(pathname: string) {
   if (pathname.startsWith("/active-mind-sweep")) {
     return "active-mind-sweep";
   }
-  if (pathname.startsWith("/assistant")) {
-    return "assistant";
+  if (pathname.startsWith("/archive")) {
+    return "archive";
   }
   if (pathname.startsWith("/profile")) {
     return "";
@@ -65,18 +65,15 @@ function AccountMenu({
   email,
   initials,
   avatarSrc,
-  theme,
-  onThemeToggle,
 }: {
   name: string;
   email: string | null;
   initials: string;
   avatarSrc?: string;
-  theme: Theme;
-  onThemeToggle: () => void;
 }) {
   const { signOut, pending, error } = useSignOut();
   const { confirmLeave } = useUnsavedLeave();
+  const { theme } = useTheme();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -143,15 +140,17 @@ function AccountMenu({
               ) : null}
             </span>
           </Link>
-          <button
-            type="button"
-            role="menuitem"
-            className="type-label flex w-full items-center gap-2 border-b border-border px-3 py-2 text-left text-foreground hover:bg-background-subtle md:hidden"
-            onClick={onThemeToggle}
-          >
-            {theme === "dark" ? <SunIcon size={16} /> : <MoonIcon size={16} />}
-            {theme === "light" ? "Dark mode" : "Light mode"}
-          </button>
+          <div className="flex items-center gap-2 border-b border-border px-3 py-2 md:hidden">
+            {theme === "dark" ? (
+              <MoonIcon size={16} className="shrink-0 text-foreground" />
+            ) : (
+              <SunIcon size={16} className="shrink-0 text-foreground" />
+            )}
+            <Text variant="label" className="min-w-0 flex-1">
+              Theme
+            </Text>
+            <ThemeToggle />
+          </div>
           <button
             type="button"
             role="menuitem"
@@ -180,7 +179,6 @@ function AccountMenu({
 export function AppHeader() {
   const user = useCurrentUser();
   const pathname = usePathname();
-  const { theme, toggleTheme } = useTheme();
   const initials = initialsFromUser(user.name, user.email);
   const remainingToday = useSessionStore((state) => {
     const today = isoDate(new Date());
@@ -210,8 +208,6 @@ export function AppHeader() {
       selected={selectedNavId(pathname)}
       items={items}
       homeHref="/home"
-      theme={theme}
-      onThemeToggle={toggleTheme}
       initials={initials}
       avatarSrc={user.avatarUrl?.trim() || undefined}
       tools={<NotificationsMenu />}
@@ -221,8 +217,6 @@ export function AppHeader() {
           email={user.email}
           initials={initials}
           avatarSrc={user.avatarUrl?.trim() || undefined}
-          theme={theme}
-          onThemeToggle={toggleTheme}
         />
       }
     />

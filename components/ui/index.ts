@@ -14,6 +14,7 @@ export { AddMindSweepForm } from "./add-mind-sweep-form";
 export { AddScenarioDrawer } from "./add-scenario-drawer";
 export { AddTriggerDrawer } from "./add-trigger-drawer";
 export { DatePicker } from "./date-picker";
+export { DateRangePicker } from "./date-range-picker";
 export { DayPlanDrawer } from "./day-plan-drawer";
 export { Dialog, DialogActions, DialogConfirmActions } from "./dialog";
 export { Divider } from "./divider";
@@ -56,6 +57,7 @@ export {
   GridIcon,
   HeadCircuitIcon,
   HeartIcon,
+  LeafIcon,
   InfoIcon,
   WarningCircleIcon,
   XCircleIcon,

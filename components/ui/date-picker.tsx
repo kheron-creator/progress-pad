@@ -14,20 +14,22 @@ type DatePickerProps = {
   showLabel?: boolean;
   open?: boolean;
   label?: string;
+  placeholder?: string;
   value?: string;
   displayLabel?: string;
   variant?: "field" | "chip";
   onChange?: (value: string) => void;
   className?: string;
+  "aria-label"?: string;
 };
 
-const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] as const;
+export const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] as const;
 
-function startOfDay(date: Date) {
+export function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function isSameDay(a: Date, b: Date) {
+export function isSameDay(a: Date, b: Date) {
   return (
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
@@ -35,14 +37,14 @@ function isSameDay(a: Date, b: Date) {
   );
 }
 
-function formatIsoDate(date: Date) {
+export function formatIsoDate(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
-function parseIsoDate(value: string | undefined) {
+export function parseIsoDate(value: string | undefined) {
   if (!value) return null;
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.slice(0, 10));
   if (!match) return null;
@@ -63,7 +65,7 @@ function startOfWeek(date: Date) {
   return start;
 }
 
-function monthCells(view: Date) {
+export function monthCells(view: Date) {
   const start = startOfWeek(new Date(view.getFullYear(), view.getMonth(), 1));
   return Array.from({ length: 42 }, (_, index) => {
     const day = new Date(start);
@@ -72,11 +74,11 @@ function monthCells(view: Date) {
   });
 }
 
-function monthLabel(date: Date) {
+export function monthLabel(date: Date) {
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric" }).toUpperCase();
 }
 
-function displayDate(date: Date) {
+export function displayDate(date: Date) {
   return date.toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
@@ -89,11 +91,13 @@ export function DatePicker({
   showLabel = true,
   open,
   label = "Date",
+  placeholder = "Select a date",
   value,
   displayLabel,
   variant = "field",
   onChange,
   className,
+  "aria-label": ariaLabel,
 }: DatePickerProps) {
   const buttonId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -179,13 +183,13 @@ export function DatePicker({
     setView((current) => new Date(current.getFullYear(), current.getMonth() + amount, 1));
   }
 
-  const triggerLabel = displayLabel ?? (selected ? displayDate(selected) : "Select a date");
+  const triggerLabel = displayLabel ?? (selected ? displayDate(selected) : placeholder);
+  const empty = !displayLabel && !selected;
   const calendar = isOpen ? (
     <div
       ref={panelRef}
       className={cn(
-        "absolute z-30 overflow-hidden rounded-md border border-border bg-surface shadow-md",
-        variant === "chip" ? "right-0 w-64" : "left-0 w-full",
+        "absolute right-0 z-30 w-80 overflow-hidden rounded-md border border-border bg-surface shadow-md",
         placement === "above" ? "bottom-full mb-2" : "top-full mt-2",
       )}
     >
@@ -296,13 +300,17 @@ export function DatePicker({
               "pr-9",
             )}
           >
-            {triggerLabel}
+            {empty ? (
+              <span className="text-foreground-muted">{triggerLabel}</span>
+            ) : (
+              triggerLabel
+            )}
           </div>
           <IconButton
             id={buttonId}
             look="clear"
             size="sm"
-            label={isOpen ? "Close calendar" : "Open calendar"}
+            label={isOpen ? "Close calendar" : (ariaLabel ?? "Open calendar")}
             aria-expanded={isOpen}
             aria-haspopup="dialog"
             className="absolute top-1/2 right-3 -translate-y-1/2"

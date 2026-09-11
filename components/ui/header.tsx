@@ -6,18 +6,17 @@ import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 
 import { Avatar } from "./avatar";
-import { CloseIcon, MenuIcon, MoonIcon, SunIcon } from "./icon";
+import { CloseIcon, MenuIcon } from "./icon";
 import { IconMark } from "./icon-mark";
 import { Logo } from "./logo";
 import { defaultNavItems, NavLinks, type NavLinkItem } from "./nav-links";
+import { ThemeToggle } from "./theme-toggle";
 
 type HeaderProps = {
   selected?: string;
   onSelect?: (id: string) => void;
   items?: NavLinkItem[];
   homeHref?: string;
-  onThemeToggle?: () => void;
-  theme?: "light" | "dark";
   initials?: string;
   avatarSrc?: string;
   account?: ReactNode;
@@ -30,8 +29,6 @@ export function Header({
   onSelect,
   items = defaultNavItems,
   homeHref,
-  onThemeToggle,
-  theme = "light",
   initials = "PP",
   avatarSrc,
   account,
@@ -137,14 +134,7 @@ export function Header({
 
           <div className="relative z-20 flex w-max shrink-0 items-center self-center gap-1 md:justify-self-end md:gap-2">
             {tools}
-            <button
-              type="button"
-              aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
-              className="hidden size-9 items-center justify-center rounded-full bg-background-subtle p-0 leading-none text-foreground hover:bg-border-strong md:inline-flex"
-              onClick={onThemeToggle}
-            >
-              {theme === "dark" ? <SunIcon size={16} /> : <MoonIcon size={16} />}
-            </button>
+            <ThemeToggle className="max-md:hidden" />
             {account ?? <Avatar src={avatarSrc} initials={initials} size="sm" />}
           </div>
         </div>
