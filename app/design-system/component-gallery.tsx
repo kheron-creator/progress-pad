@@ -240,7 +240,7 @@ export function ComponentGallery() {
           <div className="flex flex-col gap-2">
             <Text variant="caption">Nav links — selected item</Text>
             <div className="flex w-full flex-col gap-2">
-              {["dashboard", "active-mind-sweep", "progress-today", "triggers", "assistant"].map((id) => (
+              {["dashboard", "active-mind-sweep", "progress-today", "triggers", "archive"].map((id) => (
                 <NavLinks key={id} selected={id} items={DEMO_NAV_ITEMS} />
               ))}
             </div>

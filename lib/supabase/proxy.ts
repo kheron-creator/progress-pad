@@ -19,7 +19,7 @@ const protectedPrefixes = [
   "/profile",
   "/onboarding",
   "/dashboard",
-  "/assistant",
+  "/archive",
   "/active-mind-sweep",
   "/habit-sweep",
   "/coming-soon",

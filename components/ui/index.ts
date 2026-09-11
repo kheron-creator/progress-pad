@@ -56,6 +56,7 @@ export {
   GridIcon,
   HeadCircuitIcon,
   HeartIcon,
+  LeafIcon,
   InfoIcon,
   WarningCircleIcon,
   XCircleIcon,

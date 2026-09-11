@@ -25,7 +25,7 @@ const navHrefs: Record<string, string> = {
   "active-mind-sweep": "/active-mind-sweep",
   "progress-today": "/home",
   triggers: "/triggers",
-  assistant: "/assistant",
+  archive: "/archive",
 };
 
 function selectedNavId(pathname: string) {
@@ -38,8 +38,8 @@ function selectedNavId(pathname: string) {
   if (pathname.startsWith("/active-mind-sweep")) {
     return "active-mind-sweep";
   }
-  if (pathname.startsWith("/assistant")) {
-    return "assistant";
+  if (pathname.startsWith("/archive")) {
+    return "archive";
   }
   if (pathname.startsWith("/profile")) {
     return "";

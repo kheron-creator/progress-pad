@@ -35,10 +35,10 @@ export function Tabs({
       role="tablist"
       aria-label={label}
       className={cn(
-        "inline-flex bg-background-subtle",
+        "inline-flex bg-(--pp-grey-25)",
         size === "lg"
           ? "h-10 max-h-10 items-stretch rounded-md p-1"
-          : "rounded-xs p-0.5",
+          : "rounded-sm p-0.5",
       )}
     >
       {options.map((option) => {
