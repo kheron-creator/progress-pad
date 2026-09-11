@@ -22,8 +22,9 @@ const body = Dosis({
 });
 
 export const metadata: Metadata = {
-  title: "Progress Pad",
-  description: "Progress Pad application foundation",
+  title: "Progress Pad · Progress Today",
+  description:
+    "Your space to check in, clear your head, and move forward. A Progress Today product.",
   applicationName: "Progress Pad",
 };
 

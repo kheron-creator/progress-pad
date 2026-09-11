@@ -8,7 +8,7 @@ import { Text, type TypeVariant } from "@/components/ui/text";
 import { cn } from "@/lib/utils/cn";
 
 import { ComponentGallery } from "./component-gallery";
-import { ThemeToggle } from "./theme-toggle";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export const metadata: Metadata = {
   title: "Design system · Progress Pad",
