@@ -21,7 +21,6 @@ const protectedPrefixes = [
   "/dashboard",
   "/archive",
   "/active-mind-sweep",
-  "/habit-sweep",
   "/coming-soon",
   "/api",
 ];
