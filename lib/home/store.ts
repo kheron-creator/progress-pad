@@ -22,6 +22,7 @@ export type StoredMindSweepItem = {
   title: string;
   notes: string | null;
   status: MindSweepStatus;
+  sort_order: number;
   created_at: string;
 };
 
@@ -117,13 +118,15 @@ export async function deleteWritingEntry(supabase: Client, id: string) {
 
 export async function addMindSweepItem(
   supabase: Client,
-  input: { onDate: string; title: string; notes?: string },
+  input: { onDate: string; title: string; notes?: string; sortOrder?: number },
 ) {
   const userId = await requireUserId(supabase);
   const title = input.title.trim();
   if (!title) {
     throw new Error("Title is required");
   }
+
+  const sortOrder = input.sortOrder ?? (await nextMindSweepSortOrder(supabase, userId, input.onDate));
 
   const { data, error } = await supabase
     .from("mind_sweep_items")
@@ -133,8 +136,9 @@ export async function addMindSweepItem(
       title,
       notes: input.notes?.trim() || null,
       status: "todo",
+      sort_order: sortOrder,
     })
-    .select("id, on_date, title, notes, status, created_at")
+    .select("id, on_date, title, notes, status, sort_order, created_at")
     .single();
 
   if (error) {
@@ -174,11 +178,39 @@ export async function setMindSweepStatus(supabase: Client, id: string, status: M
   }
 }
 
-export async function setMindSweepDate(supabase: Client, id: string, onDate: string) {
-  const { error } = await supabase.from("mind_sweep_items").update({ on_date: onDate }).eq("id", id);
+export async function setMindSweepDate(supabase: Client, id: string, onDate: string, sortOrder?: number) {
+  const patch: { on_date: string; sort_order?: number } = { on_date: onDate };
+  if (sortOrder != null) {
+    patch.sort_order = sortOrder;
+  }
+
+  const { error } = await supabase.from("mind_sweep_items").update(patch).eq("id", id);
 
   if (error) {
     throw error;
+  }
+}
+
+export async function persistMindSweepPatches(
+  supabase: Client,
+  patches: readonly { id: string; on_date: string; sort_order: number }[],
+) {
+  if (patches.length === 0) {
+    return;
+  }
+
+  const results = await Promise.all(
+    patches.map((patch) =>
+      supabase
+        .from("mind_sweep_items")
+        .update({ on_date: patch.on_date, sort_order: patch.sort_order })
+        .eq("id", patch.id),
+    ),
+  );
+
+  const firstError = results.find((result) => result.error)?.error;
+  if (firstError) {
+    throw firstError;
   }
 }
 
@@ -230,7 +262,84 @@ function compareMindSweepItems(a: StoredMindSweepItem, b: StoredMindSweepItem, t
   if (dateCmp !== 0) {
     return dateCmp;
   }
+  const orderCmp = a.sort_order - b.sort_order;
+  if (orderCmp !== 0) {
+    return orderCmp;
+  }
   return a.created_at.localeCompare(b.created_at);
+}
+
+function withRenumberedSortOrder(items: StoredMindSweepItem[]): StoredMindSweepItem[] {
+  return items.map((item, index) =>
+    item.sort_order === index + 1 ? item : { ...item, sort_order: index + 1 },
+  );
+}
+
+export function mindSweepPatches(
+  previous: MindSweepByDate,
+  next: MindSweepByDate,
+): { id: string; on_date: string; sort_order: number }[] {
+  const prevById = new Map(flattenMindSweepItems(previous).map((item) => [item.id, item]));
+  const patches: { id: string; on_date: string; sort_order: number }[] = [];
+
+  for (const item of flattenMindSweepItems(next)) {
+    const prior = prevById.get(item.id);
+    if (
+      !prior ||
+      prior.on_date !== item.on_date ||
+      prior.sort_order !== item.sort_order
+    ) {
+      patches.push({
+        id: item.id,
+        on_date: item.on_date,
+        sort_order: item.sort_order,
+      });
+    }
+  }
+
+  return patches;
+}
+
+export function reorderMindSweepDay(
+  byDate: MindSweepByDate,
+  onDate: string,
+  orderedIds: readonly string[],
+): MindSweepByDate {
+  const key = onDate.slice(0, 10);
+  const current = byDate[key] ?? [];
+  if (current.length === 0) {
+    return byDate;
+  }
+
+  const byId = new Map(current.map((item) => [item.id, item]));
+  const reordered: StoredMindSweepItem[] = [];
+  for (const id of orderedIds) {
+    const item = byId.get(id);
+    if (!item) {
+      continue;
+    }
+    reordered.push(item);
+    byId.delete(id);
+  }
+  for (const item of byId.values()) {
+    reordered.push(item);
+  }
+
+  const renumbered = withRenumberedSortOrder(reordered);
+  const unchanged =
+    renumbered.length === current.length &&
+    renumbered.every(
+      (item, index) =>
+        item.id === current[index]?.id && item.sort_order === current[index]?.sort_order,
+    );
+  if (unchanged) {
+    return byDate;
+  }
+
+  return {
+    ...byDate,
+    [key]: renumbered,
+  };
 }
 
 export function mapMindSweepItem(
@@ -252,15 +361,20 @@ export function mapMindSweepItem(
 
 export function relocateMindSweepItem(byDate: MindSweepByDate, id: string, onDate: string): MindSweepByDate {
   let found: StoredMindSweepItem | undefined;
+  let sourceDate: string | undefined;
   const next: MindSweepByDate = {};
+
   for (const [date, items] of Object.entries(byDate)) {
-    next[date] = items.filter((item) => {
-      if (item.id !== id) {
-        return true;
+    const remaining: StoredMindSweepItem[] = [];
+    for (const item of items) {
+      if (item.id === id) {
+        found = item;
+        sourceDate = date;
+        continue;
       }
-      found = item;
-      return false;
-    });
+      remaining.push(item);
+    }
+    next[date] = sourceDate === date ? withRenumberedSortOrder(remaining) : remaining;
   }
 
   if (!found) {
@@ -268,16 +382,34 @@ export function relocateMindSweepItem(byDate: MindSweepByDate, id: string, onDat
   }
 
   const key = onDate.slice(0, 10);
-  next[key] = [...(next[key] ?? []), { ...found, on_date: key }];
+  if (sourceDate === key) {
+    return byDate;
+  }
+
+  const target = next[key] ?? [];
+  next[key] = [
+    ...target,
+    {
+      ...found,
+      on_date: key,
+      sort_order: target.length + 1,
+    },
+  ];
   return next;
 }
 
 export function removeMindSweepItem(byDate: MindSweepByDate, id: string): MindSweepByDate {
+  let changed = false;
   const next: MindSweepByDate = {};
   for (const [date, items] of Object.entries(byDate)) {
-    next[date] = items.filter((item) => item.id !== id);
+    if (!items.some((item) => item.id === id)) {
+      next[date] = items;
+      continue;
+    }
+    changed = true;
+    next[date] = withRenumberedSortOrder(items.filter((item) => item.id !== id));
   }
-  return next;
+  return changed ? next : byDate;
 }
 
 export function mergeMindSweepItems(byDate: MindSweepByDate, rows: StoredMindSweepItem[]): MindSweepByDate {
@@ -285,7 +417,9 @@ export function mergeMindSweepItems(byDate: MindSweepByDate, rows: StoredMindSwe
   for (const row of rows) {
     const onDate = row.on_date.slice(0, 10);
     const item = { ...row, on_date: onDate };
-    next[onDate] = [...(next[onDate] ?? []).filter((entry) => entry.id !== item.id), item];
+    const day = [...(next[onDate] ?? []).filter((entry) => entry.id !== item.id), item];
+    day.sort((a, b) => a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at));
+    next[onDate] = day;
   }
   return next;
 }
@@ -358,7 +492,8 @@ async function loadWritingEntries(supabase: Client) {
 async function loadMindSweepItems(supabase: Client) {
   const { data, error } = await supabase
     .from("mind_sweep_items")
-    .select("id, on_date, title, notes, status, created_at")
+    .select("id, on_date, title, notes, status, sort_order, created_at")
+    .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
   if (error) {
@@ -386,10 +521,33 @@ function groupMindSweepByDate(rows: StoredMindSweepItem[]): MindSweepByDate {
 
   for (const row of rows) {
     const onDate = row.on_date.slice(0, 10);
-    next[onDate] = [...(next[onDate] ?? []), row];
+    next[onDate] = [...(next[onDate] ?? []), { ...row, on_date: onDate }];
+  }
+
+  for (const [date, items] of Object.entries(next)) {
+    next[date] = [...items].sort(
+      (a, b) => a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at),
+    );
   }
 
   return next;
+}
+
+async function nextMindSweepSortOrder(supabase: Client, userId: string, onDate: string) {
+  const { data, error } = await supabase
+    .from("mind_sweep_items")
+    .select("sort_order")
+    .eq("user_id", userId)
+    .eq("on_date", onDate)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data?.sort_order ?? 0) + 1;
 }
 
 function groupPillarsByDate(
