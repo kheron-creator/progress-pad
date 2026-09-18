@@ -20,6 +20,7 @@ type AddTriggerDrawerProps = {
   onIconSelect?: (emoji: string) => void;
   onSave?: () => void;
   saving?: boolean;
+  description?: string;
 };
 
 export function AddTriggerDrawer({
@@ -31,6 +32,7 @@ export function AddTriggerDrawer({
   onIconSelect,
   onSave,
   saving = false,
+  description = "Save it to your library.",
 }: AddTriggerDrawerProps) {
   const titleId = useId();
   const canSave = Boolean(name.trim() && selectedIcon);
@@ -53,7 +55,7 @@ export function AddTriggerDrawer({
                 Add New Trigger
               </Text>
               <Text variant="caption" className="text-foreground-muted">
-                Save it to your library.
+                {description}
               </Text>
             </div>
           </div>
