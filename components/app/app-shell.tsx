@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { AppDateNavigator } from "@/components/app/app-date-navigator";
 import { AppFlowNavigator } from "@/components/app/app-flow-navigator";
 import { AppHeader } from "@/components/app/app-header";
 import { enforceAppGate } from "@/lib/auth/routing";
@@ -14,6 +15,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
       <AppHeader />
       <main className="flex flex-1 flex-col px-page-x py-page-y">{children}</main>
       <AppFlowNavigator />
+      <AppDateNavigator />
     </div>
   );
 }
