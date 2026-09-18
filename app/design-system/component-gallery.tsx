@@ -97,8 +97,8 @@ const DEMO_LIBRARY_TRIGGERS = [
 const DEMO_FLOW_ITEMS = [
   { id: "overview", label: "Overview", icon: <CalendarBlankIcon size={12} /> },
   { id: "triggers", label: "Trigger List", icon: <LightningIcon size={12} /> },
-  { id: "gratitude", label: "Daily Gratitude", icon: <SparkleIcon size={12} /> },
   { id: "mind-sweep", label: "Mind Sweep", icon: <BrainIcon size={12} /> },
+  { id: "gratitude", label: "Daily Gratitude", icon: <SparkleIcon size={12} /> },
   { id: "done-list", label: "Done List", icon: <ChecksIcon size={12} /> },
   { id: "quotes", label: "Impactful Quotes", icon: <QuotesIcon size={12} /> },
   { id: "journal", label: "Let’s Journal", icon: <NoteIcon size={12} /> },
@@ -990,7 +990,7 @@ export function ComponentGallery() {
               Progression ratings saved
             </Toast>
             <Toast tone="warning" onDismiss={() => undefined}>
-              A date can have at most 10 triggers
+              Changes haven’t been saved yet
             </Toast>
             <Toast tone="error" onDismiss={() => undefined}>
               Couldn’t save changes

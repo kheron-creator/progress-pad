@@ -26,12 +26,12 @@ import {
   incompleteMindSweepItems,
   mapMindSweepItem,
   mergeMindSweepItems,
+  mindSweepPatches,
   parseIsoDate,
+  persistMindSweepPatches,
   relocateMindSweepItem,
   removeMindSweepItem,
-  setMindSweepDate,
   setMindSweepStatus,
-  updateMindSweepItem,
   type StoredMindSweepItem,
 } from "@/lib/home/store";
 import { createClient } from "@/lib/supabase/client";
@@ -84,6 +84,10 @@ export function ActiveMindSweepPage() {
       if (dateCmp !== 0) {
         return dateCmp;
       }
+      const orderCmp = a.sort_order - b.sort_order;
+      if (orderCmp !== 0) {
+        return orderCmp;
+      }
       return a.created_at.localeCompare(b.created_at);
     });
   }, [mindSweepByDate, today]);
@@ -132,10 +136,10 @@ export function ActiveMindSweepPage() {
   const [draftDate, setDraftDate] = useState(today);
   const [addSaving, setAddSaving] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
-  const [dirtyItemKeys, setDirtyItemKeys] = useState<ReadonlySet<string>>(() => new Set());
   const [deletePending, setDeletePending] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<StoredMindSweepItem | null>(null);
   const [celebrateName, setCelebrateName] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
   const celebrateNoteRef = useRef<HTMLParagraphElement>(null);
   const celebrateTimer = useRef(0);
   const visibleItems = useMemo(() => {
@@ -160,6 +164,8 @@ export function ActiveMindSweepPage() {
   const pageCount = Math.max(1, Math.ceil(visibleItems.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const pagedItems = visibleItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const allVisibleSelected =
+    visibleItems.length > 0 && visibleItems.every((item) => selectedIds.has(item.id));
   const filterTabs: { id: SweepFilter; label: string; count: number }[] = [
     { id: "all", label: "All", count: allItems.length },
     { id: "active", label: ACTIVE_MIND_SWEEP.stats.active, count: activeItems.length },
@@ -167,9 +173,7 @@ export function ActiveMindSweepPage() {
     { id: "achieved", label: ACTIVE_MIND_SWEEP.stats.achieved, count: achievedItems.length },
   ];
 
-  useRegisterUnsavedLeave(
-    dirtyItemKeys.size > 0 || (composerOpen && Boolean(draftTitle.trim() || draftNotes.trim())),
-  );
+  useRegisterUnsavedLeave(composerOpen && Boolean(draftTitle.trim() || draftNotes.trim()));
 
   useEffect(() => {
     return () => window.clearTimeout(celebrateTimer.current);
@@ -231,48 +235,6 @@ export function ActiveMindSweepPage() {
     }
   }
 
-  async function saveItem(item: StoredMindSweepItem, next: { title: string; notes?: string }) {
-    const title = next.title.trim();
-    if (!title) {
-      return;
-    }
-
-    const notes = next.notes !== undefined ? next.notes.trim() || null : item.notes;
-    if (item.title === title && item.notes === notes) {
-      return;
-    }
-
-    const previous = mindSweepByDate;
-    setMindSweepByDate((current) => mapMindSweepItem(current, item.id, { title, notes }));
-
-    try {
-      await updateMindSweepItem(createClient(), item.id, {
-        title,
-        notes,
-      });
-    } catch {
-      setMindSweepByDate(previous);
-      showToast("Couldn't update that item. Please try again.", "error");
-    }
-  }
-
-  function setItemDirty(id: string, dirty: boolean) {
-    setDirtyItemKeys((current) => {
-      const has = current.has(id);
-      if (dirty === has) {
-        return current;
-      }
-
-      const next = new Set(current);
-      if (dirty) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
-    });
-  }
-
   async function addItem(payload: { title: string; notes?: string; onDate: string }) {
     if (addSaving) {
       return;
@@ -280,7 +242,9 @@ export function ActiveMindSweepPage() {
 
     setAddSaving(true);
     try {
-      const row = await addMindSweepItem(createClient(), payload);
+      const onDate = payload.onDate.slice(0, 10);
+      const sortOrder = (mindSweepByDate[onDate]?.length ?? 0) + 1;
+      const row = await addMindSweepItem(createClient(), { ...payload, onDate, sortOrder });
       setMindSweepByDate((current) => mergeMindSweepItems(current, [row]));
       setDraftTitle("");
       setDraftNotes("");
@@ -300,36 +264,110 @@ export function ActiveMindSweepPage() {
     }
 
     setDeletePending(true);
+    const previous = mindSweepByDate;
+    const next = removeMindSweepItem(previous, pendingDelete.id);
+    setMindSweepByDate(next);
     try {
       await deleteMindSweepItem(createClient(), pendingDelete.id);
-      setMindSweepByDate((current) => removeMindSweepItem(current, pendingDelete.id));
+      await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
       setPendingDelete(null);
     } catch {
+      setMindSweepByDate(previous);
       showToast("Couldn't delete that item. Please try again.", "error");
     } finally {
       setDeletePending(false);
     }
   }
 
+  function toggleSelected(id: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function selectAllVisible() {
+    setSelectedIds(new Set(visibleItems.map((item) => item.id)));
+  }
+
+  function unselectAll() {
+    setSelectedIds(new Set());
+  }
+
   async function changeItemDate(item: StoredMindSweepItem, nextDate: string) {
+    if (!parseIsoDate(nextDate)) {
+      return;
+    }
+
+    if (selectedIds.has(item.id) && selectedIds.size > 0) {
+      await assignSelectedToDate(nextDate);
+      return;
+    }
+
     const currentDate = item.on_date.slice(0, 10);
-    if (nextDate === currentDate || !parseIsoDate(nextDate)) {
+    if (nextDate === currentDate) {
       return;
     }
 
     const previous = mindSweepByDate;
-    setMindSweepByDate((current) => relocateMindSweepItem(current, item.id, nextDate));
+    const next = relocateMindSweepItem(previous, item.id, nextDate);
+    if (next === previous) {
+      return;
+    }
+
+    setMindSweepByDate(next);
 
     try {
-      await setMindSweepDate(createClient(), item.id, nextDate);
+      await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
     } catch {
       setMindSweepByDate(previous);
       showToast("Couldn't update that date. Please try again.", "error");
     }
   }
 
+  async function assignSelectedToDate(nextDate: string) {
+    if (selectedIds.size === 0 || !parseIsoDate(nextDate)) {
+      return;
+    }
+
+    const selected = flattenMindSweepItems(mindSweepByDate)
+      .filter((item) => selectedIds.has(item.id))
+      .sort(
+        (a, b) =>
+          a.on_date.localeCompare(b.on_date) ||
+          a.sort_order - b.sort_order ||
+          a.created_at.localeCompare(b.created_at),
+      );
+    const ids = selected.map((item) => item.id);
+    const previous = mindSweepByDate;
+    let nextState = mindSweepByDate;
+    for (const id of ids) {
+      nextState = relocateMindSweepItem(nextState, id, nextDate);
+    }
+    setMindSweepByDate(nextState);
+
+    try {
+      await persistMindSweepPatches(createClient(), mindSweepPatches(previous, nextState));
+      setSelectedIds(new Set());
+      const dateLabel = formatItemDate(nextDate, today);
+      showToast(
+        ids.length === 1
+          ? `Task assigned to ${dateLabel}.`
+          : `${ids.length} tasks assigned to ${dateLabel}.`,
+      );
+    } catch {
+      setMindSweepByDate(previous);
+      showToast("Couldn't assign those tasks. Please try again.", "error");
+    }
+  }
+
   return (
-    <div className="flex w-full flex-col gap-4 pb-20 md:gap-6">
+    <div className="flex w-full flex-col gap-4 pb-8 md:gap-6">
       <Card className="flex w-full flex-col gap-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex min-w-0 items-start gap-3">
@@ -417,31 +455,54 @@ export function ActiveMindSweepPage() {
             label: `${tab.label} (${tab.count})`,
           }))}
         />
-        <div className="w-full lg:max-w-sm">
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.currentTarget.value)}
-            placeholder={ACTIVE_MIND_SWEEP.searchPlaceholder}
-            aria-label={ACTIVE_MIND_SWEEP.searchPlaceholder}
-            leftIcon={<SearchIcon size={16} />}
-          />
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:max-w-xl lg:justify-end">
+          <div className="w-full sm:min-w-0 sm:flex-1 lg:max-w-sm">
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.currentTarget.value)}
+              placeholder={ACTIVE_MIND_SWEEP.searchPlaceholder}
+              aria-label={ACTIVE_MIND_SWEEP.searchPlaceholder}
+              leftIcon={<SearchIcon size={16} />}
+            />
+          </div>
         </div>
       </div>
 
-
-
       {visibleItems.length > 0 ? (
         <Card className="flex w-full flex-col gap-section">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <Text variant="caption" className="text-foreground-muted">
+              Tap tasks to select them, then change any selected date to update all.
+            </Text>
+            <div className="flex shrink-0 items-center gap-3">
+              <button
+                type="button"
+                className="type-label cursor-pointer text-primary disabled:cursor-default disabled:text-foreground-muted"
+                disabled={allVisibleSelected}
+                onClick={selectAllVisible}
+              >
+                Select all
+              </button>
+              <button
+                type="button"
+                className="type-label cursor-pointer text-primary disabled:cursor-default disabled:text-foreground-muted"
+                disabled={selectedIds.size === 0}
+                onClick={unselectAll}
+              >
+                Unselect
+              </button>
+            </div>
+          </div>
           <div className="flex flex-col gap-3">
             {pagedItems.map((item) => {
               const onDate = item.on_date.slice(0, 10);
               const achieved = item.status === "achieved";
+              const selected = selectedIds.has(item.id);
               return (
                 <WrittenItem
                   key={item.id}
                   title={item.title}
                   notes={item.notes ?? undefined}
-                  notesEditable
                   notesPlaceholder={ACTIVE_MIND_SWEEP.notesPlaceholder}
                   checkbox
                   checked={achieved}
@@ -449,10 +510,11 @@ export function ActiveMindSweepPage() {
                   accent="var(--pp-magenta-400)"
                   dateLabel={formatItemDate(onDate, today)}
                   dateValue={onDate}
+                  selectable
+                  selected={selected}
+                  onSelect={() => toggleSelected(item.id)}
                   onDateChange={(nextDate) => void changeItemDate(item, nextDate)}
                   onCheckedChange={(checked) => void toggleItem(item, checked)}
-                  onChange={(next) => void saveItem(item, next)}
-                  onDirtyChange={(dirty) => setItemDirty(item.id, dirty)}
                   onDelete={() => setPendingDelete(item)}
                 />
               );

@@ -40,8 +40,6 @@ export type FlattenedDayTrigger = {
   status: DateTriggerStatus;
 };
 
-export const MAX_TRIGGERS_PER_DATE = 10;
-
 const TRIGGER_CATALOG = new Map<string, (typeof triggerOptions)[number]>(
   triggerOptions.map((item) => [item.id, item]),
 );

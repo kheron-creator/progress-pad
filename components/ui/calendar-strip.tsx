@@ -426,17 +426,17 @@ export function CalendarStrip({
           </div>
 
           {view === "week" ? (
-            <div className="flex items-center gap-(--pp-space-8) max-sm:gap-1">
+            <div className="flex items-stretch gap-(--pp-space-8) max-sm:gap-1">
               <IconButton
                 label="Previous week"
                 look="clear"
                 size="md"
-                className="max-sm:size-8 max-sm:min-h-8 max-sm:min-w-8"
+                className="self-center max-sm:size-8 max-sm:min-h-8 max-sm:min-w-8"
                 onClick={() => shift(-1)}
               >
                 <ChevronLeftIcon />
               </IconButton>
-              <div className="grid min-w-0 flex-1 grid-cols-7 gap-(--pp-space-8) max-sm:gap-0.5">
+              <div className="grid min-w-0 flex-1 grid-cols-7 items-stretch gap-(--pp-space-8) max-sm:gap-0.5">
                 {weekDays.map((day) => {
                   const active = isSameDay(day, selected);
                   const isToday = isSameDay(day, today);
@@ -449,7 +449,7 @@ export function CalendarStrip({
                       aria-current={isToday ? "date" : undefined}
                       onClick={() => onChange(day)}
                       className={cn(
-                        "flex min-w-0 flex-col items-center justify-center gap-(--pp-space-4) rounded-md border px-(--pp-space-8) py-(--pp-space-12)",
+                        "box-border flex h-full min-w-0 flex-col items-center justify-center gap-(--pp-space-4) rounded-md border px-(--pp-space-8) py-(--pp-space-12)",
                         "max-sm:gap-0.5 max-sm:border-0 max-sm:bg-transparent max-sm:px-0 max-sm:py-1",
                         active
                           ? "border-transparent bg-primary text-primary-foreground max-sm:bg-transparent"
@@ -469,13 +469,15 @@ export function CalendarStrip({
                       </Text>
                       <span
                         className={cn(
-                          "type-section-title leading-none",
-                          "max-sm:inline-flex max-sm:size-8 max-sm:items-center max-sm:justify-center max-sm:rounded-full max-sm:text-(length:--pp-font-size-16)",
-                          active
-                            ? "inline-flex size-9 items-center justify-center rounded-full max-sm:size-7 text-primary-foreground max-sm:bg-primary max-sm:text-primary-foreground"
-                            : isToday
-                              ? "inline-flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground max-sm:size-7"
-                              : "inline-flex size-9 items-center justify-center rounded-full text-foreground max-sm:size-7",
+                          "type-section-title inline-flex size-11 shrink-0 items-center justify-center rounded-full leading-none",
+                          "max-sm:size-8 max-sm:text-(length:--pp-font-size-16)",
+                          active && isToday
+                            ? "text-primary-foreground max-sm:bg-primary max-sm:text-primary-foreground"
+                            : active
+                              ? "text-primary-foreground max-sm:bg-transparent max-sm:text-primary max-sm:ring-2 max-sm:ring-primary max-sm:ring-inset"
+                              : isToday
+                                ? "bg-primary text-primary-foreground"
+                                : "text-foreground",
                         )}
                       >
                         {day.getDate()}
@@ -497,7 +499,7 @@ export function CalendarStrip({
                 label="Next week"
                 look="clear"
                 size="md"
-                className="max-sm:size-8 max-sm:min-h-8 max-sm:min-w-8"
+                className="self-center max-sm:size-8 max-sm:min-h-8 max-sm:min-w-8"
                 onClick={() => shift(1)}
               >
                 <ChevronRightIcon />

@@ -35,17 +35,6 @@ export const HOME_TRIGGER_SECTION = {
 
 export const HOME_WRITING_SECTIONS = [
   {
-    id: "gratitude",
-    title: "Daily Gratitude",
-    description: "Ground your day with conscious appreciation",
-    placeholder: "Today I am grateful for...",
-    accent: "var(--pp-bondi-blue-400)",
-    composer: true,
-    addLabel: "Add Entry",
-    chip: "logged" as const,
-    items: [],
-  },
-  {
     id: "mind-sweep",
     title: "Mind Sweep",
     description: "Clear your mental RAM — unload thoughts, ideas, or to-dos",
@@ -56,6 +45,17 @@ export const HOME_WRITING_SECTIONS = [
     addLabel: "Capture",
     chip: "achieved" as const,
     showProgress: true,
+    items: [],
+  },
+  {
+    id: "gratitude",
+    title: "Daily Gratitude",
+    description: "Ground your day with conscious appreciation",
+    placeholder: "Today I am grateful for...",
+    accent: "var(--pp-bondi-blue-400)",
+    composer: true,
+    addLabel: "Add Entry",
+    chip: "logged" as const,
     items: [],
   },
   {

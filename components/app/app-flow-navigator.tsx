@@ -21,8 +21,8 @@ import { useUnsavedLeave } from "./unsaved-leave-provider";
 export const FLOW_SECTIONS = [
   { id: "overview", label: "Overview", icon: <CalendarBlankIcon size={12} /> },
   { id: "triggers", label: "Trigger List", icon: <LightningIcon size={12} /> },
-  { id: "gratitude", label: "Daily Gratitude", icon: <SparkleIcon size={12} /> },
   { id: "mind-sweep", label: "Mind Sweep", icon: <BrainIcon size={12} /> },
+  { id: "gratitude", label: "Daily Gratitude", icon: <SparkleIcon size={12} /> },
   { id: "done-list", label: "Done List", icon: <ChecksIcon size={12} /> },
   { id: "quotes", label: "Impactful Quotes", icon: <QuotesIcon size={12} /> },
   { id: "journal", label: "Let’s Journal", icon: <NoteIcon size={12} /> },

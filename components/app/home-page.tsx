@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { Dialog, DialogConfirmActions } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { EmojiPicker } from "@/components/ui/emoji-picker";
 import {
   BarbellIcon,
   BookOpenIcon,
@@ -31,6 +32,7 @@ import {
   UsersThreeIcon,
 } from "@/components/ui/icon";
 import { IconMark, type IconMarkSize } from "@/components/ui/icon-mark";
+import { Input } from "@/components/ui/input";
 import { PillarRow } from "@/components/ui/pillar-row";
 import { Progress } from "@/components/ui/progress";
 import { Text } from "@/components/ui/text";
@@ -56,9 +58,15 @@ import {
   deleteWritingEntry,
   emptyWritingDay,
   emptyPillarDay,
+  formatIsoDate,
+  mindSweepPatches,
   parseIsoDate,
   pillarDaysEqual,
   pillarsByDateEqual,
+  persistMindSweepPatches,
+  relocateMindSweepItem,
+  removeMindSweepItem,
+  reorderMindSweepDay,
   savePillarEntries,
   setMindSweepStatus,
   updateMindSweepItem,
@@ -69,7 +77,9 @@ import {
   type StoredWritingEntry,
 } from "@/lib/home/store";
 import {
+  addLibraryTrigger,
   flattenDayTriggers,
+  saveDateAssignments,
   setDateTriggerStatus,
   type DateTriggerStatus,
 } from "@/lib/triggers/store";
@@ -126,6 +136,22 @@ function formatChipDateShort(date: Date) {
   });
 }
 
+function formatItemDate(onDate: string, today: string) {
+  if (onDate === today) {
+    return "Today";
+  }
+
+  const date = parseIsoDate(onDate);
+  if (!date) {
+    return onDate;
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function writingItemsFromEntries(entries: StoredWritingEntry[]): WritingSectionItem[] {
   return entries.map((entry) => ({
     id: entry.id,
@@ -134,9 +160,13 @@ function writingItemsFromEntries(entries: StoredWritingEntry[]): WritingSectionI
   }));
 }
 
-function writingItemsFromMindSweep(items: StoredMindSweepItem[]): WritingSectionItem[] {
+function writingItemsFromMindSweep(
+  items: StoredMindSweepItem[],
+  today: string,
+): WritingSectionItem[] {
   return items.map((item) => {
     const achieved = item.status === "achieved";
+    const itemDate = item.on_date.slice(0, 10);
     return {
       id: item.id,
       title: item.title,
@@ -144,6 +174,8 @@ function writingItemsFromMindSweep(items: StoredMindSweepItem[]): WritingSection
       checked: achieved,
       achieved,
       variant: achieved ? ("striked" as const) : ("default" as const),
+      dateLabel: formatItemDate(itemDate, today),
+      dateValue: itemDate,
     };
   });
 }
@@ -219,10 +251,16 @@ function ItemIcon({ children }: { children: ReactNode }) {
 }
 
 export function HomePage() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [date, setDate] = useState(() => new Date());
+  const date = useMemo(
+    () => parseIsoDate(searchParams.get("date") ?? "") ?? new Date(),
+    [searchParams],
+  );
   const [calendarView, setCalendarView] = useState<"week" | "month">("week");
   const assignments = useSessionStore((state) => state.assignments);
+  const setAssignments = useSessionStore((state) => state.setAssignments);
   const planTriggers = useSessionStore((state) => state.planTriggers);
   const planScenarios = useSessionStore((state) => state.planScenarios);
   const states = useSessionStore((state) => state.states);
@@ -235,11 +273,16 @@ export function HomePage() {
   const setPillarsByDate = useSessionStore((state) => state.setPillarsByDate);
   const savedPillarsByDate = useSessionStore((state) => state.savedPillarsByDate);
   const markPillarsSaved = useSessionStore((state) => state.markPillarsSaved);
+  const addLibraryTriggerToStore = useSessionStore((state) => state.addLibraryTrigger);
   const plan = useMemo(
     () => ({ assignments, triggers: planTriggers, scenarios: planScenarios }),
     [assignments, planTriggers, planScenarios],
   );
   const [showAllTriggers, setShowAllTriggers] = useState(false);
+  const [addingTrigger, setAddingTrigger] = useState(false);
+  const [triggerName, setTriggerName] = useState("");
+  const [triggerIcon, setTriggerIcon] = useState<string | undefined>();
+  const [savingTrigger, setSavingTrigger] = useState(false);
   const [draftsByDate, setDraftsByDate] = useState<Record<string, Record<string, string>>>({});
   const [noteDraftsByDate, setNoteDraftsByDate] = useState<Record<string, Record<string, string>>>(
     {},
@@ -256,13 +299,6 @@ export function HomePage() {
   } | null>(null);
   const { toasts, showToast, dismissToast } = useToasts();
   const [celebrateName, setCelebrateName] = useState<string | null>(null);
-
-  useEffect(() => {
-    const parsed = parseIsoDate(searchParams.get("date") ?? "");
-    if (parsed) {
-      setDate(parsed);
-    }
-  }, [searchParams]);
   const celebrateNoteRef = useRef<HTMLParagraphElement>(null);
   const celebrateTimer = useRef(0);
   const pillarsByDateRef = useRef(pillarsByDate);
@@ -308,13 +344,22 @@ export function HomePage() {
     };
   }, []);
 
+  function changeDate(next: Date) {
+    setShowAllTriggers(false);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("date", isoDate(next));
+    const hash = typeof window !== "undefined" ? window.location.hash : "";
+    router.replace(`${pathname}?${params.toString()}${hash}`, { scroll: false });
+  }
+
   const onDate = isoDate(date);
+  const today = formatIsoDate(new Date());
   const dayPillars = pillarsByDate[onDate] ?? emptyPillarDay();
   const dayDrafts = draftsByDate[onDate] ?? emptyWritingDrafts();
   const dayNoteDrafts = noteDraftsByDate[onDate] ?? emptyWritingDrafts();
   const composerDirty = hasComposerDrafts(draftsByDate, noteDraftsByDate);
   const pillarsDirty = !pillarsByDateEqual(pillarsByDate, savedPillarsByDate);
-  const { guardedPush } = useRegisterUnsavedLeave(
+  useRegisterUnsavedLeave(
     composerDirty || pillarsDirty || dirtyItemKeys.size > 0,
   );
   const triggers = useMemo(
@@ -381,6 +426,117 @@ export function HomePage() {
     }
   }
 
+  function resetTriggerDraft() {
+    setTriggerName("");
+    setTriggerIcon(undefined);
+  }
+
+  function openAddTrigger() {
+    resetTriggerDraft();
+    setAddingTrigger(true);
+  }
+
+  function closeAddTrigger() {
+    if (savingTrigger) {
+      return;
+    }
+    setAddingTrigger(false);
+    resetTriggerDraft();
+  }
+
+  async function saveNewTrigger() {
+    const name = triggerName.trim();
+    if (!name || !triggerIcon || savingTrigger) {
+      return;
+    }
+
+    setSavingTrigger(true);
+    const previousAssignments = assignments;
+
+    try {
+      const supabase = createClient();
+      const created = await addLibraryTrigger(supabase, { name, emoji: triggerIcon });
+      addLibraryTriggerToStore(created);
+
+      const dayList = previousAssignments[onDate] ?? [];
+      const alreadyAssigned = dayList.some((item) => item.kind === "trigger" && item.id === created.id);
+
+      if (!alreadyAssigned) {
+        const nextAssignments = {
+          ...previousAssignments,
+          [onDate]: [...dayList, { kind: "trigger" as const, id: created.id }],
+        };
+        setAssignments(nextAssignments);
+        try {
+          await saveDateAssignments(supabase, previousAssignments, nextAssignments);
+        } catch {
+          setAssignments(previousAssignments);
+          showToast("Trigger saved to your library, but couldn't add it to this day.", "error");
+          setAddingTrigger(false);
+          resetTriggerDraft();
+          return;
+        }
+      }
+
+      setAddingTrigger(false);
+      resetTriggerDraft();
+      showToast("Trigger added to this day and your library.");
+    } catch {
+      showToast("Couldn't add that trigger. Please try again.", "error");
+    } finally {
+      setSavingTrigger(false);
+    }
+  }
+
+  const canSaveTrigger = Boolean(triggerName.trim() && triggerIcon);
+
+  const addTriggerForm = (
+    <form
+      className="flex items-start gap-2 rounded-md border border-border p-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void saveNewTrigger();
+      }}
+    >
+      <div className="min-w-0 flex-1">
+        <Input
+          value={triggerName}
+          onChange={(event) => setTriggerName(event.currentTarget.value)}
+          placeholder="Trigger name"
+          aria-label="Trigger name"
+          disabled={savingTrigger}
+        />
+      </div>
+      <EmojiPicker
+        label=""
+        placeholder="Icon"
+        selected={triggerIcon}
+        onSelect={setTriggerIcon}
+        className="w-64 shrink-0 sm:w-72"
+      />
+      <Button
+        type="button"
+        size="md"
+        variant="primary"
+        look="outline"
+        onClick={closeAddTrigger}
+        disabled={savingTrigger}
+        className="shrink-0"
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        size="md"
+        disabled={!canSaveTrigger}
+        loading={savingTrigger}
+        className="shrink-0"
+      >
+        Save
+      </Button>
+    </form>
+  );
+
   function markSaving(sectionId: string, saving: boolean) {
     if (saving) {
       savingSectionsRef.current.add(sectionId);
@@ -428,6 +584,44 @@ export function HomePage() {
       }));
       setCelebrateName(null);
       showToast("Couldn't update that item. Please try again.", "error");
+    }
+  }
+
+  async function changeMindSweepItemDate(id: string, nextDate: string) {
+    if (nextDate === onDate || !parseIsoDate(nextDate)) {
+      return;
+    }
+
+    const previous = mindSweepByDate;
+    const next = relocateMindSweepItem(previous, id, nextDate);
+    if (next === previous) {
+      return;
+    }
+
+    setMindSweepByDate(next);
+
+    try {
+      await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
+    } catch {
+      setMindSweepByDate(previous);
+      showToast("Couldn't update that date. Please try again.", "error");
+    }
+  }
+
+  async function reorderMindSweepItems(orderedIds: string[]) {
+    const previous = mindSweepByDate;
+    const next = reorderMindSweepDay(previous, onDate, orderedIds);
+    if (next === previous) {
+      return;
+    }
+
+    setMindSweepByDate(next);
+
+    try {
+      await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
+    } catch {
+      setMindSweepByDate(previous);
+      showToast("Couldn't update that order. Please try again.", "error");
     }
   }
 
@@ -547,7 +741,8 @@ export function HomePage() {
 
     try {
       if (sectionId === "mind-sweep") {
-        const row = await addMindSweepItem(createClient(), { onDate, title, notes });
+        const sortOrder = (mindSweepByDate[onDate]?.length ?? 0) + 1;
+        const row = await addMindSweepItem(createClient(), { onDate, title, notes, sortOrder });
         setMindSweepByDate((current) => ({
           ...current,
           [onDate]: [...(current[onDate] ?? []), { ...row, on_date: onDate }],
@@ -599,13 +794,16 @@ export function HomePage() {
 
     try {
       if (pendingDelete.sectionId === "mind-sweep") {
-        await deleteMindSweepItem(createClient(), pendingDelete.id);
-        setMindSweepByDate((current) => ({
-          ...current,
-          [pendingDelete.onDate]: (current[pendingDelete.onDate] ?? []).filter(
-            (item) => item.id !== pendingDelete.id,
-          ),
-        }));
+        const previous = mindSweepByDate;
+        const next = removeMindSweepItem(previous, pendingDelete.id);
+        setMindSweepByDate(next);
+        try {
+          await deleteMindSweepItem(createClient(), pendingDelete.id);
+          await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
+        } catch (error) {
+          setMindSweepByDate(previous);
+          throw error;
+        }
       } else {
         const kind = writingKindForSection(pendingDelete.sectionId);
         if (!kind) {
@@ -738,7 +936,7 @@ export function HomePage() {
     const isComposer = Boolean("composer" in section && section.composer);
     const kind = writingKindForSection(section.id);
     const items = isMindSweep
-      ? writingItemsFromMindSweep(mindSweepByDate[onDate] ?? [])
+      ? writingItemsFromMindSweep(mindSweepByDate[onDate] ?? [], today)
       : writingItemsFromEntries(kind ? (writingByDate[onDate]?.[kind] ?? []) : []);
     const achievedCount = items.filter((item) => item.checked || item.achieved).length;
     const chip =
@@ -835,6 +1033,10 @@ export function HomePage() {
         items={items}
         onCheckedChange={(id, checked) => updateWritingItem(section.id, id, checked)}
         onItemChange={(id, next) => void saveWritingItem(section.id, id, next)}
+        onItemDateChange={
+          isMindSweep ? (id, nextDate) => void changeMindSweepItemDate(id, nextDate) : undefined
+        }
+        onReorder={isMindSweep ? (orderedIds) => void reorderMindSweepItems(orderedIds) : undefined}
         onItemDirtyChange={(id, dirty) => setWritingItemDirty(section.id, id, dirty)}
         onAdd={isComposer ? (title, notes) => addWritingItem(section.id, title, notes) : undefined}
         onDelete={
@@ -894,10 +1096,7 @@ export function HomePage() {
       <div id="flow-calendar" className="scroll-mt-28">
         <CalendarStrip
           value={date}
-          onChange={(next) => {
-            setDate(next);
-            setShowAllTriggers(false);
-          }}
+          onChange={changeDate}
           view={calendarView}
           onViewChange={setCalendarView}
           markers={calendarMarkers}
@@ -927,22 +1126,32 @@ export function HomePage() {
               {achievedCount} / {triggers.length} Achieved
             </CountChip>
           }
+          action={
+            addingTrigger ? undefined : (
+              <Button size="md" className="shrink-0 max-sm:hidden" onClick={openAddTrigger}>
+                <PlusIcon size={16} />
+                Add Trigger
+              </Button>
+            )
+          }
         />
 
-        {triggers.length === 0 ? (
+        {addingTrigger ? addTriggerForm : null}
+
+        {triggers.length === 0 && !addingTrigger ? (
           <EmptyState
             className="border-0 bg-transparent py-8"
             media={<FilesIcon size="xl" className="text-(--pp-spring-green-700)" />}
             title="No triggers yet"
             description="Add your first trigger to start building small actions that create big change over time."
             action={
-              <Button size="md" onClick={() => guardedPush("/triggers")}>
+              <Button size="md" onClick={openAddTrigger}>
                 <PlusIcon size={16} />
                 Add Your First Trigger
               </Button>
             }
           />
-        ) : (
+        ) : triggers.length > 0 ? (
           <>
             <Progress value={triggerProgress} size="md" label="Today’s trigger progress" />
 
@@ -972,6 +1181,13 @@ export function HomePage() {
               })}
             </div>
 
+            {!addingTrigger ? (
+              <Button className="md:hidden max-sm:w-full" size="md" onClick={openAddTrigger}>
+                <PlusIcon size={16} />
+                Add Trigger
+              </Button>
+            ) : null}
+
             {triggers.length > MOBILE_TRIGGER_COUNT ? (
               <Button
                 className="md:hidden max-sm:w-full"
@@ -984,10 +1200,10 @@ export function HomePage() {
               </Button>
             ) : null}
           </>
-        )}
+        ) : null}
       </Card>
 
-      <div id="flow-gratitude" className="scroll-mt-28">
+      <div id={`flow-${HOME_WRITING_SECTIONS[0].id}`} className="scroll-mt-28">
         {writingSection(HOME_WRITING_SECTIONS[0])}
       </div>
 

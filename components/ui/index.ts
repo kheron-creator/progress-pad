@@ -14,6 +14,7 @@ export { AddMindSweepForm } from "./add-mind-sweep-form";
 export { AddScenarioDrawer } from "./add-scenario-drawer";
 export { AddTriggerDrawer } from "./add-trigger-drawer";
 export { DatePicker } from "./date-picker";
+export { DateNavigator } from "./date-navigator";
 export { DateRangePicker } from "./date-range-picker";
 export { DayPlanDrawer } from "./day-plan-drawer";
 export { Dialog, DialogActions, DialogConfirmActions } from "./dialog";

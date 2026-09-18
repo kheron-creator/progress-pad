@@ -17,7 +17,7 @@ type DatePickerProps = {
   placeholder?: string;
   value?: string;
   displayLabel?: string;
-  variant?: "field" | "chip";
+  variant?: "field" | "chip" | "inline";
   onChange?: (value: string) => void;
   className?: string;
   "aria-label"?: string;
@@ -112,7 +112,8 @@ export function DatePicker({
       : new Date(today.getFullYear(), today.getMonth(), 1),
   );
   const isControlled = open !== undefined;
-  const isOpen = open ?? internalOpen;
+  const isInline = variant === "inline";
+  const isOpen = isInline ? true : (open ?? internalOpen);
   const days = useMemo(() => monthCells(view), [view]);
   const weeks = useMemo(() => {
     const rows: Date[][] = [];
@@ -123,11 +124,12 @@ export function DatePicker({
   }, [days]);
 
   function setOpenState(next: boolean) {
-    if (!isControlled) setInternalOpen(next);
+    if (isInline || isControlled) return;
+    setInternalOpen(next);
   }
 
   useEffect(() => {
-    if (!isOpen || isControlled) return;
+    if (!isOpen || isControlled || isInline) return;
 
     function onPointerDown(event: PointerEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
@@ -137,10 +139,10 @@ export function DatePicker({
 
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [isOpen, isControlled]);
+  }, [isOpen, isControlled, isInline]);
 
   useLayoutEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || isInline) {
       setPlacement("below");
       return;
     }
@@ -171,12 +173,14 @@ export function DatePicker({
       window.removeEventListener("resize", updatePlacement);
       window.removeEventListener("scroll", updatePlacement, true);
     };
-  }, [isOpen]);
+  }, [isOpen, isInline]);
 
   function selectDay(day: Date) {
     onChange?.(formatIsoDate(day));
     setView(new Date(day.getFullYear(), day.getMonth(), 1));
-    setOpenState(false);
+    if (!isInline) {
+      setOpenState(false);
+    }
   }
 
   function shiftMonth(amount: number) {
@@ -189,8 +193,9 @@ export function DatePicker({
     <div
       ref={panelRef}
       className={cn(
-        "absolute right-0 z-30 w-80 overflow-hidden rounded-md border border-border bg-surface shadow-md",
-        placement === "above" ? "bottom-full mb-2" : "top-full mt-2",
+        "z-30 overflow-hidden rounded-md border border-border bg-surface",
+        isInline ? "relative w-full shadow-none" : "absolute right-0 w-80 min-w-80 shadow-md",
+        !isInline && (placement === "above" ? "bottom-full mb-2" : "top-full mt-2"),
       )}
     >
       <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
@@ -281,6 +286,15 @@ export function DatePicker({
         >
           {triggerLabel}
         </Chip>
+        {calendar}
+      </div>
+    );
+  }
+
+  if (variant === "inline") {
+    return (
+      <div ref={rootRef} className={cn("flex w-full min-w-0 flex-col gap-2", className)}>
+        {showLabel && label ? <FieldLabel htmlFor={buttonId}>{label}</FieldLabel> : null}
         {calendar}
       </div>
     );

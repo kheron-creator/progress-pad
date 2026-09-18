@@ -51,7 +51,7 @@ export function EmojiPicker({
   }, [isOpen, isControlled]);
 
   return (
-    <div ref={rootRef} className={cn("flex w-full min-w-0 flex-col", className)}>
+    <div ref={rootRef} className={cn("relative flex w-full min-w-0 flex-col", className)}>
       <Frimousse.Root
         columns={8}
         className="flex w-full min-w-0 flex-col gap-2"
@@ -106,7 +106,7 @@ export function EmojiPicker({
           </div>
         </Field>
         {isOpen ? (
-          <div className="w-full overflow-hidden rounded-md border border-border bg-surface">
+          <div className="absolute top-full left-0 z-30 mt-1 w-full overflow-hidden rounded-md border border-border bg-surface shadow-md">
             <Frimousse.Viewport className="relative h-72 w-full outline-hidden">
               <Frimousse.Loading className="absolute inset-0 flex items-center justify-center">
                 <Text variant="caption" className="text-foreground-muted">

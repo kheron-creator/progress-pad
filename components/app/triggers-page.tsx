@@ -27,7 +27,6 @@ import {
   softDeleteLibraryScenario,
   softDeleteLibraryTrigger,
   uniqueAssignedTriggerIds,
-  MAX_TRIGGERS_PER_DATE,
   type DateAssignmentItem,
   type StoredScenario,
   type StoredTrigger,
@@ -38,7 +37,6 @@ type DayAssignment = DateAssignmentItem;
 type PendingDelete =
   | { kind: "library-trigger"; id: string; name: string }
   | { kind: "library-scenario"; id: string; name: string }
-  | { kind: "date-trigger"; id: string; name: string }
   | { kind: "date-scenario"; id: string; name: string }
   | { kind: "date-clear" }
   | { kind: "calendar-clear" };
@@ -56,11 +54,6 @@ const DELETE_COPY: Record<
     title: "Delete this scenario?",
     description: (name) => `“${name}” will be removed from your library. This cannot be undone.`,
     confirm: "Delete",
-  },
-  "date-trigger": {
-    title: "Remove this trigger?",
-    description: (name) => `“${name}” will be removed from this date. It will stay in your library.`,
-    confirm: "Remove",
   },
   "date-scenario": {
     title: "Remove this scenario?",
@@ -391,22 +384,10 @@ export function TriggersPage() {
     const key = isoDate(day);
     const list = assignments[key] ?? [];
     const nextList = [...list];
-    let blocked = false;
     let added = 0;
 
     for (const item of items) {
       if (nextList.some((entry) => entry.kind === item.kind && entry.id === item.id)) {
-        continue;
-      }
-
-      const candidate: DayAssignment[] = [...nextList, { kind: item.kind, id: item.id }];
-      const count = uniqueAssignedTriggerIds(
-        candidate,
-        (scenarioId) => scenarioById.get(scenarioId)?.triggerIds,
-      ).length;
-
-      if (count > MAX_TRIGGERS_PER_DATE) {
-        blocked = true;
         continue;
       }
 
@@ -417,10 +398,6 @@ export function TriggersPage() {
     if (added > 0) {
       const next = { ...assignments, [key]: nextList };
       void persistDayChange(next, () => saveDateAssignments(createClient(), assignments, next));
-    }
-
-    if (blocked) {
-      showToast("A date can have at most 10 triggers, including ones inside scenarios.", "warning");
     }
   }
 
@@ -584,17 +561,6 @@ export function TriggersPage() {
         setPendingDelete(null);
       } catch {
         showToast("Couldn't remove that scenario. Please try again.", "error");
-      } finally {
-        setDeletePending(false);
-      }
-      return;
-    }
-
-    if (pendingDelete.kind === "date-trigger") {
-      setDeletePending(true);
-      try {
-        await removeFromDate("trigger", pendingDelete.id);
-        setPendingDelete(null);
       } finally {
         setDeletePending(false);
       }
@@ -789,9 +755,7 @@ export function TriggersPage() {
           setPendingDelete({ kind: "date-scenario", id, name: item.title });
         }}
         onRemoveTrigger={(id) => {
-          const item = dayTriggers.find((trigger) => trigger.id === id);
-          if (!item) return;
-          setPendingDelete({ kind: "date-trigger", id, name: item.title });
+          void removeFromDate("trigger", id);
         }}
         onClear={() => {
           setPendingDelete({ kind: "date-clear" });
