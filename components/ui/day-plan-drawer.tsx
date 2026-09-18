@@ -1,6 +1,9 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
+import { useEffect, useId, useState, type DragEvent, type ReactNode } from "react";
+
+import { readLibraryDragItems, type LibraryDragPayload } from "@/lib/triggers/drag";
+import { cn } from "@/lib/utils/cn";
 
 import { Divider } from "./divider";
 import { CalendarBlankIcon, CloseIcon, InfoIcon, LightningIcon, TrashIcon } from "./icon";
@@ -26,6 +29,7 @@ type DayPlanDrawerProps = {
   onRemoveScenario?: (id: string) => void;
   onRemoveTrigger?: (id: string) => void;
   onClear?: () => void;
+  onDropItems?: (items: LibraryDragPayload[]) => void;
 };
 
 function formatDate(date: Date) {
@@ -96,14 +100,49 @@ export function DayPlanDrawer({
   onRemoveScenario,
   onRemoveTrigger,
   onClear,
+  onDropItems,
 }: DayPlanDrawerProps) {
   const titleId = useId();
   const totalTriggers = triggerCount ?? triggers.length;
   const hasItems = scenarios.length > 0 || triggers.length > 0;
+  const [dropActive, setDropActive] = useState(false);
+  const canDrop = Boolean(onDropItems);
+
+  useEffect(() => {
+    if (!open) setDropActive(false);
+  }, [open]);
+
+  function allowDrop(event: DragEvent<HTMLElement>) {
+    if (!canDrop) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    setDropActive(true);
+  }
+
+  function handleDrop(event: DragEvent<HTMLElement>) {
+    if (!canDrop || !onDropItems) return;
+    event.preventDefault();
+    setDropActive(false);
+    const items = readLibraryDragItems(event);
+    if (items.length === 0) return;
+    onDropItems(items);
+  }
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange} labelledBy={titleId}>
-      <div className="flex h-full min-h-0 max-h-full flex-col p-2">
+    <Drawer open={open} onOpenChange={onOpenChange} labelledBy={titleId} modal={false}>
+      <div
+        className={cn(
+          "flex h-full min-h-0 max-h-full flex-col p-2 transition-colors",
+          dropActive && canDrop && "bg-primary-muted",
+        )}
+        onDragEnter={allowDrop}
+        onDragOver={allowDrop}
+        onDragLeave={(event) => {
+          if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+          setDropActive(false);
+        }}
+        onDrop={handleDrop}
+      >
         <div className="flex items-start justify-between gap-3 p-card pb-4">
           <div className="flex min-w-0 items-start gap-3">
             <IconMark size="lg" shape="circle" tone="primary">
@@ -204,6 +243,20 @@ export function DayPlanDrawer({
             >
               Clear all from this date
             </button>
+          </div>
+        ) : canDrop ? (
+          <div className="border-t border-border p-card">
+            <Text
+              variant="caption"
+              className={cn(
+                "text-center text-foreground-muted",
+                dropActive && "font-(--pp-font-weight-medium) text-primary",
+              )}
+            >
+              {dropActive
+                ? "Drop to assign to this date"
+                : "Drag triggers or scenarios here to assign them"}
+            </Text>
           </div>
         ) : null}
       </div>

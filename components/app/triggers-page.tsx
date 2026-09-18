@@ -744,7 +744,10 @@ export function TriggersPage() {
 
       <DayPlanDrawer
         open={dayDrawerOpen}
-        onOpenChange={setDayDrawerOpen}
+        onOpenChange={(open) => {
+          setDayDrawerOpen(open);
+          if (!open) clearAssignSelection();
+        }}
         date={date}
         scenarios={dayScenarios}
         triggers={dayTriggers}
@@ -760,6 +763,13 @@ export function TriggersPage() {
         onClear={() => {
           setPendingDelete({ kind: "date-clear" });
         }}
+        onDropItems={
+          addingScenario
+            ? undefined
+            : (items) => {
+                assignToDate(date, items);
+              }
+        }
       />
 
       <ToastRegion toasts={toasts} onDismiss={dismissToast} />
