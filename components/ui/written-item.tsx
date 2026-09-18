@@ -49,6 +49,10 @@ type WrittenItemProps = Omit<HTMLAttributes<HTMLElement>, "title" | "onChange"> 
   onDateChange?: (value: string) => void;
   accent?: string;
   checkboxLocked?: boolean;
+  selectable?: boolean;
+  selected?: boolean;
+  onSelect?: () => void;
+  dragHandle?: ReactNode;
 };
 
 const SAVE_DELAY_MS = 500;
@@ -72,6 +76,10 @@ export function WrittenItem({
   onDateChange,
   accent,
   checkboxLocked = false,
+  selectable = false,
+  selected = false,
+  onSelect,
+  dragHandle,
   className,
   style,
   ...props
@@ -80,10 +88,15 @@ export function WrittenItem({
   const striked = variant === "striked" || isDone;
   const doneText = "font-(--pp-font-weight-semibold) text-(--pp-spring-green-600) line-through";
   const itemStyle = {
-    ...(accent && !isDone ? { borderColor: accent, "--pp-item-accent": accent } : null),
+    ...(accent
+      ? {
+          "--pp-item-accent": accent,
+          ...(!isDone && !selected ? { borderColor: accent } : null),
+        }
+      : null),
     ...style,
   } as CSSProperties;
-  const editable = Boolean(onChange);
+  const editable = Boolean(onChange) && !selectable;
   const savedNotes = notes ?? "";
   const [editing, setEditing] = useState(false);
   const [focusField, setFocusField] = useState<"title" | "notes">("title");
@@ -249,58 +262,84 @@ export function WrittenItem({
   }
 
   const checkboxControl = checkbox ? (
-    <Checkbox
-      size="xl"
-      tone="accent"
-      checked={checked ?? achieved}
-      disabled={checkboxLocked}
-      onChange={
-        checkboxLocked ? undefined : (event) => onCheckedChange?.(event.currentTarget.checked)
-      }
-      aria-label={title}
-      className="size-6.5! shrink-0"
-      boxClassName={
-        accent || isDone
-          ? cn(
+    <div
+      className="shrink-0"
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      <Checkbox
+        size="xl"
+        tone="accent"
+        checked={checked ?? achieved}
+        disabled={checkboxLocked}
+        onChange={
+          checkboxLocked
+            ? undefined
+            : (event) => onCheckedChange?.(event.currentTarget.checked)
+        }
+        aria-label={title}
+        className="size-6.5!"
+        boxClassName={
+          accent || isDone
+            ? cn(
               "rounded-sm text-white",
               isDone
                 ? "border-transparent! bg-(--pp-spring-green-600)! peer-checked:border-transparent peer-checked:bg-(--pp-spring-green-600) peer-disabled:border-transparent! peer-disabled:bg-(--pp-spring-green-600)!"
                 : "border-(--pp-item-accent) peer-checked:border-transparent peer-checked:bg-(--pp-spring-green-600)",
             )
-          : undefined
-      }
-    />
-  ) : null;
-
-  const dateControl = dateLabel ? (
-    onDateChange && dateValue ? (
-      <DatePicker
-        variant="chip"
-        showLabel={false}
-        value={dateValue}
-        displayLabel={dateLabel}
-        onChange={onDateChange}
+            : undefined
+        }
       />
-    ) : (
-      <Chip
-        size="sm"
-        state="outlined"
-        leftIcon={<CalendarBlankIcon size={12} />}
-        className="pointer-events-none shrink-0"
-        aria-label={dateLabel}
+    </div>
+  ) : null;
+
+  const dateControl =
+    dateLabel == null
+      ? null
+      : onDateChange && dateValue ? (
+          <div
+            className="shrink-0"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <DatePicker
+              variant="chip"
+              showLabel={false}
+              value={dateValue}
+              displayLabel={dateLabel}
+              onChange={onDateChange}
+            />
+          </div>
+        ) : (
+          <Chip
+            size="sm"
+            state="outlined"
+            leftIcon={<CalendarBlankIcon size={12} />}
+            className="pointer-events-none shrink-0"
+            aria-label={dateLabel}
+          >
+            {dateLabel}
+          </Chip>
+        );
+
+  const deleteControl =
+    !onDelete ? null : (
+      <IconButton
+        label={`Delete ${title}`}
+        variant="danger"
+        look="clear"
+        size="md"
+        className="shrink-0"
+        onClick={(event) => {
+          event.stopPropagation();
+          onDelete();
+        }}
       >
-        {dateLabel}
-      </Chip>
-    )
-  ) : null;
+        <TrashIcon />
+      </IconButton>
+    );
 
-  const deleteControl = onDelete ? (
-    <IconButton label={`Delete ${title}`} variant="danger" look="clear" size="md" className="shrink-0" onClick={onDelete}>
-      <TrashIcon />
-    </IconButton>
-  ) : null;
-
-  const achievedControl = isDone ? (
+  const achievedControl = !isDone ? null : (
     <Tag
       size="xs"
       className="shrink-0 border-transparent! bg-(--pp-spring-green-600)! text-white!"
@@ -308,23 +347,53 @@ export function WrittenItem({
     >
       ACHIEVED
     </Tag>
-  ) : null;
+  );
 
   return (
     <article
       className={cn(
-        "flex rounded-md border bg-surface px-(--pp-space-16) py-(--pp-space-12)",
+        "flex rounded-md border px-(--pp-space-16) py-(--pp-space-12)",
         editing ? "flex-col gap-2" : "items-center gap-3",
-        isDone ? "border-(--pp-spring-green-600)" : accent ? undefined : "border-border",
+        selectable && "cursor-pointer transition-colors",
+        selected
+          ? "border-(--pp-spring-green-700) bg-(--pp-spring-green-25) ring-1 ring-inset ring-(--pp-spring-green-700)"
+          : isDone
+            ? "border-(--pp-spring-green-600) bg-surface"
+            : accent
+              ? "bg-surface"
+              : "border-border bg-surface",
+        selectable && !selected && "hover:bg-background-subtle",
         className,
       )}
       style={itemStyle}
       onBlur={editing ? handleEditorBlur : undefined}
+      onClick={
+        selectable
+          ? (event) => {
+            event.preventDefault();
+            onSelect?.();
+          }
+          : undefined
+      }
+      onKeyDown={
+        selectable
+          ? (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              onSelect?.();
+            }
+          }
+          : undefined
+      }
+      role={selectable ? "button" : undefined}
+      tabIndex={selectable ? 0 : undefined}
+      aria-pressed={selectable ? selected : undefined}
       {...props}
     >
       {editing ? (
         <>
           <div className="flex items-center gap-3">
+            {dragHandle}
             {checkboxControl}
             {leftIcon}
             <div className="min-w-0 flex-1">
@@ -346,6 +415,7 @@ export function WrittenItem({
           </div>
           {notesEditable ? (
             <div className="flex gap-3">
+              {dragHandle ? <span className="size-6.5 shrink-0" aria-hidden /> : null}
               {checkboxControl ? <span className="size-6.5 shrink-0" aria-hidden /> : null}
               <div className="min-w-0 flex-1">
                 <Textarea
@@ -366,6 +436,7 @@ export function WrittenItem({
         </>
       ) : (
         <>
+          {dragHandle}
           {checkboxControl}
           {leftIcon}
           {editable ? (
