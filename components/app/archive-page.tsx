@@ -249,7 +249,7 @@ function ArchiveCategoryGroup({
       </span>
       <div
         className={cn(
-          "flex min-w-0 flex-1 flex-col divide-y divide-border overflow-hidden rounded-md border bg-background-subtle",
+          "flex min-w-0 flex-1 flex-col divide-y divide-border overflow-hidden rounded-md border bg-(--pp-grey-25) in-data-[theme=dark]:bg-background-subtle",
           allAchieved ? "border-(--pp-spring-green-600)" : "border-border",
         )}
       >
@@ -344,14 +344,7 @@ export function ArchivePage() {
   }, [selectedPeriod?.id, filter, query]);
 
   const resolvedOpenDays =
-    openDays ??
-    new Set(
-      query.trim()
-        ? visibleDays.map(({ day }) => day.date)
-        : visibleDays[0]
-          ? [visibleDays[0].day.date]
-          : [],
-    );
+    openDays ?? new Set(visibleDays.map(({ day }) => day.date));
 
   function toggleDay(date: string) {
     setOpenDays((current) => {
