@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { FormEvent, ReactNode } from "react";
+import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
@@ -220,13 +220,19 @@ export function WritingSection({
   accent = "var(--pp-bondi-blue-400)",
   className,
 }: WritingSectionProps) {
+  const dndId = useId();
+  const [sortableReady, setSortableReady] = useState(false);
   const showNotes = Boolean(notesPlaceholder);
   const showCheckbox = itemLocked || (itemCheckbox ?? !composer);
-  const sortable = Boolean(onReorder) && items.length > 1;
+  const sortable = sortableReady && Boolean(onReorder) && items.length > 1;
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  useEffect(() => {
+    setSortableReady(true);
+  }, []);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -377,7 +383,12 @@ export function WritingSection({
       )}
       {items.length > 0 ? (
         sortable ? (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext
+            id={dndId}
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
             <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
               {list}
             </SortableContext>
