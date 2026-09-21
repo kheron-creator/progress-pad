@@ -79,6 +79,7 @@ import {
 import {
   addLibraryTrigger,
   flattenDayTriggers,
+  removeTriggerFromDayAssignments,
   saveDateAssignments,
   setDateTriggerStatus,
   type DateTriggerStatus,
@@ -423,6 +424,38 @@ export function HomePage() {
       }));
       setCelebrateName(null);
       showToast("Couldn't update that trigger. Please try again.", "error");
+    }
+  }
+
+  async function removeTriggerFromDay(id: string) {
+    const previousAssignments = assignments;
+    const previousDayStates = states[onDate] ?? {};
+    const dayList = previousAssignments[onDate] ?? [];
+    const nextDayList = removeTriggerFromDayAssignments(dayList, id, planScenarios);
+    const nextAssignments = { ...previousAssignments };
+
+    if (nextDayList.length === 0) {
+      delete nextAssignments[onDate];
+    } else {
+      nextAssignments[onDate] = nextDayList;
+    }
+
+    setAssignments(nextAssignments);
+    setStates((current) => {
+      const day = { ...(current[onDate] ?? {}) };
+      delete day[id];
+      return { ...current, [onDate]: day };
+    });
+
+    try {
+      await saveDateAssignments(createClient(), previousAssignments, nextAssignments);
+    } catch {
+      setAssignments(previousAssignments);
+      setStates((current) => ({
+        ...current,
+        [onDate]: previousDayStates,
+      }));
+      showToast("Couldn't remove that trigger from this day. Please try again.", "error");
     }
   }
 
@@ -1176,6 +1209,7 @@ export function HomePage() {
                     showDescription={false}
                     className={cn("cursor-pointer", hiddenOnMobile && "hidden md:flex")}
                     onClick={() => void toggleTrigger(trigger.id)}
+                    onDelete={() => void removeTriggerFromDay(trigger.id)}
                   />
                 );
               })}

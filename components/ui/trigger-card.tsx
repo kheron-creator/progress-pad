@@ -127,7 +127,7 @@ export function TriggerCard({
           onDelete?.();
         }}
       >
-        <TrashIcon />
+        <TrashIcon size={18} />
       </IconButton>
     ) : (
       action
