@@ -505,6 +505,48 @@ export function flattenDayTriggers(
   return result;
 }
 
+/** Remove one trigger from a day's plan. Scenario membership is expanded so only that trigger leaves. */
+export function removeTriggerFromDayAssignments(
+  items: DateAssignmentItem[],
+  triggerId: string,
+  scenarios: StoredScenario[],
+): DateAssignmentItem[] {
+  const scenarioById = new Map(scenarios.map((scenario) => [scenario.id, scenario]));
+  const next: DateAssignmentItem[] = [];
+  const seenTriggers = new Set<string>();
+
+  for (const item of items) {
+    if (item.kind === "trigger") {
+      if (item.id === triggerId || seenTriggers.has(item.id)) {
+        continue;
+      }
+      seenTriggers.add(item.id);
+      next.push(item);
+      continue;
+    }
+
+    const scenario = scenarioById.get(item.id);
+    if (!scenario) {
+      continue;
+    }
+
+    if (!scenario.triggerIds.includes(triggerId)) {
+      next.push(item);
+      continue;
+    }
+
+    for (const id of scenario.triggerIds) {
+      if (id === triggerId || seenTriggers.has(id)) {
+        continue;
+      }
+      seenTriggers.add(id);
+      next.push({ kind: "trigger", id });
+    }
+  }
+
+  return next;
+}
+
 export function uniqueAssignedTriggerIds(
   items: DateAssignmentItem[],
   scenarioTriggerIds: (scenarioId: string) => readonly string[] | undefined,

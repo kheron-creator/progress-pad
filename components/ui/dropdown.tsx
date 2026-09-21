@@ -4,7 +4,16 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
-import { Field, FieldLabel, fieldPaddingClass, fieldSizeClass, fieldStateClass, type FieldSize } from "./field";
+import { Checkbox } from "./checkbox";
+import {
+  Field,
+  FieldLabel,
+  fieldPaddingClass,
+  fieldSizeClass,
+  fieldStateClass,
+  fieldTextClass,
+  type FieldSize,
+} from "./field";
 import { ChevronDownIcon } from "./icon";
 
 export type DropdownOption = {
@@ -17,7 +26,10 @@ type DropdownProps = {
   labelClassName?: string;
   options: DropdownOption[];
   value?: string;
-  onChange: (value: string) => void;
+  values?: string[];
+  onChange?: (value: string) => void;
+  onValuesChange?: (values: string[]) => void;
+  multiple?: boolean;
   placeholder?: string;
   size?: FieldSize;
   look?: "field" | "chip" | "pill";
@@ -31,7 +43,10 @@ export function Dropdown({
   labelClassName,
   options,
   value,
+  values = [],
   onChange,
+  onValuesChange,
+  multiple = false,
   placeholder = "Select",
   size = "md",
   look = "field",
@@ -44,6 +59,14 @@ export function Dropdown({
   const listId = useId();
   const buttonId = useId();
   const selected = options.find((option) => option.value === value);
+  const selectedSet = new Set(values);
+  const selectedCount = values.length;
+
+  const buttonLabel = multiple
+    ? selectedCount > 0
+      ? `${selectedCount} selected`
+      : placeholder
+    : (selected?.label ?? placeholder);
 
   useEffect(() => {
     function handlePointer(event: MouseEvent) {
@@ -66,6 +89,17 @@ export function Dropdown({
     };
   }, []);
 
+  function toggleValue(optionValue: string) {
+    if (!onValuesChange) {
+      return;
+    }
+
+    const next = selectedSet.has(optionValue)
+      ? values.filter((item) => item !== optionValue)
+      : [...values, optionValue];
+    onValuesChange(next);
+  }
+
   return (
     <Field className={cn(look !== "field" && "w-auto!", className)}>
       {label ? (
@@ -82,6 +116,7 @@ export function Dropdown({
           aria-expanded={open}
           aria-controls={listId}
           aria-label={ariaLabel}
+          aria-multiselectable={multiple || undefined}
           className={
             look === "chip"
               ? "inline-flex h-auto min-h-0 cursor-pointer items-center justify-between gap-(--pp-space-4) rounded-full border border-(--pp-bondi-blue-600) bg-(--pp-bondi-blue-50) px-(--pp-space-16) py-(--pp-space-4) text-(length:--pp-font-size-12) font-(--pp-font-weight-semibold) leading-none text-(--pp-bondi-blue-600) disabled:cursor-not-allowed disabled:opacity-50"
@@ -102,10 +137,14 @@ export function Dropdown({
         >
           <span
             className={
-              look === "chip" ? undefined : selected ? "text-foreground" : "text-foreground-muted"
+              look === "chip"
+                ? undefined
+                : (multiple ? selectedCount > 0 : Boolean(selected))
+                  ? "text-foreground"
+                  : "text-foreground-muted"
             }
           >
-            {selected?.label ?? placeholder}
+            {buttonLabel}
           </span>
           <ChevronDownIcon
             size={look === "field" ? undefined : 12}
@@ -116,10 +155,38 @@ export function Dropdown({
           <ul
             id={listId}
             role="listbox"
-            className="absolute z-20 mt-1 w-full overflow-hidden rounded-sm border border-border bg-surface py-1 shadow-md"
+            aria-multiselectable={multiple || undefined}
+            className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-sm border border-border bg-surface py-1 shadow-md"
           >
             {options.map((option) => {
-              const isSelected = option.value === value;
+              const isSelected = multiple
+                ? selectedSet.has(option.value)
+                : option.value === value;
+
+              if (multiple) {
+                return (
+                  <li key={option.value} role="option" aria-selected={isSelected}>
+                    <label
+                      className={cn(
+                        "flex w-full cursor-pointer items-center gap-2 text-left text-foreground-muted hover:bg-primary-muted",
+                        look === "pill"
+                          ? "px-2.5 py-1.5 text-(length:--pp-text-control-sm-size) leading-snug"
+                          : cn("px-3 py-2 leading-snug", fieldTextClass[size]),
+                        isSelected && "bg-primary-muted",
+                      )}
+                    >
+                      <Checkbox
+                        size="sm"
+                        checked={isSelected}
+                        disabled={disabled}
+                        onChange={() => toggleValue(option.value)}
+                        aria-label={option.label}
+                      />
+                      <span className="min-w-0 flex-1">{option.label}</span>
+                    </label>
+                  </li>
+                );
+              }
 
               return (
                 <li key={option.value} role="option" aria-selected={isSelected}>
@@ -129,11 +196,11 @@ export function Dropdown({
                       "flex w-full text-left text-foreground-muted hover:bg-primary-muted",
                       look === "pill"
                         ? "px-2.5 py-1.5 text-(length:--pp-text-control-sm-size) leading-snug"
-                        : "type-body px-3 py-2",
+                        : cn("px-3 py-2 leading-snug", fieldTextClass[size]),
                       isSelected && "bg-primary-muted",
                     )}
                     onClick={() => {
-                      onChange(option.value);
+                      onChange?.(option.value);
                       setOpen(false);
                     }}
                   >
