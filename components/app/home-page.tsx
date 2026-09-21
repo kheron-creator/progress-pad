@@ -21,16 +21,21 @@ import {
   ChartLineIcon,
   ChecksIcon,
   FilesIcon,
+  GridIcon,
   HeadCircuitIcon,
   HeartIcon,
   LightbulbIcon,
   LightningIcon,
   PlusIcon,
   QuotesIcon,
+  SearchIcon,
   SmileyIcon,
   SparkleIcon,
   UsersThreeIcon,
+  CloseIcon,
+  CheckIcon,
 } from "@/components/ui/icon";
+import { IconButton } from "@/components/ui/icon-button";
 import { IconMark, type IconMarkSize } from "@/components/ui/icon-mark";
 import { Input } from "@/components/ui/input";
 import { PillarRow } from "@/components/ui/pillar-row";
@@ -82,6 +87,7 @@ import {
   removeTriggerFromDayAssignments,
   saveDateAssignments,
   setDateTriggerStatus,
+  uniqueAssignedTriggerIds,
   type DateTriggerStatus,
 } from "@/lib/triggers/store";
 import { burstConfetti } from "@/lib/ui/burst-confetti";
@@ -274,6 +280,7 @@ export function HomePage() {
   const setPillarsByDate = useSessionStore((state) => state.setPillarsByDate);
   const savedPillarsByDate = useSessionStore((state) => state.savedPillarsByDate);
   const markPillarsSaved = useSessionStore((state) => state.markPillarsSaved);
+  const libraryTriggers = useSessionStore((state) => state.libraryTriggers);
   const addLibraryTriggerToStore = useSessionStore((state) => state.addLibraryTrigger);
   const plan = useMemo(
     () => ({ assignments, triggers: planTriggers, scenarios: planScenarios }),
@@ -281,6 +288,10 @@ export function HomePage() {
   );
   const [showAllTriggers, setShowAllTriggers] = useState(false);
   const [addingTrigger, setAddingTrigger] = useState(false);
+  const [addTriggerTab, setAddTriggerTab] = useState<"library" | "custom">("library");
+  const [libraryQuery, setLibraryQuery] = useState("");
+  const [selectedLibraryIds, setSelectedLibraryIds] = useState<string[]>([]);
+  const [savingLibrarySelection, setSavingLibrarySelection] = useState(false);
   const [triggerName, setTriggerName] = useState("");
   const [triggerIcon, setTriggerIcon] = useState<string | undefined>();
   const [savingTrigger, setSavingTrigger] = useState(false);
@@ -373,6 +384,24 @@ export function HomePage() {
       ),
     [onDate, plan, states],
   );
+  const dayAssignedTriggerIds = useMemo(
+    () =>
+      new Set(
+        uniqueAssignedTriggerIds(
+          plan.assignments[onDate] ?? [],
+          (scenarioId) => plan.scenarios.find((scenario) => scenario.id === scenarioId)?.triggerIds,
+        ),
+      ),
+    [onDate, plan],
+  );
+  const availableLibraryTriggers = useMemo(() => {
+    const query = libraryQuery.trim().toLowerCase();
+    return libraryTriggers
+      .filter((trigger) => !dayAssignedTriggerIds.has(trigger.id))
+      .filter((trigger) => !query || trigger.name.toLowerCase().includes(query))
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [dayAssignedTriggerIds, libraryQuery, libraryTriggers]);
   const achievedCount = triggers.filter((trigger) => trigger.status === "achieved").length;
   const triggerProgress =
     triggers.length === 0 ? 0 : Math.round((achievedCount / triggers.length) * 100);
@@ -466,15 +495,74 @@ export function HomePage() {
 
   function openAddTrigger() {
     resetTriggerDraft();
+    setLibraryQuery("");
+    setSelectedLibraryIds([]);
+    setAddTriggerTab("library");
     setAddingTrigger(true);
   }
 
   function closeAddTrigger() {
-    if (savingTrigger) {
+    if (savingTrigger || savingLibrarySelection) {
       return;
     }
     setAddingTrigger(false);
+    setAddTriggerTab("library");
+    setLibraryQuery("");
+    setSelectedLibraryIds([]);
     resetTriggerDraft();
+  }
+
+  function toggleLibrarySelection(triggerId: string) {
+    if (savingTrigger || savingLibrarySelection) {
+      return;
+    }
+    setSelectedLibraryIds((current) =>
+      current.includes(triggerId)
+        ? current.filter((id) => id !== triggerId)
+        : [...current, triggerId],
+    );
+  }
+
+  async function assignSelectedLibraryTriggers() {
+    if (savingTrigger || savingLibrarySelection || selectedLibraryIds.length === 0) {
+      return;
+    }
+
+    const previousAssignments = assignments;
+    const dayList = previousAssignments[onDate] ?? [];
+    const existing = new Set(
+      dayList.filter((item) => item.kind === "trigger").map((item) => item.id),
+    );
+    const toAdd = selectedLibraryIds.filter((id) => !existing.has(id));
+    if (toAdd.length === 0) {
+      setSelectedLibraryIds([]);
+      return;
+    }
+
+    setSavingLibrarySelection(true);
+    const nextAssignments = {
+      ...previousAssignments,
+      [onDate]: [
+        ...dayList,
+        ...toAdd.map((id) => ({ kind: "trigger" as const, id })),
+      ],
+    };
+    setAssignments(nextAssignments);
+
+    try {
+      await saveDateAssignments(createClient(), previousAssignments, nextAssignments);
+      setSelectedLibraryIds([]);
+      showToast(
+        toAdd.length === 1
+          ? "Trigger added to this day."
+          : `${toAdd.length} triggers added to this day.`,
+      );
+    } catch {
+      setAssignments(previousAssignments);
+      showToast("Couldn't add those triggers. Please try again.", "error");
+    } finally {
+      setSavingLibrarySelection(false);
+    }
   }
 
   async function saveNewTrigger() {
@@ -505,13 +593,11 @@ export function HomePage() {
         } catch {
           setAssignments(previousAssignments);
           showToast("Trigger saved to your library, but couldn't add it to this day.", "error");
-          setAddingTrigger(false);
           resetTriggerDraft();
           return;
         }
       }
 
-      setAddingTrigger(false);
       resetTriggerDraft();
       showToast("Trigger added to this day and your library.");
     } catch {
@@ -522,52 +608,215 @@ export function HomePage() {
   }
 
   const canSaveTrigger = Boolean(triggerName.trim() && triggerIcon);
+  const addBusy = savingTrigger || savingLibrarySelection;
+  const selectedLibraryCount = selectedLibraryIds.length;
 
-  const addTriggerForm = (
-    <form
-      className="flex items-start gap-2 rounded-md border border-border p-3"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void saveNewTrigger();
-      }}
-    >
-      <div className="min-w-0 flex-1">
-        <Input
-          value={triggerName}
-          onChange={(event) => setTriggerName(event.currentTarget.value)}
-          placeholder="Trigger name"
-          aria-label="Trigger name"
-          disabled={savingTrigger}
-        />
+  const addTriggerPanel = (
+    <div className="flex flex-col gap-4 rounded-lg border border-border bg-(--pp-spring-green-10) p-6 in-data-[theme=dark]:bg-background-subtle">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <IconMark size="xs" shape="circle" tone="primary-muted">
+            <PlusIcon size={10} />
+          </IconMark>
+          <Text as="h3" variant="bodySmall" className="font-(--pp-font-weight-semibold)">
+            Add Trigger
+          </Text>
+        </div>
+        <IconButton
+          label="Close"
+          look="clear"
+          size="sm"
+          onClick={closeAddTrigger}
+          disabled={addBusy}
+          className="shrink-0"
+        >
+          <CloseIcon size={16} />
+        </IconButton>
       </div>
-      <EmojiPicker
-        label=""
-        placeholder="Icon"
-        selected={triggerIcon}
-        onSelect={setTriggerIcon}
-        className="w-64 shrink-0 sm:w-72"
-      />
-      <Button
-        type="button"
-        size="md"
-        variant="primary"
-        look="outline"
-        onClick={closeAddTrigger}
-        disabled={savingTrigger}
-        className="shrink-0"
-      >
-        Cancel
-      </Button>
-      <Button
-        type="submit"
-        size="md"
-        disabled={!canSaveTrigger}
-        loading={savingTrigger}
-        className="shrink-0"
-      >
-        Save
-      </Button>
-    </form>
+
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={addTriggerTab === "library"}
+          disabled={addBusy}
+          onClick={() => setAddTriggerTab("library")}
+          className={cn(
+            "inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border bg-surface px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+            addTriggerTab === "library"
+              ? "border-primary text-primary"
+              : "border-transparent text-foreground hover:border-border",
+          )}
+        >
+          <GridIcon size={16} />
+          <Text
+            variant="caption"
+            className={cn(
+              "font-(--pp-font-weight-semibold)",
+              addTriggerTab === "library" ? "text-primary" : "text-foreground",
+            )}
+          >
+            Choose from Library
+          </Text>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={addTriggerTab === "custom"}
+          disabled={addBusy}
+          onClick={() => setAddTriggerTab("custom")}
+          className={cn(
+            "inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border bg-surface px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+            addTriggerTab === "custom"
+              ? "border-primary text-primary"
+              : "border-transparent text-foreground hover:border-border",
+          )}
+        >
+          <PlusIcon size={16} />
+          <Text
+            variant="caption"
+            className={cn(
+              "font-(--pp-font-weight-semibold)",
+              addTriggerTab === "custom" ? "text-primary" : "text-foreground",
+            )}
+          >
+            Add Custom Trigger
+          </Text>
+        </button>
+      </div>
+
+      {addTriggerTab === "library" ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Text variant="caption" className="text-foreground">
+              Select triggers from your library
+            </Text>
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <div className="min-w-0 flex-1 sm:w-52 sm:flex-none">
+                <Input
+                  size="sm"
+                  value={libraryQuery}
+                  onChange={(event) => setLibraryQuery(event.currentTarget.value)}
+                  placeholder="Search triggers..."
+                  aria-label="Search library triggers"
+                  leftIcon={<SearchIcon size={12} />}
+                  disabled={addBusy}
+                />
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => void assignSelectedLibraryTriggers()}
+                disabled={selectedLibraryCount === 0}
+                loading={savingLibrarySelection}
+                className="shrink-0"
+              >
+                Add
+                {selectedLibraryCount > 0 ? ` (${selectedLibraryCount})` : ""}
+              </Button>
+            </div>
+          </div>
+
+          {availableLibraryTriggers.length === 0 ? (
+            <Text variant="caption" className="text-foreground-muted">
+              {libraryTriggers.length === 0
+                ? "Your library is empty. Switch to Add Custom Trigger to create one."
+                : libraryQuery.trim()
+                  ? "No matching triggers in your library."
+                  : "All library triggers are already on this day."}
+            </Text>
+          ) : (
+            <div className="grid max-h-72 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2 lg:grid-cols-4">
+              {availableLibraryTriggers.map((trigger) => {
+                const selected = selectedLibraryIds.includes(trigger.id);
+
+                return (
+                  <button
+                    key={trigger.id}
+                    type="button"
+                    disabled={addBusy}
+                    aria-pressed={selected}
+                    aria-label={`${selected ? "Deselect" : "Select"} ${trigger.name}`}
+                    onClick={() => toggleLibrarySelection(trigger.id)}
+                    className={cn(
+                      "flex min-w-0 cursor-pointer items-center gap-2 rounded-md border bg-surface px-3 py-2 text-left transition-colors",
+                      "hover:border-primary hover:bg-primary-muted/40",
+                      "disabled:cursor-not-allowed disabled:opacity-60",
+                      selected
+                        ? "border-primary bg-primary-muted/50"
+                        : "border-border",
+                    )}
+                  >
+                    <span
+                      aria-hidden
+                      className="inline-flex size-5 shrink-0 items-center justify-center text-(length:--pp-font-size-14) leading-none"
+                    >
+                      {trigger.emoji || "⚡"}
+                    </span>
+                    <Text
+                      variant="caption"
+                      className="min-w-0 flex-1 truncate font-(--pp-font-weight-medium) text-foreground"
+                    >
+                      {trigger.name}
+                    </Text>
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "inline-flex size-4 shrink-0 items-center justify-center rounded-full border",
+                        selected
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-primary text-primary",
+                      )}
+                    >
+                      {selected ? <CheckIcon size={10} /> : <PlusIcon size={10} />}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void saveNewTrigger();
+          }}
+        >
+          <Text variant="caption" className="text-foreground">
+            Create a trigger that isn’t in your library yet
+          </Text>
+          <div className="flex flex-wrap items-start gap-2">
+            <div className="min-w-0 flex-1 basis-40">
+              <Input
+                value={triggerName}
+                onChange={(event) => setTriggerName(event.currentTarget.value)}
+                placeholder="Trigger name"
+                aria-label="Custom trigger name"
+                disabled={savingTrigger}
+              />
+            </div>
+            <EmojiPicker
+              label=""
+              placeholder="Icon"
+              selected={triggerIcon}
+              onSelect={setTriggerIcon}
+              className="w-64 shrink-0 sm:w-72"
+            />
+            <Button
+              type="submit"
+              size="md"
+              disabled={!canSaveTrigger}
+              loading={savingTrigger}
+              className="shrink-0"
+            >
+              Save
+            </Button>
+          </div>
+        </form>
+      )}
+    </div>
   );
 
   function markSaving(sectionId: string, saving: boolean) {
@@ -1169,7 +1418,7 @@ export function HomePage() {
           }
         />
 
-        {addingTrigger ? addTriggerForm : null}
+        {addingTrigger ? addTriggerPanel : null}
 
         {triggers.length === 0 && !addingTrigger ? (
           <EmptyState
