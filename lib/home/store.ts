@@ -476,15 +476,18 @@ export async function savePillarEntries(
   const next = emptyPillarDay();
   const rows = PILLAR_IDS.map((pillar_id) => {
     const rating = clampRating(values[pillar_id]?.rating ?? DEFAULT_PILLAR_RATING);
-    const notes = values[pillar_id]?.notes?.trim() ?? "";
-    next[pillar_id] = { rating, notes };
+    // Keep the typed notes as-is (including trailing spaces) so debounced saves
+    // don't yank characters out of the field while the user is still typing.
+    const notes = values[pillar_id]?.notes ?? "";
+    const emptyNotes = notes.trim().length === 0;
+    next[pillar_id] = { rating, notes: emptyNotes ? "" : notes };
 
     return {
       user_id: userId,
       on_date: onDate,
       pillar_id,
       rating,
-      notes: notes || null,
+      notes: emptyNotes ? null : notes,
     };
   });
 
