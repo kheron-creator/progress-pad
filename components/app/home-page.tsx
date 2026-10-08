@@ -1048,7 +1048,7 @@ export function HomePage() {
             ...current,
             [onDate]: {
               ...day,
-              [kind]: [...day[kind], { ...row, on_date: onDate }],
+              [kind]: [{ ...row, on_date: onDate }, ...day[kind]],
             },
           };
         });

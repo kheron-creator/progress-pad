@@ -503,7 +503,7 @@ async function loadWritingEntries(supabase: Client) {
   const { data, error } = await supabase
     .from("writing_entries")
     .select("id, on_date, kind, title, notes, created_at")
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false });
 
   if (error) {
     throw error;
