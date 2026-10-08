@@ -21,6 +21,8 @@ import {
   CheckCircleIcon as PhosphorCheckCircleIcon,
   CheckIcon as PhosphorCheckIcon,
   ChecksIcon as PhosphorChecksIcon,
+  ClipboardTextIcon as PhosphorClipboardTextIcon,
+  CopySimpleIcon as PhosphorCopySimpleIcon,
   DotsSixVerticalIcon,
   HeadCircuitIcon as PhosphorHeadCircuitIcon,
   HeartIcon as PhosphorHeartIcon,
@@ -131,6 +133,8 @@ export const HeadCircuitIcon = withIcon(PhosphorHeadCircuitIcon);
 export const HeartIcon = withIcon(PhosphorHeartIcon);
 export const LeafIcon = withIcon(PhosphorLeafIcon);
 export const TrashIcon = withIcon(PhosphorTrashIcon);
+export const CopyIcon = withIcon(PhosphorCopySimpleIcon);
+export const ClipboardIcon = withIcon(PhosphorClipboardTextIcon);
 export const BellIcon = withIcon(PhosphorBellIcon);
 export const BookOpenIcon = withIcon(PhosphorBookOpenIcon);
 export const BrainIcon = withIcon(PhosphorBrainIcon);

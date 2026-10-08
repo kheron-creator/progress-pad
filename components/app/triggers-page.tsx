@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AddScenarioDrawer } from "@/components/ui/add-scenario-drawer";
 import { AddTriggerDrawer } from "@/components/ui/add-trigger-drawer";
@@ -17,7 +17,12 @@ import { type DroppedTrigger } from "@/components/ui/trigger-dropzone";
 import { TriggersLibrary, type LibraryTrigger } from "@/components/ui/triggers-library";
 import { useSessionStore } from "@/components/app/session-store-provider";
 import { createClient } from "@/lib/supabase/client";
-import { SUGGESTED_TRIGGERS, TRIGGERS_HEADING } from "@/lib/triggers/content";
+import { countLabel, SUGGESTED_TRIGGERS, TRIGGERS_HEADING } from "@/lib/triggers/content";
+import {
+  readDayClipboard,
+  writeDayClipboard,
+  type DayClipboard,
+} from "@/lib/triggers/day-clipboard";
 import { type LibraryDragPayload } from "@/lib/triggers/drag";
 import {
   addLibraryScenario,
@@ -177,6 +182,7 @@ export function TriggersPage() {
   );
   const [date, setDate] = useState(() => new Date());
   const [dayDrawerOpen, setDayDrawerOpen] = useState(false);
+  const [dayClipboard, setDayClipboard] = useState<DayClipboard | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
   const [savingTrigger, setSavingTrigger] = useState(false);
   const [savingScenario, setSavingScenario] = useState(false);
@@ -201,6 +207,10 @@ export function TriggersPage() {
       icon: <EmojiMark>{item.emoji}</EmojiMark>,
     }));
   }, [hiddenSuggestionIds, libraryTriggers]);
+
+  useEffect(() => {
+    setDayClipboard(readDayClipboard());
+  }, []);
 
   function cancelTrigger() {
     setTriggerName("");
@@ -748,6 +758,76 @@ export function TriggersPage() {
     dayAssignments,
     (scenarioId) => scenarioById.get(scenarioId)?.triggerIds,
   ).length;
+  const canPasteTriggers = dayClipboard?.kind === "trigger";
+  const canPasteScenarios = dayClipboard?.kind === "scenario";
+
+  function copyDayTriggers() {
+    const ids = dayTriggers.map((item) => item.id);
+    if (ids.length === 0) return;
+    writeDayClipboard("trigger", ids);
+    setDayClipboard({ kind: "trigger", ids });
+    showToast(
+      ids.length === 1
+        ? "Trigger copied. Open another date to paste."
+        : `${ids.length} triggers copied. Open another date to paste.`,
+    );
+  }
+
+  function pasteDayTriggers() {
+    if (dayClipboard?.kind !== "trigger") return;
+    const items: LibraryDragPayload[] = dayClipboard.ids.map((id) => ({
+      kind: "trigger",
+      id,
+      name: triggerById.get(id)?.name ?? "Trigger",
+    }));
+    const key = isoDate(date);
+    const existing = new Set(
+      (assignments[key] ?? [])
+        .filter((item) => item.kind === "trigger")
+        .map((item) => item.id),
+    );
+    const added = items.filter((item) => !existing.has(item.id)).length;
+    assignToDate(date, items);
+    if (added > 0) {
+      showToast(`Pasted ${countLabel(added, "trigger")}.`);
+    } else {
+      showToast("Those triggers are already on this date.");
+    }
+  }
+
+  function copyDayScenarios() {
+    const ids = dayScenarios.map((item) => item.id);
+    if (ids.length === 0) return;
+    writeDayClipboard("scenario", ids);
+    setDayClipboard({ kind: "scenario", ids });
+    showToast(
+      ids.length === 1
+        ? "Scenario copied. Open another date to paste."
+        : `${ids.length} scenarios copied. Open another date to paste.`,
+    );
+  }
+
+  function pasteDayScenarios() {
+    if (dayClipboard?.kind !== "scenario") return;
+    const items: LibraryDragPayload[] = dayClipboard.ids.map((id) => ({
+      kind: "scenario",
+      id,
+      name: scenarioById.get(id)?.title ?? "Scenario",
+    }));
+    const key = isoDate(date);
+    const existing = new Set(
+      (assignments[key] ?? [])
+        .filter((item) => item.kind === "scenario")
+        .map((item) => item.id),
+    );
+    const added = items.filter((item) => !existing.has(item.id)).length;
+    assignToDate(date, items);
+    if (added > 0) {
+      showToast(`Pasted ${countLabel(added, "scenario")}.`);
+    } else {
+      showToast("Those scenarios are already on this date.");
+    }
+  }
 
   async function confirmDelete() {
     if (!pendingDelete || deletePending) return;
@@ -1061,6 +1141,12 @@ export function TriggersPage() {
           void removeFromDate("trigger", id);
         }}
         onCreateScenario={startCreateScenarioFromDay}
+        onCopyTriggers={copyDayTriggers}
+        onPasteTriggers={pasteDayTriggers}
+        canPasteTriggers={canPasteTriggers}
+        onCopyScenarios={copyDayScenarios}
+        onPasteScenarios={pasteDayScenarios}
+        canPasteScenarios={canPasteScenarios}
         onClear={() => {
           setPendingDelete({ kind: "date-clear" });
         }}

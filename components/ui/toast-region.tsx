@@ -59,7 +59,7 @@ export function ToastRegion({
 
   return (
     <div
-      className="pointer-events-none fixed top-4 right-4 z-50 flex w-[min(calc(100%-2rem),18rem)] flex-col gap-2"
+      className="pointer-events-none fixed top-4 right-4 z-60 flex w-[min(calc(100%-2rem),18rem)] flex-col gap-2"
       aria-live="polite"
     >
       {toasts.map((toast) => (
