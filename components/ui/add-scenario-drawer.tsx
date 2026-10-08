@@ -37,6 +37,7 @@ function useLgUp() {
 type AddScenarioDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  mode?: "create" | "edit";
   name?: string;
   onNameChange?: (value: string) => void;
   description?: string;
@@ -57,6 +58,7 @@ type AddScenarioDrawerProps = {
 export function AddScenarioDrawer({
   open,
   onOpenChange,
+  mode = "create",
   name = "",
   onNameChange,
   description = "",
@@ -73,6 +75,7 @@ export function AddScenarioDrawer({
   onSave,
   saving = false,
 }: AddScenarioDrawerProps) {
+  const isEdit = mode === "edit";
   const titleId = useId();
   const isLgUp = useLgUp();
   const canSave = Boolean(name.trim() && selectedIcon && droppedTriggers.length > 0);
@@ -138,12 +141,16 @@ export function AddScenarioDrawer({
             </IconMark>
             <div className="min-w-0">
               <Text as="h2" id={titleId} variant="cardTitle">
-                Add New Scenario
+                {isEdit ? "Edit Scenario" : "Add New Scenario"}
               </Text>
               <Text variant="caption" className="text-foreground-muted">
-                {isLgUp
-                  ? "Drag triggers from your library into this panel."
-                  : TRIGGERS_PICK_COPY.chooseTriggersHint}
+                {isEdit
+                  ? isLgUp
+                    ? "Update this scenario’s triggers, name, and icon."
+                    : "Update this scenario’s details and triggers."
+                  : isLgUp
+                    ? "Drag triggers from your library into this panel."
+                    : TRIGGERS_PICK_COPY.chooseTriggersHint}
               </Text>
             </div>
           </div>
@@ -223,7 +230,7 @@ export function AddScenarioDrawer({
             Cancel
           </Button>
           <Button size="md" onClick={onSave} disabled={!canSave} loading={saving}>
-            Save
+            {isEdit ? "Save changes" : "Save"}
           </Button>
         </div>
       </div>

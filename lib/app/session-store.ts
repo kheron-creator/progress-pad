@@ -70,6 +70,7 @@ export type SessionState = AppSession & {
   addLibraryTrigger: (trigger: StoredTrigger) => void;
   removeLibraryTrigger: (id: string) => void;
   addLibraryScenario: (scenario: StoredScenario) => void;
+  updateLibraryScenario: (scenario: StoredScenario) => void;
   removeLibraryScenario: (id: string) => void;
 };
 
@@ -132,6 +133,15 @@ export function createSessionStore(initial: AppSession) {
       set((current) => ({
         libraryScenarios: [...current.libraryScenarios, scenario],
         planScenarios: mergeById(current.planScenarios, [scenario]),
+      })),
+    updateLibraryScenario: (scenario) =>
+      set((current) => ({
+        libraryScenarios: current.libraryScenarios.map((item) =>
+          item.id === scenario.id ? scenario : item,
+        ),
+        planScenarios: current.planScenarios.map((item) =>
+          item.id === scenario.id ? scenario : item,
+        ),
       })),
     removeLibraryScenario: (id) =>
       set((current) => ({

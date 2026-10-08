@@ -48,6 +48,7 @@ type ScenariosLibraryProps = {
   onSave?: () => void;
   onCancel?: () => void;
   saving?: boolean;
+  onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   selectedIds?: ReadonlySet<string>;
   onSelectedChange?: (id: string, checked: boolean) => void;
@@ -77,6 +78,7 @@ export function ScenariosLibrary({
   onSave,
   onCancel,
   saving = false,
+  onEdit,
   onDelete,
   selectedIds,
   onSelectedChange,
@@ -198,6 +200,7 @@ export function ScenariosLibrary({
                         </IconMark>
                       )
                     }
+                    onEdit={onEdit ? () => onEdit(item.id) : undefined}
                     onDelete={onDelete ? () => onDelete(item.id) : undefined}
                   />
                 ))}

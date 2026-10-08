@@ -6,9 +6,11 @@ import { AddScenarioDrawer } from "@/components/ui/add-scenario-drawer";
 import { AddTriggerDrawer } from "@/components/ui/add-trigger-drawer";
 import { CalendarStrip, isoDate, type CalendarMarker } from "@/components/ui/calendar-strip";
 import { DayPlanDrawer } from "@/components/ui/day-plan-drawer";
-import { Dialog, DialogConfirmActions } from "@/components/ui/dialog";
+import { Dialog, DialogActions, DialogConfirmActions } from "@/components/ui/dialog";
 import { IconMark } from "@/components/ui/icon-mark";
+import { Radio } from "@/components/ui/radio";
 import { ScenariosLibrary, type LibraryScenario } from "@/components/ui/scenarios-library";
+import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { ToastRegion, useToasts } from "@/components/ui/toast-region";
 import { type DroppedTrigger } from "@/components/ui/trigger-dropzone";
@@ -21,16 +23,20 @@ import {
   addLibraryScenario,
   addLibraryTrigger,
   clearDateAssignments,
+  forkLibraryScenario,
   pruneStatesToAssignments,
   removeDateAssignment,
   saveDateAssignments,
   softDeleteLibraryScenario,
   softDeleteLibraryTrigger,
   uniqueAssignedTriggerIds,
+  updateLibraryScenario,
   type DateAssignmentItem,
   type StoredScenario,
   type StoredTrigger,
 } from "@/lib/triggers/store";
+
+type EditScope = "future" | "everywhere";
 
 type DayAssignment = DateAssignmentItem;
 
@@ -138,6 +144,7 @@ export function TriggersPage() {
   const addLibraryTriggerToStore = useSessionStore((state) => state.addLibraryTrigger);
   const removeLibraryTriggerFromStore = useSessionStore((state) => state.removeLibraryTrigger);
   const addLibraryScenarioToStore = useSessionStore((state) => state.addLibraryScenario);
+  const updateLibraryScenarioInStore = useSessionStore((state) => state.updateLibraryScenario);
   const removeLibraryScenarioFromStore = useSessionStore((state) => state.removeLibraryScenario);
   const triggers = useMemo(() => libraryTriggers.map(toLibraryTrigger), [libraryTriggers]);
   const scenarios = useMemo(() => libraryScenarios.map(toLibraryScenario), [libraryScenarios]);
@@ -162,6 +169,9 @@ export function TriggersPage() {
   const [scenarioIcon, setScenarioIcon] = useState<string>();
   const [scenarioTriggers, setScenarioTriggers] = useState<DroppedTrigger[]>([]);
   const [convertDayKey, setConvertDayKey] = useState<string | null>(null);
+  const [editingScenarioId, setEditingScenarioId] = useState<string | null>(null);
+  const [editScopeOpen, setEditScopeOpen] = useState(false);
+  const [editScope, setEditScope] = useState<EditScope>("future");
   const [assignments, setAssignments] = useState<Record<string, DayAssignment[]>>(
     () => savedAssignments,
   );
@@ -205,7 +215,42 @@ export function TriggersPage() {
     setScenarioIcon(undefined);
     setScenarioTriggers([]);
     setConvertDayKey(null);
+    setEditingScenarioId(null);
+    setEditScopeOpen(false);
     setAddingScenario(false);
+    clearAssignSelection();
+  }
+
+  function scenarioIsAssigned(id: string) {
+    return Object.values(assignments).some((day) =>
+      day.some((item) => item.kind === "scenario" && item.id === id),
+    );
+  }
+
+  function startEditScenario(id: string) {
+    const stored = libraryScenarios.find((scenario) => scenario.id === id);
+    if (!stored) {
+      return;
+    }
+
+    const dropped: DroppedTrigger[] = [];
+    for (const triggerId of stored.triggerIds) {
+      const trigger = triggerById.get(triggerId);
+      if (!trigger) {
+        continue;
+      }
+      dropped.push({ id: trigger.id, name: trigger.name, icon: trigger.icon });
+    }
+
+    setEditingScenarioId(id);
+    setScenarioName(stored.name);
+    setScenarioDescription(stored.description ?? "");
+    setScenarioIcon(stored.emoji ?? undefined);
+    setScenarioTriggers(dropped);
+    setConvertDayKey(null);
+    cancelTrigger();
+    setDayDrawerOpen(false);
+    setAddingScenario(true);
     clearAssignSelection();
   }
 
@@ -233,6 +278,7 @@ export function TriggersPage() {
       return;
     }
 
+    setEditingScenarioId(null);
     setScenarioName("");
     setScenarioDescription("");
     setScenarioIcon(undefined);
@@ -352,9 +398,67 @@ export function TriggersPage() {
     }
   }
 
+  function resetScenarioForm() {
+    setScenarioName("");
+    setScenarioDescription("");
+    setScenarioIcon(undefined);
+    setScenarioTriggers([]);
+    setConvertDayKey(null);
+    setEditingScenarioId(null);
+    setEditScopeOpen(false);
+    setAddingScenario(false);
+    clearAssignSelection();
+  }
+
+  async function applyScenarioEdit(scope: EditScope) {
+    const title = scenarioName.trim();
+    if (!editingScenarioId || !title || !scenarioIcon || scenarioTriggers.length === 0) {
+      return;
+    }
+
+    setSavingScenario(true);
+    try {
+      const supabase = createClient();
+      const input = {
+        name: title,
+        emoji: scenarioIcon,
+        description: scenarioDescription,
+        triggerIds: scenarioTriggers.map((item) => item.id),
+      };
+
+      if (scope === "everywhere") {
+        const updated = await updateLibraryScenario(supabase, editingScenarioId, input);
+        updateLibraryScenarioInStore(updated);
+        showToast("Scenario updated everywhere it’s used.");
+      } else {
+        const created = await forkLibraryScenario(supabase, editingScenarioId, input);
+        removeLibraryScenarioFromStore(editingScenarioId);
+        addLibraryScenarioToStore(created);
+        showToast("Scenario updated for new assignments only.");
+      }
+
+      resetScenarioForm();
+    } catch {
+      showToast("Couldn't update that scenario. Please try again.", "error");
+    } finally {
+      setSavingScenario(false);
+      setEditScopeOpen(false);
+    }
+  }
+
   async function saveScenario() {
     const title = scenarioName.trim();
     if (!title || !scenarioIcon || scenarioTriggers.length === 0 || savingScenario) return;
+
+    if (editingScenarioId) {
+      if (scenarioIsAssigned(editingScenarioId)) {
+        setEditScope("future");
+        setEditScopeOpen(true);
+        return;
+      }
+      await applyScenarioEdit("everywhere");
+      return;
+    }
 
     setSavingScenario(true);
     const dayKey = convertDayKey;
@@ -396,24 +500,12 @@ export function TriggersPage() {
             "Scenario saved to your library, but couldn't assign it to this date.",
             "error",
           );
-          setScenarioName("");
-          setScenarioDescription("");
-          setScenarioIcon(undefined);
-          setScenarioTriggers([]);
-          setConvertDayKey(null);
-          setAddingScenario(false);
-          clearAssignSelection();
+          resetScenarioForm();
           return;
         }
       }
 
-      setScenarioName("");
-      setScenarioDescription("");
-      setScenarioIcon(undefined);
-      setScenarioTriggers([]);
-      setConvertDayKey(null);
-      setAddingScenario(false);
-      clearAssignSelection();
+      resetScenarioForm();
       showToast(
         dayKey
           ? "Scenario created and assigned to this date."
@@ -805,8 +897,10 @@ export function TriggersPage() {
               setScenarioIcon(undefined);
               setScenarioTriggers([]);
               setConvertDayKey(null);
+              setEditingScenarioId(null);
               setAddingScenario(true);
             }}
+            onEdit={startEditScenario}
             onDelete={(id) => {
               const item = scenarios.find((scenario) => scenario.id === id);
               if (!item) return;
@@ -840,6 +934,7 @@ export function TriggersPage() {
 
       <AddScenarioDrawer
         open={addingScenario}
+        mode={editingScenarioId ? "edit" : "create"}
         onOpenChange={(open) => {
           if (open) {
             cancelTrigger();
@@ -865,6 +960,67 @@ export function TriggersPage() {
         onSave={() => void saveScenario()}
         saving={savingScenario}
       />
+
+      <Dialog
+        open={editScopeOpen}
+        onOpenChange={(open) => {
+          if (!open && !savingScenario) {
+            setEditScopeOpen(false);
+          }
+        }}
+        title="Edit scenario"
+        description="This scenario is already assigned to one or more dates. Choose how to apply your changes."
+      >
+        <div role="radiogroup" aria-label="Edit scope" className="flex flex-col gap-4">
+          <Radio
+            name="scenario-edit-scope"
+            className="items-start"
+            label={
+              <span className="flex flex-col gap-0.5">
+                <span className="type-label text-foreground">Future assignments only</span>
+                <span className="type-caption text-foreground-muted">
+                  Keep existing dates unchanged. Your updated scenario will be used for new
+                  assignments.
+                </span>
+              </span>
+            }
+            checked={editScope === "future"}
+            onChange={() => setEditScope("future")}
+            disabled={savingScenario}
+          />
+          <Radio
+            name="scenario-edit-scope"
+            className="items-start"
+            label={
+              <span className="flex flex-col gap-0.5">
+                <span className="type-label text-foreground">All assignments</span>
+                <span className="type-caption text-foreground-muted">
+                  Update this scenario everywhere it’s currently assigned, including past and future dates.
+                </span>
+              </span>
+            }
+            checked={editScope === "everywhere"}
+            onChange={() => setEditScope("everywhere")}
+            disabled={savingScenario}
+          />
+        </div>
+        <DialogActions>
+          <Button
+            variant="secondary"
+            look="outline"
+            disabled={savingScenario}
+            onClick={() => setEditScopeOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            loading={savingScenario}
+            onClick={() => void applyScenarioEdit(editScope)}
+          >
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <AddTriggerDrawer
         open={addingTrigger}
@@ -911,8 +1067,8 @@ export function TriggersPage() {
           addingScenario
             ? undefined
             : (items) => {
-                assignToDate(date, items);
-              }
+              assignToDate(date, items);
+            }
         }
       />
 
