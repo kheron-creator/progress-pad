@@ -7,9 +7,11 @@ import { useRegisterUnsavedLeave } from "@/components/app/unsaved-leave-provider
 import { AddMindSweepForm } from "@/components/ui/add-mind-sweep-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { DatePicker, displayDate } from "@/components/ui/date-picker";
 import { Dialog, DialogConfirmActions } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
-import { CalendarBlankIcon, CheckCircleIcon, HeadCircuitIcon, ListBulletsIcon, PlusIcon, SearchIcon } from "@/components/ui/icon";
+import { CalendarBlankIcon, CheckCircleIcon, CloseIcon, HeadCircuitIcon, ListBulletsIcon, PlusIcon, SearchIcon } from "@/components/ui/icon";
+import { IconButton } from "@/components/ui/icon-button";
 import { IconMark, type IconMarkTone } from "@/components/ui/icon-mark";
 import { Input } from "@/components/ui/input";
 import { Pagination, PAGINATION_PAGE_SIZES } from "@/components/ui/pagination";
@@ -134,6 +136,7 @@ export function ActiveMindSweepPage() {
   const { toasts, showToast, dismissToast } = useToasts();
   const { banner, showUndo, undo, dismissBanner } = useUndoSnackbar();
   const [filter, setFilter] = useState<SweepFilter>("active");
+  const [filterDate, setFilterDate] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [query, setQuery] = useState("");
@@ -147,15 +150,22 @@ export function ActiveMindSweepPage() {
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
   const celebrateNoteRef = useRef<HTMLParagraphElement>(null);
   const celebrateTimer = useRef(0);
+  const dateFilterItems = useMemo(() => {
+    if (!filterDate) {
+      return null;
+    }
+    return allItems.filter((item) => item.on_date.slice(0, 10) === filterDate);
+  }, [allItems, filterDate]);
   const visibleItems = useMemo(() => {
     const source =
-      filter === "today"
+      dateFilterItems ??
+      (filter === "today"
         ? todayItems
         : filter === "achieved"
           ? achievedItems
           : filter === "active"
             ? activeItems
-            : allItems;
+            : allItems);
     const needle = query.trim().toLowerCase();
     if (!needle) {
       return source;
@@ -165,7 +175,7 @@ export function ActiveMindSweepPage() {
         item.title.toLowerCase().includes(needle) ||
         (item.notes ?? "").toLowerCase().includes(needle),
     );
-  }, [achievedItems, activeItems, allItems, filter, query, todayItems]);
+  }, [achievedItems, activeItems, allItems, dateFilterItems, filter, query, todayItems]);
   const pageCount = Math.max(1, Math.ceil(visibleItems.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const pagedItems = visibleItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -177,6 +187,16 @@ export function ActiveMindSweepPage() {
     { id: "today", label: ACTIVE_MIND_SWEEP.stats.today, count: todayItems.length },
     { id: "achieved", label: ACTIVE_MIND_SWEEP.stats.achieved, count: achievedItems.length },
   ];
+  const filterDateLabel = useMemo(() => {
+    if (!filterDate) {
+      return null;
+    }
+    if (filterDate === today) {
+      return "Today";
+    }
+    const parsed = parseIsoDate(filterDate);
+    return parsed ? displayDate(parsed) : filterDate;
+  }, [filterDate, today]);
 
   useRegisterUnsavedLeave(composerOpen && Boolean(draftTitle.trim() || draftNotes.trim()));
 
@@ -196,7 +216,21 @@ export function ActiveMindSweepPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [filter, query, pageSize]);
+  }, [filter, filterDate, query, pageSize]);
+
+  function selectFilter(next: SweepFilter) {
+    setFilterDate(null);
+    setFilter(next);
+  }
+
+  function selectFilterDate(next: string) {
+    setFilterDate(next);
+    setPage(1);
+  }
+
+  function clearFilterDate() {
+    setFilterDate(null);
+  }
 
   useEffect(() => {
     if (!composerOpen) {
@@ -531,14 +565,36 @@ export function ActiveMindSweepPage() {
           label="Filter mind sweep items"
           tone="primary"
           size="lg"
-          value={filter}
-          onChange={(next) => setFilter(next as SweepFilter)}
+          value={filterDate ? "" : filter}
+          onChange={(next) => selectFilter(next as SweepFilter)}
           options={filterTabs.map((tab) => ({
             value: tab.id,
             label: `${tab.label} (${tab.count})`,
           }))}
         />
-        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:max-w-xl lg:justify-end">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:max-w-2xl lg:justify-end">
+          <div className="flex w-full items-center gap-2 sm:w-auto sm:shrink-0">
+            <DatePicker
+              showLabel={false}
+              label={ACTIVE_MIND_SWEEP.datePlaceholder}
+              placeholder={ACTIVE_MIND_SWEEP.datePlaceholder}
+              value={filterDate ?? undefined}
+              displayLabel={filterDateLabel ?? undefined}
+              onChange={selectFilterDate}
+              className="min-w-0 flex-1 sm:w-56"
+              aria-label={ACTIVE_MIND_SWEEP.datePlaceholder}
+            />
+            {filterDate ? (
+              <IconButton
+                label="Clear date filter"
+                look="outline"
+                size="md"
+                onClick={clearFilterDate}
+              >
+                <CloseIcon size={16} />
+              </IconButton>
+            ) : null}
+          </div>
           <div className="w-full sm:min-w-0 sm:flex-1 lg:max-w-sm">
             <Input
               value={query}
@@ -550,6 +606,13 @@ export function ActiveMindSweepPage() {
           </div>
         </div>
       </div>
+
+      {filterDate && filterDateLabel ? (
+        <Text variant="caption" className="text-foreground-muted">
+          Showing {visibleItems.length} item{visibleItems.length === 1 ? "" : "s"} from{" "}
+          {filterDateLabel}
+        </Text>
+      ) : null}
 
       {visibleItems.length > 0 ? (
         <Card className="flex w-full flex-col gap-section">
@@ -620,15 +683,27 @@ export function ActiveMindSweepPage() {
         <EmptyState
           media={<HeadCircuitIcon size="xl" className="text-(--pp-spring-green-700)" />}
           title={
-            query.trim() ? ACTIVE_MIND_SWEEP.searchEmptyTitle : ACTIVE_MIND_SWEEP.emptyTitle
+            query.trim()
+              ? ACTIVE_MIND_SWEEP.searchEmptyTitle
+              : filterDate
+                ? ACTIVE_MIND_SWEEP.dateEmptyTitle
+                : ACTIVE_MIND_SWEEP.emptyTitle
           }
           description={
             query.trim()
               ? ACTIVE_MIND_SWEEP.searchEmptyDescription
-              : ACTIVE_MIND_SWEEP.emptyDescription
+              : filterDate
+                ? ACTIVE_MIND_SWEEP.dateEmptyDescription
+                : ACTIVE_MIND_SWEEP.emptyDescription
           }
           action={
-            query.trim() ? undefined : (
+            query.trim() ? (
+              undefined
+            ) : filterDate ? (
+              <Button size="md" look="outline" onClick={clearFilterDate}>
+                Clear date
+              </Button>
+            ) : (
               <Button size="md" onClick={openComposer}>
                 <PlusIcon size={16} />
                 {ACTIVE_MIND_SWEEP.newLabel}

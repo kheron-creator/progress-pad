@@ -181,6 +181,7 @@ export const ACTIVE_MIND_SWEEP = {
   newLabel: "New mind sweep",
   captureTitle: "Capture new thought / mind sweep",
   searchPlaceholder: "Search mind sweeps, notes…",
+  datePlaceholder: "Jump to date",
   addLabel: "Save to mind sweep",
   placeholder: "Unload a thought, idea, or mental clutter...",
   notesPlaceholder: "Notes or Context (Optional)...",
@@ -188,6 +189,8 @@ export const ACTIVE_MIND_SWEEP = {
   emptyDescription: "Unload a thought, idea, or mental clutter. It will stay here until you achieve it.",
   searchEmptyTitle: "No matching mind sweeps",
   searchEmptyDescription: "Try a different search.",
+  dateEmptyTitle: "Nothing on this date",
+  dateEmptyDescription: "No mind sweep items were captured for this day.",
   stats: {
     active: "Active",
     today: "Today",
