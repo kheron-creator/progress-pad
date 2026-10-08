@@ -830,8 +830,8 @@ export function TriggersPage() {
   }
 
   return (
-    <div className="flex w-full flex-col gap-4 md:gap-6">
-      <section className="flex flex-col items-center gap-1 py-2 text-center">
+    <div className="flex w-full flex-col gap-3">
+      <section className="flex flex-col items-center gap-0.5 text-center">
         <Text as="h1" variant="pageTitle" className="text-center">
           {TRIGGERS_HEADING.title}
         </Text>
@@ -840,81 +840,80 @@ export function TriggersPage() {
         </Text>
       </section>
 
-      <div className="grid grid-cols-1 items-start gap-3 md:gap-4 lg:grid-cols-2">
-        <div className="flex flex-col gap-3 md:gap-4">
-          <TriggersLibrary
-            columns={2}
-            items={triggers}
-            selectedIds={selectedTriggerIds}
-            onSelectedChange={(id, checked) => {
-              const trigger = triggers.find((entry) => entry.id === id);
-              if (!trigger) return;
-              toggleAssignSelection({ kind: "trigger", id, name: trigger.name }, checked);
-            }}
-            onSelectAll={(selected) =>
-              setKindSelection(
-                "trigger",
-                triggers.map((trigger) => ({ kind: "trigger", id: trigger.id, name: trigger.name })),
-                selected,
-              )
-            }
-            selection={assignSelection}
-            onAdd={() => {
-              cancelScenario();
-              setDayDrawerOpen(false);
-              setAddingTrigger(true);
-            }}
-            onDelete={(id) => {
-              const item = triggers.find((trigger) => trigger.id === id);
-              if (!item) return;
-              setPendingDelete({ kind: "library-trigger", id, name: item.name });
-            }}
-            suggestions={suggestedTriggers}
-            onAddSuggestion={(id) => void addSuggestedTrigger(id)}
-          />
-          <ScenariosLibrary
-            columns={2}
-            items={scenarios}
-            selectedIds={selectedScenarioIds}
-            onSelectedChange={(id, checked) => {
-              const scenario = scenarios.find((entry) => entry.id === id);
-              if (!scenario) return;
-              toggleAssignSelection({ kind: "scenario", id, name: scenario.title }, checked);
-            }}
-            onSelectAll={(selected) =>
-              setKindSelection(
-                "scenario",
-                scenarios.map((scenario) => ({ kind: "scenario", id: scenario.id, name: scenario.title })),
-                selected,
-              )
-            }
-            selection={assignSelection}
-            onAdd={() => {
-              cancelTrigger();
-              setDayDrawerOpen(false);
-              setScenarioName("");
-              setScenarioDescription("");
-              setScenarioIcon(undefined);
-              setScenarioTriggers([]);
-              setConvertDayKey(null);
-              setEditingScenarioId(null);
-              setAddingScenario(true);
-            }}
-            onEdit={startEditScenario}
-            onDelete={(id) => {
-              const item = scenarios.find((scenario) => scenario.id === id);
-              if (!item) return;
-              setPendingDelete({ kind: "library-scenario", id, name: item.title });
-            }}
-          />
-        </div>
+      <div className="flex w-full flex-col gap-3">
+        <TriggersLibrary
+          columns={3}
+          items={triggers}
+          selectedIds={selectedTriggerIds}
+          onSelectedChange={(id, checked) => {
+            const trigger = triggers.find((entry) => entry.id === id);
+            if (!trigger) return;
+            toggleAssignSelection({ kind: "trigger", id, name: trigger.name }, checked);
+          }}
+          onSelectAll={(selected) =>
+            setKindSelection(
+              "trigger",
+              triggers.map((trigger) => ({ kind: "trigger", id: trigger.id, name: trigger.name })),
+              selected,
+            )
+          }
+          selection={assignSelection}
+          onAdd={() => {
+            cancelScenario();
+            setDayDrawerOpen(false);
+            setAddingTrigger(true);
+          }}
+          onDelete={(id) => {
+            const item = triggers.find((trigger) => trigger.id === id);
+            if (!item) return;
+            setPendingDelete({ kind: "library-trigger", id, name: item.name });
+          }}
+          suggestions={suggestedTriggers}
+          onAddSuggestion={(id) => void addSuggestedTrigger(id)}
+        />
+
+        <ScenariosLibrary
+          columns={2}
+          items={scenarios}
+          selectedIds={selectedScenarioIds}
+          onSelectedChange={(id, checked) => {
+            const scenario = scenarios.find((entry) => entry.id === id);
+            if (!scenario) return;
+            toggleAssignSelection({ kind: "scenario", id, name: scenario.title }, checked);
+          }}
+          onSelectAll={(selected) =>
+            setKindSelection(
+              "scenario",
+              scenarios.map((scenario) => ({ kind: "scenario", id: scenario.id, name: scenario.title })),
+              selected,
+            )
+          }
+          selection={assignSelection}
+          onAdd={() => {
+            cancelTrigger();
+            setDayDrawerOpen(false);
+            setScenarioName("");
+            setScenarioDescription("");
+            setScenarioIcon(undefined);
+            setScenarioTriggers([]);
+            setConvertDayKey(null);
+            setEditingScenarioId(null);
+            setAddingScenario(true);
+          }}
+          onEdit={startEditScenario}
+          onDelete={(id) => {
+            const item = scenarios.find((scenario) => scenario.id === id);
+            if (!item) return;
+            setPendingDelete({ kind: "library-scenario", id, name: item.title });
+          }}
+        />
 
         <CalendarStrip
           look="intention"
           view="month"
           value={date}
           onChange={setDate}
-          className="max-w-none self-start"
+          className="max-w-none"
           selectionCount={addingScenario ? 0 : assignSelection.length}
           markers={markers}
           onDropOnDate={addingScenario ? undefined : assignToDate}
@@ -930,6 +929,8 @@ export function TriggersPage() {
           onClearWeek={() => setPendingDelete({ kind: "week-clear" })}
           onClear={() => setPendingDelete({ kind: "calendar-clear" })}
         />
+
+
       </div>
 
       <AddScenarioDrawer

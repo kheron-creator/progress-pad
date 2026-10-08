@@ -92,7 +92,7 @@ export function ScenariosLibrary({
   const allSelected = items.length > 0 && Boolean(selectedIds && items.every((item) => selectedIds.has(item.id)));
 
   return (
-    <Card className={cn("flex w-full flex-col gap-section", className)}>
+    <Card className={cn("flex w-full flex-col gap-3", className)}>
       <div className="flex shrink-0 items-center justify-between gap-3">
         <Text as="h2" variant="cardTitle" className="min-w-0 truncate font-(--pp-font-weight-semibold)">
           {title}
@@ -115,7 +115,7 @@ export function ScenariosLibrary({
       </div>
 
       {state === "add" ? (
-        <div className="flex flex-col gap-section">
+        <div className="flex flex-col gap-3">
           <TriggerDropzone
             items={droppedTriggers}
             pendingCount={pendingCount}
@@ -143,7 +143,7 @@ export function ScenariosLibrary({
           />
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           {notice ? (
             <Toast tone="success" className="shadow-none">
               {notice}
