@@ -174,7 +174,7 @@ export function ComponentGallery() {
   const [scenarioName, setScenarioName] = useState("Productive Morning");
   const [scenarioDescription, setScenarioDescription] = useState("");
   const [galleryPage, setGalleryPage] = useState(1);
-  const [galleryPageSize, setGalleryPageSize] = useState(6);
+  const [galleryPageSize, setGalleryPageSize] = useState(10);
 
   return (
     <>

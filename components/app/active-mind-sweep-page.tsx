@@ -132,7 +132,7 @@ export function ActiveMindSweepPage() {
   const { toasts, showToast, dismissToast } = useToasts();
   const [filter, setFilter] = useState<SweepFilter>("active");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(6);
+  const [pageSize, setPageSize] = useState(10);
   const [query, setQuery] = useState("");
   const [draftTitle, setDraftTitle] = useState("");
   const [draftNotes, setDraftNotes] = useState("");
