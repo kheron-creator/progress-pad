@@ -43,7 +43,7 @@ type AddScenarioDrawerProps = {
   description?: string;
   onDescriptionChange?: (value: string) => void;
   selectedIcon?: string;
-  onIconSelect?: (emoji: string) => void;
+  onIconSelect?: (emoji: string | undefined) => void;
   libraryTriggers?: DroppedTrigger[];
   droppedTriggers?: DroppedTrigger[];
   onDropTrigger?: (item: DroppedTrigger) => void;

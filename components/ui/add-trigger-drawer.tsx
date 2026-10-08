@@ -17,7 +17,7 @@ type AddTriggerDrawerProps = {
   name?: string;
   onNameChange?: (value: string) => void;
   selectedIcon?: string;
-  onIconSelect?: (emoji: string) => void;
+  onIconSelect?: (emoji: string | undefined) => void;
   onSave?: () => void;
   saving?: boolean;
   description?: string;

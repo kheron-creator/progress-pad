@@ -37,7 +37,7 @@ type TriggersLibraryProps = {
   onCancel?: () => void;
   saving?: boolean;
   selectedIcon?: string;
-  onIconSelect?: (emoji: string) => void;
+  onIconSelect?: (emoji: string | undefined) => void;
   onDelete?: (id: string) => void;
   selectedIds?: ReadonlySet<string>;
   onSelectedChange?: (id: string, checked: boolean) => void;
