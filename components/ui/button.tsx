@@ -1,4 +1,5 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from "react";
+import Link from "next/link";
 
 import { cn } from "@/lib/utils/cn";
 
@@ -9,7 +10,7 @@ export type ButtonVariant = "primary" | "secondary" | "danger";
 export type ButtonLook = "filled" | "outline" | "clear" | "ghost" | "icon";
 export type ButtonSize = ControlSize;
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+type ButtonBaseProps = {
   variant?: ButtonVariant;
   look?: ButtonLook;
   size?: ButtonSize;
@@ -17,7 +18,22 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   loading?: boolean;
   fullWidth?: boolean;
   children?: ReactNode;
+  className?: string;
+  disabled?: boolean;
 };
+
+type ButtonAsButtonProps = ButtonBaseProps &
+  Omit<ButtonHTMLAttributes<HTMLButtonElement>, keyof ButtonBaseProps> & {
+    href?: undefined;
+  };
+
+type ButtonAsLinkProps = ButtonBaseProps &
+  Omit<AnchorHTMLAttributes<HTMLAnchorElement>, keyof ButtonBaseProps | "href"> & {
+    href: string;
+    type?: never;
+  };
+
+export type ButtonProps = ButtonAsButtonProps | ButtonAsLinkProps;
 
 const sizeClass: Record<ButtonSize, string> = {
   sm: "h-[var(--pp-control-height-sm)] min-h-[var(--pp-control-height-sm)] min-w-[var(--pp-control-height-sm)] gap-1 px-10.5 text-[length:var(--pp-text-control-sm-size)]",
@@ -89,6 +105,37 @@ function iconSizeClass(size: ButtonSize, look: ButtonLook) {
   return iconCompactClass[size];
 }
 
+function buttonClassName({
+  variant,
+  look,
+  size,
+  iconOnly,
+  fullWidth,
+  className,
+}: {
+  variant: ButtonVariant;
+  look: ButtonLook;
+  size: ButtonSize;
+  iconOnly: boolean;
+  fullWidth: boolean;
+  className?: string;
+}) {
+  const resolvedLook = resolveLook(look);
+  const isIcon = iconOnly || look === "icon";
+
+  return cn(
+    "type-button inline-flex cursor-pointer items-center justify-center transition-colors",
+    "disabled:pointer-events-none disabled:cursor-not-allowed disabled:border-border-disabled disabled:bg-background-subtle disabled:text-foreground-disabled",
+    isIcon && resolvedLook === "clear" ? "rounded-none" : "rounded-sm",
+    isIcon ? iconSizeClass(size, look) : sizeClass[size],
+    fullWidth && "w-full",
+    isIcon && resolvedLook === "clear"
+      ? iconClearClass[variant]
+      : lookClass[`${variant}-${resolvedLook}`],
+    className,
+  );
+}
+
 export function Button({
   variant = "primary",
   look = "filled",
@@ -98,34 +145,55 @@ export function Button({
   fullWidth = false,
   className,
   disabled,
-  type = "button",
   children,
   ...props
 }: ButtonProps) {
   const isDisabled = disabled || loading;
-  const resolvedLook = resolveLook(look);
+  const classes = buttonClassName({
+    variant,
+    look,
+    size,
+    iconOnly,
+    fullWidth,
+    className,
+  });
   const isIcon = iconOnly || look === "icon";
+  const content = (
+    <>
+      {loading ? <Spinner size={spinnerSize[size]} /> : null}
+      {isIcon && loading ? null : children}
+    </>
+  );
+
+  if ("href" in props && props.href) {
+    const { href, ...linkProps } = props;
+
+    if (isDisabled) {
+      return (
+        <span aria-disabled="true" aria-busy={loading || undefined} className={classes}>
+          {content}
+        </span>
+      );
+    }
+
+    return (
+      <Link href={href} aria-busy={loading || undefined} className={classes} {...linkProps}>
+        {content}
+      </Link>
+    );
+  }
+
+  const { type = "button", ...buttonProps } = props as ButtonAsButtonProps;
 
   return (
     <button
       type={type}
       disabled={isDisabled}
       aria-busy={loading || undefined}
-      className={cn(
-        "type-button inline-flex cursor-pointer items-center justify-center transition-colors",
-        "disabled:pointer-events-none disabled:cursor-not-allowed disabled:border-border-disabled disabled:bg-background-subtle disabled:text-foreground-disabled",
-        isIcon && resolvedLook === "clear" ? "rounded-none" : "rounded-sm",
-        isIcon ? iconSizeClass(size, look) : sizeClass[size],
-        fullWidth && "w-full",
-        isIcon && resolvedLook === "clear"
-          ? iconClearClass[variant]
-          : lookClass[`${variant}-${resolvedLook}`],
-        className,
-      )}
-      {...props}
+      className={classes}
+      {...buttonProps}
     >
-      {loading ? <Spinner size={spinnerSize[size]} /> : null}
-      {isIcon && loading ? null : children}
+      {content}
     </button>
   );
 }
