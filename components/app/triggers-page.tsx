@@ -1,36 +1,47 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AddScenarioDrawer } from "@/components/ui/add-scenario-drawer";
 import { AddTriggerDrawer } from "@/components/ui/add-trigger-drawer";
 import { CalendarStrip, isoDate, type CalendarMarker } from "@/components/ui/calendar-strip";
 import { DayPlanDrawer } from "@/components/ui/day-plan-drawer";
-import { Dialog, DialogConfirmActions } from "@/components/ui/dialog";
+import { Dialog, DialogActions, DialogConfirmActions } from "@/components/ui/dialog";
 import { IconMark } from "@/components/ui/icon-mark";
+import { Radio } from "@/components/ui/radio";
 import { ScenariosLibrary, type LibraryScenario } from "@/components/ui/scenarios-library";
+import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { ToastRegion, useToasts } from "@/components/ui/toast-region";
 import { type DroppedTrigger } from "@/components/ui/trigger-dropzone";
 import { TriggersLibrary, type LibraryTrigger } from "@/components/ui/triggers-library";
 import { useSessionStore } from "@/components/app/session-store-provider";
 import { createClient } from "@/lib/supabase/client";
-import { SUGGESTED_TRIGGERS, TRIGGERS_HEADING } from "@/lib/triggers/content";
+import { countLabel, SUGGESTED_TRIGGERS, TRIGGERS_HEADING } from "@/lib/triggers/content";
+import {
+  readDayClipboard,
+  writeDayClipboard,
+  type DayClipboard,
+} from "@/lib/triggers/day-clipboard";
 import { type LibraryDragPayload } from "@/lib/triggers/drag";
 import {
   addLibraryScenario,
   addLibraryTrigger,
   clearDateAssignments,
+  forkLibraryScenario,
   pruneStatesToAssignments,
   removeDateAssignment,
   saveDateAssignments,
   softDeleteLibraryScenario,
   softDeleteLibraryTrigger,
   uniqueAssignedTriggerIds,
+  updateLibraryScenario,
   type DateAssignmentItem,
   type StoredScenario,
   type StoredTrigger,
 } from "@/lib/triggers/store";
+
+type EditScope = "future" | "everywhere";
 
 type DayAssignment = DateAssignmentItem;
 
@@ -39,6 +50,7 @@ type PendingDelete =
   | { kind: "library-scenario"; id: string; name: string }
   | { kind: "date-scenario"; id: string; name: string }
   | { kind: "date-clear" }
+  | { kind: "week-clear" }
   | { kind: "calendar-clear" };
 
 const DELETE_COPY: Record<
@@ -67,6 +79,12 @@ const DELETE_COPY: Record<
       "All scenarios and triggers will be removed from this date. They will stay in your library.",
     confirm: "Clear",
   },
+  "week-clear": {
+    title: "Clear current week?",
+    description: () =>
+      "All scenarios and triggers will be removed from this week. They will stay in your library.",
+    confirm: "Clear week",
+  },
   "calendar-clear": {
     title: "Clear calendar?",
     description: () =>
@@ -74,6 +92,17 @@ const DELETE_COPY: Record<
     confirm: "Clear calendar",
   },
 };
+
+function weekDateKeys(anchor: Date) {
+  const start = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
+  const day = start.getDay();
+  start.setDate(start.getDate() - (day === 0 ? 6 : day - 1));
+  return Array.from({ length: 7 }, (_, index) => {
+    const next = new Date(start);
+    next.setDate(start.getDate() + index);
+    return isoDate(next);
+  });
+}
 
 function EmojiMark({ children }: { children: string }) {
   return (
@@ -120,6 +149,7 @@ export function TriggersPage() {
   const addLibraryTriggerToStore = useSessionStore((state) => state.addLibraryTrigger);
   const removeLibraryTriggerFromStore = useSessionStore((state) => state.removeLibraryTrigger);
   const addLibraryScenarioToStore = useSessionStore((state) => state.addLibraryScenario);
+  const updateLibraryScenarioInStore = useSessionStore((state) => state.updateLibraryScenario);
   const removeLibraryScenarioFromStore = useSessionStore((state) => state.removeLibraryScenario);
   const triggers = useMemo(() => libraryTriggers.map(toLibraryTrigger), [libraryTriggers]);
   const scenarios = useMemo(() => libraryScenarios.map(toLibraryScenario), [libraryScenarios]);
@@ -143,11 +173,16 @@ export function TriggersPage() {
   const [scenarioDescription, setScenarioDescription] = useState("");
   const [scenarioIcon, setScenarioIcon] = useState<string>();
   const [scenarioTriggers, setScenarioTriggers] = useState<DroppedTrigger[]>([]);
+  const [convertDayKey, setConvertDayKey] = useState<string | null>(null);
+  const [editingScenarioId, setEditingScenarioId] = useState<string | null>(null);
+  const [editScopeOpen, setEditScopeOpen] = useState(false);
+  const [editScope, setEditScope] = useState<EditScope>("future");
   const [assignments, setAssignments] = useState<Record<string, DayAssignment[]>>(
     () => savedAssignments,
   );
   const [date, setDate] = useState(() => new Date());
   const [dayDrawerOpen, setDayDrawerOpen] = useState(false);
+  const [dayClipboard, setDayClipboard] = useState<DayClipboard | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
   const [savingTrigger, setSavingTrigger] = useState(false);
   const [savingScenario, setSavingScenario] = useState(false);
@@ -173,6 +208,10 @@ export function TriggersPage() {
     }));
   }, [hiddenSuggestionIds, libraryTriggers]);
 
+  useEffect(() => {
+    setDayClipboard(readDayClipboard());
+  }, []);
+
   function cancelTrigger() {
     setTriggerName("");
     setTriggerIcon(undefined);
@@ -185,7 +224,79 @@ export function TriggersPage() {
     setScenarioDescription("");
     setScenarioIcon(undefined);
     setScenarioTriggers([]);
+    setConvertDayKey(null);
+    setEditingScenarioId(null);
+    setEditScopeOpen(false);
     setAddingScenario(false);
+    clearAssignSelection();
+  }
+
+  function scenarioIsAssigned(id: string) {
+    return Object.values(assignments).some((day) =>
+      day.some((item) => item.kind === "scenario" && item.id === id),
+    );
+  }
+
+  function startEditScenario(id: string) {
+    const stored = libraryScenarios.find((scenario) => scenario.id === id);
+    if (!stored) {
+      return;
+    }
+
+    const dropped: DroppedTrigger[] = [];
+    for (const triggerId of stored.triggerIds) {
+      const trigger = triggerById.get(triggerId);
+      if (!trigger) {
+        continue;
+      }
+      dropped.push({ id: trigger.id, name: trigger.name, icon: trigger.icon });
+    }
+
+    setEditingScenarioId(id);
+    setScenarioName(stored.name);
+    setScenarioDescription(stored.description ?? "");
+    setScenarioIcon(stored.emoji ?? undefined);
+    setScenarioTriggers(dropped);
+    setConvertDayKey(null);
+    cancelTrigger();
+    setDayDrawerOpen(false);
+    setAddingScenario(true);
+    clearAssignSelection();
+  }
+
+  function startCreateScenarioFromDay() {
+    const key = isoDate(date);
+    const dayItems = (assignments[key] ?? []).filter(
+      (item) => item.kind === "trigger" && !item.id.startsWith("pending:"),
+    );
+    if (dayItems.length === 0) {
+      showToast("Add at least one saved trigger before creating a scenario.", "error");
+      return;
+    }
+
+    const dropped: DroppedTrigger[] = [];
+    for (const item of dayItems) {
+      const trigger = triggerById.get(item.id);
+      if (!trigger) {
+        continue;
+      }
+      dropped.push({ id: trigger.id, name: trigger.name, icon: trigger.icon });
+    }
+
+    if (dropped.length === 0) {
+      showToast("Couldn't find those triggers. Please try again.", "error");
+      return;
+    }
+
+    setEditingScenarioId(null);
+    setScenarioName("");
+    setScenarioDescription("");
+    setScenarioIcon(undefined);
+    setScenarioTriggers(dropped);
+    setConvertDayKey(key);
+    cancelTrigger();
+    setDayDrawerOpen(false);
+    setAddingScenario(true);
     clearAssignSelection();
   }
 
@@ -297,11 +408,70 @@ export function TriggersPage() {
     }
   }
 
+  function resetScenarioForm() {
+    setScenarioName("");
+    setScenarioDescription("");
+    setScenarioIcon(undefined);
+    setScenarioTriggers([]);
+    setConvertDayKey(null);
+    setEditingScenarioId(null);
+    setEditScopeOpen(false);
+    setAddingScenario(false);
+    clearAssignSelection();
+  }
+
+  async function applyScenarioEdit(scope: EditScope) {
+    const title = scenarioName.trim();
+    if (!editingScenarioId || !title || !scenarioIcon || scenarioTriggers.length === 0) {
+      return;
+    }
+
+    setSavingScenario(true);
+    try {
+      const supabase = createClient();
+      const input = {
+        name: title,
+        emoji: scenarioIcon,
+        description: scenarioDescription,
+        triggerIds: scenarioTriggers.map((item) => item.id),
+      };
+
+      if (scope === "everywhere") {
+        const updated = await updateLibraryScenario(supabase, editingScenarioId, input);
+        updateLibraryScenarioInStore(updated);
+        showToast("Scenario updated everywhere it’s used.");
+      } else {
+        const created = await forkLibraryScenario(supabase, editingScenarioId, input);
+        removeLibraryScenarioFromStore(editingScenarioId);
+        addLibraryScenarioToStore(created);
+        showToast("Scenario updated for new assignments only.");
+      }
+
+      resetScenarioForm();
+    } catch {
+      showToast("Couldn't update that scenario. Please try again.", "error");
+    } finally {
+      setSavingScenario(false);
+      setEditScopeOpen(false);
+    }
+  }
+
   async function saveScenario() {
     const title = scenarioName.trim();
     if (!title || !scenarioIcon || scenarioTriggers.length === 0 || savingScenario) return;
 
+    if (editingScenarioId) {
+      if (scenarioIsAssigned(editingScenarioId)) {
+        setEditScope("future");
+        setEditScopeOpen(true);
+        return;
+      }
+      await applyScenarioEdit("everywhere");
+      return;
+    }
+
     setSavingScenario(true);
+    const dayKey = convertDayKey;
     try {
       const supabase = createClient();
       const created = await addLibraryScenario(supabase, {
@@ -311,13 +481,46 @@ export function TriggersPage() {
         triggerIds: scenarioTriggers.map((item) => item.id),
       });
       addLibraryScenarioToStore(created);
-      setScenarioName("");
-      setScenarioDescription("");
-      setScenarioIcon(undefined);
-      setScenarioTriggers([]);
-      setAddingScenario(false);
-      clearAssignSelection();
-      showToast("Scenario added to your library.");
+
+      if (dayKey) {
+        const previous = assignments;
+        const dayList = previous[dayKey] ?? [];
+        const withoutTriggers = dayList.filter((item) => item.kind !== "trigger");
+        const nextList = withoutTriggers.some(
+          (item) => item.kind === "scenario" && item.id === created.id,
+        )
+          ? withoutTriggers
+          : [...withoutTriggers, { kind: "scenario" as const, id: created.id }];
+        const next = { ...previous, [dayKey]: nextList };
+        setAssignments(next);
+        setSavedAssignments(next);
+        try {
+          await saveDateAssignments(supabase, previous, next);
+          setStates((current) =>
+            pruneStatesToAssignments(current, next, (scenarioId) =>
+              scenarioId === created.id
+                ? created.triggerIds
+                : scenarioById.get(scenarioId)?.triggerIds,
+            ),
+          );
+        } catch {
+          setAssignments(previous);
+          setSavedAssignments(previous);
+          showToast(
+            "Scenario saved to your library, but couldn't assign it to this date.",
+            "error",
+          );
+          resetScenarioForm();
+          return;
+        }
+      }
+
+      resetScenarioForm();
+      showToast(
+        dayKey
+          ? "Scenario created and assigned to this date."
+          : "Scenario added to your library.",
+      );
     } catch {
       showToast("Couldn't add that scenario. Please try again.", "error");
     } finally {
@@ -477,6 +680,31 @@ export function TriggersPage() {
     return persistDayChange(next, () => clearDateAssignments(createClient(), key));
   }
 
+  async function clearWeek() {
+    const keys = new Set(weekDateKeys(date));
+    const previous = assignments;
+    const next: Record<string, DayAssignment[]> = {};
+    for (const [onDate, items] of Object.entries(assignments)) {
+      if (!keys.has(onDate)) {
+        next[onDate] = items;
+      }
+    }
+    setAssignments(next);
+    setSavedAssignments(next);
+
+    try {
+      await saveDateAssignments(createClient(), previous, next);
+      setStates((current) =>
+        pruneStatesToAssignments(current, next, (scenarioId) => scenarioById.get(scenarioId)?.triggerIds),
+      );
+      showToast("Current week cleared.");
+    } catch {
+      setAssignments(previous);
+      setSavedAssignments(previous);
+      showToast("Couldn't clear this week. Please try again.", "error");
+    }
+  }
+
   async function clearCalendar() {
     const previous = assignments;
     const next: Record<string, DayAssignment[]> = {};
@@ -530,6 +758,76 @@ export function TriggersPage() {
     dayAssignments,
     (scenarioId) => scenarioById.get(scenarioId)?.triggerIds,
   ).length;
+  const canPasteTriggers = dayClipboard?.kind === "trigger";
+  const canPasteScenarios = dayClipboard?.kind === "scenario";
+
+  function copyDayTriggers() {
+    const ids = dayTriggers.map((item) => item.id);
+    if (ids.length === 0) return;
+    writeDayClipboard("trigger", ids);
+    setDayClipboard({ kind: "trigger", ids });
+    showToast(
+      ids.length === 1
+        ? "Trigger copied. Open another date to paste."
+        : `${ids.length} triggers copied. Open another date to paste.`,
+    );
+  }
+
+  function pasteDayTriggers() {
+    if (dayClipboard?.kind !== "trigger") return;
+    const items: LibraryDragPayload[] = dayClipboard.ids.map((id) => ({
+      kind: "trigger",
+      id,
+      name: triggerById.get(id)?.name ?? "Trigger",
+    }));
+    const key = isoDate(date);
+    const existing = new Set(
+      (assignments[key] ?? [])
+        .filter((item) => item.kind === "trigger")
+        .map((item) => item.id),
+    );
+    const added = items.filter((item) => !existing.has(item.id)).length;
+    assignToDate(date, items);
+    if (added > 0) {
+      showToast(`Pasted ${countLabel(added, "trigger")}.`);
+    } else {
+      showToast("Those triggers are already on this date.");
+    }
+  }
+
+  function copyDayScenarios() {
+    const ids = dayScenarios.map((item) => item.id);
+    if (ids.length === 0) return;
+    writeDayClipboard("scenario", ids);
+    setDayClipboard({ kind: "scenario", ids });
+    showToast(
+      ids.length === 1
+        ? "Scenario copied. Open another date to paste."
+        : `${ids.length} scenarios copied. Open another date to paste.`,
+    );
+  }
+
+  function pasteDayScenarios() {
+    if (dayClipboard?.kind !== "scenario") return;
+    const items: LibraryDragPayload[] = dayClipboard.ids.map((id) => ({
+      kind: "scenario",
+      id,
+      name: scenarioById.get(id)?.title ?? "Scenario",
+    }));
+    const key = isoDate(date);
+    const existing = new Set(
+      (assignments[key] ?? [])
+        .filter((item) => item.kind === "scenario")
+        .map((item) => item.id),
+    );
+    const added = items.filter((item) => !existing.has(item.id)).length;
+    assignToDate(date, items);
+    if (added > 0) {
+      showToast(`Pasted ${countLabel(added, "scenario")}.`);
+    } else {
+      showToast("Those scenarios are already on this date.");
+    }
+  }
 
   async function confirmDelete() {
     if (!pendingDelete || deletePending) return;
@@ -589,6 +887,17 @@ export function TriggersPage() {
       return;
     }
 
+    if (pendingDelete.kind === "week-clear") {
+      setDeletePending(true);
+      try {
+        await clearWeek();
+        setPendingDelete(null);
+      } finally {
+        setDeletePending(false);
+      }
+      return;
+    }
+
     if (pendingDelete.kind === "calendar-clear") {
       setDeletePending(true);
       try {
@@ -601,8 +910,8 @@ export function TriggersPage() {
   }
 
   return (
-    <div className="flex w-full flex-col gap-4 md:gap-6">
-      <section className="flex flex-col items-center gap-1 py-2 text-center">
+    <div className="flex w-full flex-col gap-3">
+      <section className="flex flex-col items-center gap-0.5 text-center">
         <Text as="h1" variant="pageTitle" className="text-center">
           {TRIGGERS_HEADING.title}
         </Text>
@@ -611,74 +920,80 @@ export function TriggersPage() {
         </Text>
       </section>
 
-      <div className="grid grid-cols-1 items-start gap-3 md:gap-4 lg:grid-cols-2">
-        <div className="flex flex-col gap-3 md:gap-4">
-          <TriggersLibrary
-            columns={2}
-            items={triggers}
-            selectedIds={selectedTriggerIds}
-            onSelectedChange={(id, checked) => {
-              const trigger = triggers.find((entry) => entry.id === id);
-              if (!trigger) return;
-              toggleAssignSelection({ kind: "trigger", id, name: trigger.name }, checked);
-            }}
-            onSelectAll={(selected) =>
-              setKindSelection(
-                "trigger",
-                triggers.map((trigger) => ({ kind: "trigger", id: trigger.id, name: trigger.name })),
-                selected,
-              )
-            }
-            selection={assignSelection}
-            onAdd={() => {
-              cancelScenario();
-              setDayDrawerOpen(false);
-              setAddingTrigger(true);
-            }}
-            onDelete={(id) => {
-              const item = triggers.find((trigger) => trigger.id === id);
-              if (!item) return;
-              setPendingDelete({ kind: "library-trigger", id, name: item.name });
-            }}
-            suggestions={suggestedTriggers}
-            onAddSuggestion={(id) => void addSuggestedTrigger(id)}
-          />
-          <ScenariosLibrary
-            columns={2}
-            items={scenarios}
-            selectedIds={selectedScenarioIds}
-            onSelectedChange={(id, checked) => {
-              const scenario = scenarios.find((entry) => entry.id === id);
-              if (!scenario) return;
-              toggleAssignSelection({ kind: "scenario", id, name: scenario.title }, checked);
-            }}
-            onSelectAll={(selected) =>
-              setKindSelection(
-                "scenario",
-                scenarios.map((scenario) => ({ kind: "scenario", id: scenario.id, name: scenario.title })),
-                selected,
-              )
-            }
-            selection={assignSelection}
-            onAdd={() => {
-              cancelTrigger();
-              setDayDrawerOpen(false);
-              setAddingScenario(true);
-            }}
-            onDelete={(id) => {
-              const item = scenarios.find((scenario) => scenario.id === id);
-              if (!item) return;
-              setPendingDelete({ kind: "library-scenario", id, name: item.title });
-            }}
-          />
-        </div>
+      <div className="flex w-full flex-col gap-3">
+        <TriggersLibrary
+          columns={3}
+          items={triggers}
+          selectedIds={selectedTriggerIds}
+          onSelectedChange={(id, checked) => {
+            const trigger = triggers.find((entry) => entry.id === id);
+            if (!trigger) return;
+            toggleAssignSelection({ kind: "trigger", id, name: trigger.name }, checked);
+          }}
+          onSelectAll={(selected) =>
+            setKindSelection(
+              "trigger",
+              triggers.map((trigger) => ({ kind: "trigger", id: trigger.id, name: trigger.name })),
+              selected,
+            )
+          }
+          selection={assignSelection}
+          onAdd={() => {
+            cancelScenario();
+            setDayDrawerOpen(false);
+            setAddingTrigger(true);
+          }}
+          onDelete={(id) => {
+            const item = triggers.find((trigger) => trigger.id === id);
+            if (!item) return;
+            setPendingDelete({ kind: "library-trigger", id, name: item.name });
+          }}
+          suggestions={suggestedTriggers}
+          onAddSuggestion={(id) => void addSuggestedTrigger(id)}
+        />
+
+        <ScenariosLibrary
+          columns={2}
+          items={scenarios}
+          selectedIds={selectedScenarioIds}
+          onSelectedChange={(id, checked) => {
+            const scenario = scenarios.find((entry) => entry.id === id);
+            if (!scenario) return;
+            toggleAssignSelection({ kind: "scenario", id, name: scenario.title }, checked);
+          }}
+          onSelectAll={(selected) =>
+            setKindSelection(
+              "scenario",
+              scenarios.map((scenario) => ({ kind: "scenario", id: scenario.id, name: scenario.title })),
+              selected,
+            )
+          }
+          selection={assignSelection}
+          onAdd={() => {
+            cancelTrigger();
+            setDayDrawerOpen(false);
+            setScenarioName("");
+            setScenarioDescription("");
+            setScenarioIcon(undefined);
+            setScenarioTriggers([]);
+            setConvertDayKey(null);
+            setEditingScenarioId(null);
+            setAddingScenario(true);
+          }}
+          onEdit={startEditScenario}
+          onDelete={(id) => {
+            const item = scenarios.find((scenario) => scenario.id === id);
+            if (!item) return;
+            setPendingDelete({ kind: "library-scenario", id, name: item.title });
+          }}
+        />
 
         <CalendarStrip
           look="intention"
           view="month"
           value={date}
           onChange={setDate}
-          className="max-w-none self-start"
+          className="max-w-none"
           selectionCount={addingScenario ? 0 : assignSelection.length}
           markers={markers}
           onDropOnDate={addingScenario ? undefined : assignToDate}
@@ -691,12 +1006,16 @@ export function TriggersPage() {
             cancelTrigger();
             setDayDrawerOpen(true);
           }}
+          onClearWeek={() => setPendingDelete({ kind: "week-clear" })}
           onClear={() => setPendingDelete({ kind: "calendar-clear" })}
         />
+
+
       </div>
 
       <AddScenarioDrawer
         open={addingScenario}
+        mode={editingScenarioId ? "edit" : "create"}
         onOpenChange={(open) => {
           if (open) {
             cancelTrigger();
@@ -722,6 +1041,67 @@ export function TriggersPage() {
         onSave={() => void saveScenario()}
         saving={savingScenario}
       />
+
+      <Dialog
+        open={editScopeOpen}
+        onOpenChange={(open) => {
+          if (!open && !savingScenario) {
+            setEditScopeOpen(false);
+          }
+        }}
+        title="Edit scenario"
+        description="This scenario is already assigned to one or more dates. Choose how to apply your changes."
+      >
+        <div role="radiogroup" aria-label="Edit scope" className="flex flex-col gap-4">
+          <Radio
+            name="scenario-edit-scope"
+            className="items-start"
+            label={
+              <span className="flex flex-col gap-0.5">
+                <span className="type-label text-foreground">Future assignments only</span>
+                <span className="type-caption text-foreground-muted">
+                  Keep existing dates unchanged. Your updated scenario will be used for new
+                  assignments.
+                </span>
+              </span>
+            }
+            checked={editScope === "future"}
+            onChange={() => setEditScope("future")}
+            disabled={savingScenario}
+          />
+          <Radio
+            name="scenario-edit-scope"
+            className="items-start"
+            label={
+              <span className="flex flex-col gap-0.5">
+                <span className="type-label text-foreground">All assignments</span>
+                <span className="type-caption text-foreground-muted">
+                  Update this scenario everywhere it’s currently assigned, including past and future dates.
+                </span>
+              </span>
+            }
+            checked={editScope === "everywhere"}
+            onChange={() => setEditScope("everywhere")}
+            disabled={savingScenario}
+          />
+        </div>
+        <DialogActions>
+          <Button
+            variant="secondary"
+            look="outline"
+            disabled={savingScenario}
+            onClick={() => setEditScopeOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            loading={savingScenario}
+            onClick={() => void applyScenarioEdit(editScope)}
+          >
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <AddTriggerDrawer
         open={addingTrigger}
@@ -760,6 +1140,13 @@ export function TriggersPage() {
         onRemoveTrigger={(id) => {
           void removeFromDate("trigger", id);
         }}
+        onCreateScenario={startCreateScenarioFromDay}
+        onCopyTriggers={copyDayTriggers}
+        onPasteTriggers={pasteDayTriggers}
+        canPasteTriggers={canPasteTriggers}
+        onCopyScenarios={copyDayScenarios}
+        onPasteScenarios={pasteDayScenarios}
+        canPasteScenarios={canPasteScenarios}
         onClear={() => {
           setPendingDelete({ kind: "date-clear" });
         }}
@@ -767,8 +1154,8 @@ export function TriggersPage() {
           addingScenario
             ? undefined
             : (items) => {
-                assignToDate(date, items);
-              }
+              assignToDate(date, items);
+            }
         }
       />
 

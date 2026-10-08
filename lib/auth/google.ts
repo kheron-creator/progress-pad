@@ -7,6 +7,9 @@ export async function startGoogleSignIn(next: "/home" | "/onboarding" = "/home")
     provider: "google",
     options: {
       redirectTo: authRedirectTo(next),
+      queryParams: {
+        prompt: "select_account",
+      },
     },
   });
 

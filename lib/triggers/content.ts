@@ -3,6 +3,11 @@ export const TRIGGERS_HEADING = {
   subtitle: "Small cues that help your day flow.",
 } as const;
 
+export const SCENARIOS_LIBRARY = {
+  title: "Scenarios Library",
+  subtitle: "Group triggers into routines you can assign to any day.",
+} as const;
+
 export const SUGGESTED_TRIGGERS = [
   { id: "suggest-make-bed", name: "Make my bed", emoji: "🛏️" },
   { id: "suggest-inbox-zero", name: "Clear my inbox", emoji: "📥" },

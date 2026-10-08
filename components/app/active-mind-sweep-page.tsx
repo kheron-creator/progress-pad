@@ -7,22 +7,27 @@ import { useRegisterUnsavedLeave } from "@/components/app/unsaved-leave-provider
 import { AddMindSweepForm } from "@/components/ui/add-mind-sweep-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { DatePicker, displayDate } from "@/components/ui/date-picker";
 import { Dialog, DialogConfirmActions } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
-import { CalendarBlankIcon, CheckCircleIcon, HeadCircuitIcon, ListBulletsIcon, PlusIcon, SearchIcon } from "@/components/ui/icon";
+import { CalendarBlankIcon, CheckCircleIcon, CloseIcon, HeadCircuitIcon, ListBulletsIcon, PlusIcon, SearchIcon } from "@/components/ui/icon";
+import { IconButton } from "@/components/ui/icon-button";
 import { IconMark, type IconMarkTone } from "@/components/ui/icon-mark";
 import { Input } from "@/components/ui/input";
 import { Pagination, PAGINATION_PAGE_SIZES } from "@/components/ui/pagination";
 import { Tabs } from "@/components/ui/tabs";
 import { Text } from "@/components/ui/text";
 import { ToastRegion, useToasts } from "@/components/ui/toast-region";
+import { UndoSnackbar, useUndoSnackbar } from "@/components/ui/undo-snackbar";
 import { WrittenItem } from "@/components/ui/written-item";
 import { ACTIVE_MIND_SWEEP } from "@/lib/home/content";
 import {
   addMindSweepItem,
   deleteMindSweepItem,
+  deleteMindSweepItems,
   flattenMindSweepItems,
   formatIsoDate,
+  frontMindSweepSortOrder,
   incompleteMindSweepItems,
   mapMindSweepItem,
   mergeMindSweepItems,
@@ -31,11 +36,13 @@ import {
   persistMindSweepPatches,
   relocateMindSweepItem,
   removeMindSweepItem,
+  removeMindSweepItems,
   setMindSweepStatus,
   type StoredMindSweepItem,
 } from "@/lib/home/store";
 import { createClient } from "@/lib/supabase/client";
 import { burstConfetti } from "@/lib/ui/burst-confetti";
+import { cn } from "@/lib/utils/cn";
 
 const COMPOSER_ID = "active-mind-sweep-composer";
 const COMPOSER_TITLE_ID = "active-mind-sweep-title";
@@ -127,30 +134,38 @@ export function ActiveMindSweepPage() {
     },
   ];
   const { toasts, showToast, dismissToast } = useToasts();
-  const [filter, setFilter] = useState<SweepFilter>("all");
+  const { banner, showUndo, undo, dismissBanner } = useUndoSnackbar();
+  const [filter, setFilter] = useState<SweepFilter>("active");
+  const [filterDate, setFilterDate] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(6);
+  const [pageSize, setPageSize] = useState(10);
   const [query, setQuery] = useState("");
   const [draftTitle, setDraftTitle] = useState("");
   const [draftNotes, setDraftNotes] = useState("");
   const [draftDate, setDraftDate] = useState(today);
   const [addSaving, setAddSaving] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
-  const [deletePending, setDeletePending] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<StoredMindSweepItem | null>(null);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null);
   const [celebrateName, setCelebrateName] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
   const celebrateNoteRef = useRef<HTMLParagraphElement>(null);
   const celebrateTimer = useRef(0);
+  const dateFilterItems = useMemo(() => {
+    if (!filterDate) {
+      return null;
+    }
+    return allItems.filter((item) => item.on_date.slice(0, 10) === filterDate);
+  }, [allItems, filterDate]);
   const visibleItems = useMemo(() => {
     const source =
-      filter === "today"
+      dateFilterItems ??
+      (filter === "today"
         ? todayItems
         : filter === "achieved"
           ? achievedItems
           : filter === "active"
             ? activeItems
-            : allItems;
+            : allItems);
     const needle = query.trim().toLowerCase();
     if (!needle) {
       return source;
@@ -160,7 +175,7 @@ export function ActiveMindSweepPage() {
         item.title.toLowerCase().includes(needle) ||
         (item.notes ?? "").toLowerCase().includes(needle),
     );
-  }, [achievedItems, activeItems, allItems, filter, query, todayItems]);
+  }, [achievedItems, activeItems, allItems, dateFilterItems, filter, query, todayItems]);
   const pageCount = Math.max(1, Math.ceil(visibleItems.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const pagedItems = visibleItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -172,6 +187,16 @@ export function ActiveMindSweepPage() {
     { id: "today", label: ACTIVE_MIND_SWEEP.stats.today, count: todayItems.length },
     { id: "achieved", label: ACTIVE_MIND_SWEEP.stats.achieved, count: achievedItems.length },
   ];
+  const filterDateLabel = useMemo(() => {
+    if (!filterDate) {
+      return null;
+    }
+    if (filterDate === today) {
+      return "Today";
+    }
+    const parsed = parseIsoDate(filterDate);
+    return parsed ? displayDate(parsed) : filterDate;
+  }, [filterDate, today]);
 
   useRegisterUnsavedLeave(composerOpen && Boolean(draftTitle.trim() || draftNotes.trim()));
 
@@ -191,7 +216,21 @@ export function ActiveMindSweepPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [filter, query, pageSize]);
+  }, [filter, filterDate, query, pageSize]);
+
+  function selectFilter(next: SweepFilter) {
+    setFilterDate(null);
+    setFilter(next);
+  }
+
+  function selectFilterDate(next: string) {
+    setFilterDate(next);
+    setPage(1);
+  }
+
+  function clearFilterDate() {
+    setFilterDate(null);
+  }
 
   useEffect(() => {
     if (!composerOpen) {
@@ -228,6 +267,21 @@ export function ActiveMindSweepPage() {
 
     try {
       await setMindSweepStatus(createClient(), item.id, status);
+      if (status === "achieved") {
+        showUndo({
+          message: "Marked as done.",
+          onUndo: async () => {
+            setCelebrateName(null);
+            setMindSweepByDate(previous);
+            try {
+              await setMindSweepStatus(createClient(), item.id, "todo");
+            } catch {
+              setMindSweepByDate((current) => mapMindSweepItem(current, item.id, { status: "achieved" }));
+              showToast("Couldn't undo that change. Please try again.", "error");
+            }
+          },
+        });
+      }
     } catch {
       setMindSweepByDate(previous);
       setCelebrateName(null);
@@ -243,7 +297,7 @@ export function ActiveMindSweepPage() {
     setAddSaving(true);
     try {
       const onDate = payload.onDate.slice(0, 10);
-      const sortOrder = (mindSweepByDate[onDate]?.length ?? 0) + 1;
+      const sortOrder = frontMindSweepSortOrder(mindSweepByDate[onDate] ?? []);
       const row = await addMindSweepItem(createClient(), { ...payload, onDate, sortOrder });
       setMindSweepByDate((current) => mergeMindSweepItems(current, [row]));
       setDraftTitle("");
@@ -258,25 +312,65 @@ export function ActiveMindSweepPage() {
     }
   }
 
-  async function confirmDelete() {
-    if (!pendingDelete || deletePending) {
+  function deleteItems(ids: readonly string[]) {
+    if (ids.length === 0) {
       return;
     }
 
-    setDeletePending(true);
     const previous = mindSweepByDate;
-    const next = removeMindSweepItem(previous, pendingDelete.id);
+    const next =
+      ids.length === 1
+        ? removeMindSweepItem(previous, ids[0]!)
+        : removeMindSweepItems(previous, ids);
     setMindSweepByDate(next);
-    try {
-      await deleteMindSweepItem(createClient(), pendingDelete.id);
-      await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
-      setPendingDelete(null);
-    } catch {
-      setMindSweepByDate(previous);
-      showToast("Couldn't delete that item. Please try again.", "error");
-    } finally {
-      setDeletePending(false);
+    setSelectedIds((current) => {
+      const remaining = new Set(current);
+      for (const id of ids) {
+        remaining.delete(id);
+      }
+      return remaining;
+    });
+    setPendingDeleteIds(null);
+
+    showUndo({
+      message: ids.length === 1 ? "Task deleted." : `${ids.length} tasks deleted.`,
+      onUndo: () => {
+        setMindSweepByDate(previous);
+      },
+      onCommit: async () => {
+        try {
+          if (ids.length === 1) {
+            await deleteMindSweepItem(createClient(), ids[0]!);
+          } else {
+            await deleteMindSweepItems(createClient(), ids);
+          }
+          await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
+        } catch {
+          setMindSweepByDate(previous);
+          showToast(
+            ids.length === 1
+              ? "Couldn't delete that item. Please try again."
+              : "Couldn't delete those items. Please try again.",
+            "error",
+          );
+        }
+      },
+    });
+  }
+
+  function requestDelete(item: StoredMindSweepItem) {
+    if (selectedIds.size > 1 && selectedIds.has(item.id)) {
+      setPendingDeleteIds([...selectedIds]);
+      return;
     }
+    deleteItems([item.id]);
+  }
+
+  function confirmDelete() {
+    if (!pendingDeleteIds) {
+      return;
+    }
+    deleteItems(pendingDeleteIds);
   }
 
   function toggleSelected(id: string) {
@@ -324,6 +418,19 @@ export function ActiveMindSweepPage() {
 
     try {
       await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
+      const dateLabel = formatItemDate(nextDate, today);
+      showUndo({
+        message: `Date changed to ${dateLabel}.`,
+        onUndo: async () => {
+          setMindSweepByDate(previous);
+          try {
+            await persistMindSweepPatches(createClient(), mindSweepPatches(next, previous));
+          } catch {
+            setMindSweepByDate(next);
+            showToast("Couldn't undo that date change. Please try again.", "error");
+          }
+        },
+      });
     } catch {
       setMindSweepByDate(previous);
       showToast("Couldn't update that date. Please try again.", "error");
@@ -355,11 +462,21 @@ export function ActiveMindSweepPage() {
       await persistMindSweepPatches(createClient(), mindSweepPatches(previous, nextState));
       setSelectedIds(new Set());
       const dateLabel = formatItemDate(nextDate, today);
-      showToast(
-        ids.length === 1
-          ? `Task assigned to ${dateLabel}.`
-          : `${ids.length} tasks assigned to ${dateLabel}.`,
-      );
+      showUndo({
+        message:
+          ids.length === 1
+            ? `Date changed to ${dateLabel}.`
+            : `${ids.length} tasks moved to ${dateLabel}.`,
+        onUndo: async () => {
+          setMindSweepByDate(previous);
+          try {
+            await persistMindSweepPatches(createClient(), mindSweepPatches(nextState, previous));
+          } catch {
+            setMindSweepByDate(nextState);
+            showToast("Couldn't undo that date change. Please try again.", "error");
+          }
+        },
+      });
     } catch {
       setMindSweepByDate(previous);
       showToast("Couldn't assign those tasks. Please try again.", "error");
@@ -448,14 +565,36 @@ export function ActiveMindSweepPage() {
           label="Filter mind sweep items"
           tone="primary"
           size="lg"
-          value={filter}
-          onChange={(next) => setFilter(next as SweepFilter)}
+          value={filterDate ? "" : filter}
+          onChange={(next) => selectFilter(next as SweepFilter)}
           options={filterTabs.map((tab) => ({
             value: tab.id,
             label: `${tab.label} (${tab.count})`,
           }))}
         />
-        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:max-w-xl lg:justify-end">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:max-w-2xl lg:justify-end">
+          <div className="flex w-full items-center gap-2 sm:w-auto sm:shrink-0">
+            <DatePicker
+              showLabel={false}
+              label={ACTIVE_MIND_SWEEP.datePlaceholder}
+              placeholder={ACTIVE_MIND_SWEEP.datePlaceholder}
+              value={filterDate ?? undefined}
+              displayLabel={filterDateLabel ?? undefined}
+              onChange={selectFilterDate}
+              className="min-w-0 flex-1 sm:w-56"
+              aria-label={ACTIVE_MIND_SWEEP.datePlaceholder}
+            />
+            {filterDate ? (
+              <IconButton
+                label="Clear date filter"
+                look="outline"
+                size="md"
+                onClick={clearFilterDate}
+              >
+                <CloseIcon size={16} />
+              </IconButton>
+            ) : null}
+          </div>
           <div className="w-full sm:min-w-0 sm:flex-1 lg:max-w-sm">
             <Input
               value={query}
@@ -467,6 +606,13 @@ export function ActiveMindSweepPage() {
           </div>
         </div>
       </div>
+
+      {filterDate && filterDateLabel ? (
+        <Text variant="caption" className="text-foreground-muted">
+          Showing {visibleItems.length} item{visibleItems.length === 1 ? "" : "s"} from{" "}
+          {filterDateLabel}
+        </Text>
+      ) : null}
 
       {visibleItems.length > 0 ? (
         <Card className="flex w-full flex-col gap-section">
@@ -515,7 +661,7 @@ export function ActiveMindSweepPage() {
                   onSelect={() => toggleSelected(item.id)}
                   onDateChange={(nextDate) => void changeItemDate(item, nextDate)}
                   onCheckedChange={(checked) => void toggleItem(item, checked)}
-                  onDelete={() => setPendingDelete(item)}
+                  onDelete={() => requestDelete(item)}
                 />
               );
             })}
@@ -537,15 +683,27 @@ export function ActiveMindSweepPage() {
         <EmptyState
           media={<HeadCircuitIcon size="xl" className="text-(--pp-spring-green-700)" />}
           title={
-            query.trim() ? ACTIVE_MIND_SWEEP.searchEmptyTitle : ACTIVE_MIND_SWEEP.emptyTitle
+            query.trim()
+              ? ACTIVE_MIND_SWEEP.searchEmptyTitle
+              : filterDate
+                ? ACTIVE_MIND_SWEEP.dateEmptyTitle
+                : ACTIVE_MIND_SWEEP.emptyTitle
           }
           description={
             query.trim()
               ? ACTIVE_MIND_SWEEP.searchEmptyDescription
-              : ACTIVE_MIND_SWEEP.emptyDescription
+              : filterDate
+                ? ACTIVE_MIND_SWEEP.dateEmptyDescription
+                : ACTIVE_MIND_SWEEP.emptyDescription
           }
           action={
-            query.trim() ? undefined : (
+            query.trim() ? (
+              undefined
+            ) : filterDate ? (
+              <Button size="md" look="outline" onClick={clearFilterDate}>
+                Clear date
+              </Button>
+            ) : (
               <Button size="md" onClick={openComposer}>
                 <PlusIcon size={16} />
                 {ACTIVE_MIND_SWEEP.newLabel}
@@ -556,25 +714,26 @@ export function ActiveMindSweepPage() {
       )}
 
       <Dialog
-        open={pendingDelete !== null}
+        open={pendingDeleteIds !== null}
         onOpenChange={(open) => {
-          if (!open && !deletePending) setPendingDelete(null);
+          if (!open) setPendingDeleteIds(null);
         }}
-        title="Delete this item?"
+        title={
+          pendingDeleteIds
+            ? `Delete ${pendingDeleteIds.length} tasks?`
+            : "Delete tasks?"
+        }
         description={
-          pendingDelete
-            ? `“${pendingDelete.title}” will be removed. This cannot be undone.`
+          pendingDeleteIds
+            ? `${pendingDeleteIds.length} tasks will be removed.`
             : undefined
         }
       >
         <DialogConfirmActions
           danger
-          pending={deletePending}
           confirmLabel="Delete"
-          onCancel={() => {
-            if (!deletePending) setPendingDelete(null);
-          }}
-          onConfirm={() => void confirmDelete()}
+          onCancel={() => setPendingDeleteIds(null)}
+          onConfirm={() => confirmDelete()}
         />
       </Dialog>
 
@@ -582,10 +741,16 @@ export function ActiveMindSweepPage() {
         <p
           ref={celebrateNoteRef}
           role="status"
-          className="type-status pointer-events-none fixed bottom-6 left-1/2 z-50 w-fit max-w-[min(100%-2rem,24rem)] -translate-x-1/2 truncate rounded-full border border-(--pp-bondi-blue-600) bg-(--pp-bondi-blue-25) px-4 py-2 text-center text-(--pp-bondi-blue-700) shadow-md animate-[pp-ready-check-pop_0.45s_cubic-bezier(0.22,1.15,0.36,1)_both]"
+          className={cn(
+            "type-status pointer-events-none fixed left-1/2 z-50 w-fit max-w-[min(100%-2rem,24rem)] -translate-x-1/2 truncate rounded-full border border-(--pp-bondi-blue-600) bg-(--pp-bondi-blue-25) px-4 py-2 text-center text-(--pp-bondi-blue-700) shadow-md animate-[pp-ready-check-pop_0.45s_cubic-bezier(0.22,1.15,0.36,1)_both]",
+            banner ? "bottom-24" : "bottom-6",
+          )}
         >
           Achieved ‘{celebrateName}’
         </p>
+      ) : null}
+      {banner ? (
+        <UndoSnackbar message={banner.message} onUndo={undo} onDismiss={dismissBanner} />
       ) : null}
       <ToastRegion toasts={toasts} onDismiss={dismissToast} />
     </div>

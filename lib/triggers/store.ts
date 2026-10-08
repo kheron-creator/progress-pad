@@ -305,6 +305,73 @@ export async function softDeleteLibraryScenario(supabase: Client, id: string) {
   }
 }
 
+export async function updateLibraryScenario(
+  supabase: Client,
+  id: string,
+  input: { name: string; emoji: string; description?: string; triggerIds: string[] },
+) {
+  const userId = await requireUserId(supabase);
+  const name = input.name.trim();
+  const emoji = input.emoji.trim();
+  const triggerIds = uniqueKeys(input.triggerIds);
+  const description = input.description?.trim() || null;
+
+  if (!name || !emoji || triggerIds.length === 0) {
+    throw new Error("Name, emoji, and at least one trigger are required");
+  }
+
+  const { data: scenario, error } = await supabase
+    .from("scenarios")
+    .update({
+      name,
+      description,
+      emoji,
+    })
+    .eq("id", id)
+    .is("deleted_at", null)
+    .select("id, name, description, emoji")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  const { error: clearError } = await supabase
+    .from("scenario_triggers")
+    .delete()
+    .eq("scenario_id", id);
+
+  if (clearError) {
+    throw clearError;
+  }
+
+  const { error: memberError } = await supabase.from("scenario_triggers").insert(
+    triggerIds.map((trigger_id, position) => ({
+      scenario_id: id,
+      trigger_id,
+      user_id: userId,
+      position,
+    })),
+  );
+
+  if (memberError) {
+    throw memberError;
+  }
+
+  return { ...scenario, triggerIds };
+}
+
+/** Keep the old scenario for past date assignments; create a new library scenario for future use. */
+export async function forkLibraryScenario(
+  supabase: Client,
+  id: string,
+  input: { name: string; emoji: string; description?: string; triggerIds: string[] },
+) {
+  const created = await addLibraryScenario(supabase, input);
+  await softDeleteLibraryScenario(supabase, id);
+  return created;
+}
+
 export async function loadDatePlan(supabase: Client): Promise<StoredDatePlan> {
   const { data, error } = await supabase
     .from("date_assignments")

@@ -105,6 +105,7 @@ export { Text } from "./text";
 export { Textarea } from "./textarea";
 export { Toast } from "./toast";
 export { ToastRegion, useToasts } from "./toast-region";
+export { UndoSnackbar, useUndoSnackbar } from "./undo-snackbar";
 export { Toggle } from "./toggle";
 export { Tooltip } from "./tooltip";
 export { SuggestedTriggers } from "./suggested-triggers";

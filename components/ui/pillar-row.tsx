@@ -113,6 +113,7 @@ export function PillarRow({
               onBlur={() => onNotesBlur?.()}
               placeholder={placeholder}
               aria-label={placeholder ?? `${title} context`}
+              className="scroll-mb-28"
             />
           </div>
           {/* <DictateButton

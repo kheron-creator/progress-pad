@@ -37,13 +37,13 @@ type TriggersLibraryProps = {
   onCancel?: () => void;
   saving?: boolean;
   selectedIcon?: string;
-  onIconSelect?: (emoji: string) => void;
+  onIconSelect?: (emoji: string | undefined) => void;
   onDelete?: (id: string) => void;
   selectedIds?: ReadonlySet<string>;
   onSelectedChange?: (id: string, checked: boolean) => void;
   onSelectAll?: (selected: boolean) => void;
   selection?: LibraryDragPayload[];
-  columns?: 1 | 2;
+  columns?: 1 | 2 | 3;
   suggestions?: LibraryTrigger[];
   onAddSuggestion?: (id: string) => void;
   addingSuggestionId?: string | null;
@@ -80,7 +80,7 @@ export function TriggersLibrary({
   const allSelected = items.length > 0 && Boolean(selectedIds && items.every((item) => selectedIds.has(item.id)));
 
   return (
-    <Card className={cn("flex w-full min-w-0 flex-col gap-section", className)}>
+    <Card className={cn("flex w-full min-w-0 flex-col gap-3", className)}>
       <div className="flex shrink-0 items-center justify-between gap-3">
         <Text as="h2" variant="cardTitle" className="min-w-0 truncate font-(--pp-font-weight-semibold)">
           {title}
@@ -103,7 +103,7 @@ export function TriggersLibrary({
       </div>
 
       {state === "add" ? (
-        <div className="flex flex-col gap-section">
+        <div className="flex flex-col gap-3">
           <Textarea
             autoSize
             label="Trigger Name"
@@ -117,7 +117,7 @@ export function TriggersLibrary({
           />
         </div>
       ) : (
-        <div className="flex min-w-0 flex-col gap-3">
+        <div className="flex min-w-0 flex-col gap-2">
           {onQueryChange || query != null ? (
             <Input
               placeholder="Search..."
@@ -155,6 +155,7 @@ export function TriggersLibrary({
                 className={cn(
                   "grid min-h-0 max-h-(--pp-library-list-max-height) content-start gap-3 overflow-y-auto overscroll-y-contain scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
                   columns === 2 && "grid-cols-2 max-sm:grid-cols-1",
+                  columns === 3 && "grid-cols-3 max-md:grid-cols-2 max-sm:grid-cols-1",
                 )}
               >
                 {items.map((item) => (

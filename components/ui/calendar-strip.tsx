@@ -40,6 +40,7 @@ type CalendarStripProps = {
   selectionCount?: number;
   onDayClick?: (date: Date) => void;
   onClear?: () => void;
+  onClearWeek?: () => void;
   compact?: boolean;
   className?: string;
 };
@@ -121,6 +122,7 @@ export function CalendarStrip({
   selectionCount = 0,
   onDayClick,
   onClear,
+  onClearWeek,
   compact = false,
   className,
 }: CalendarStripProps) {
@@ -275,7 +277,7 @@ export function CalendarStrip({
                       : canAssignOnTap
                         ? "bg-background-subtle ring-1 ring-primary/30 ring-inset hover:bg-primary-muted"
                         : "bg-background-subtle hover:bg-primary-muted"
-                    : "bg-transparent",
+                    : "bg-transparent ring-1 ring-border-subtle ring-inset hover:bg-background-subtle/60",
                 )}
               >
                 <div className="flex w-full items-center justify-between gap-0.5">
@@ -337,13 +339,24 @@ export function CalendarStrip({
         })}
       </div>
       {look === "intention" ? (
-        <button
-          type="button"
-          className="type-label w-fit cursor-pointer text-error underline decoration-error/40 underline-offset-2"
-          onClick={() => (onClear ? onClear() : onChange(startOfDay(new Date())))}
-        >
-          Clear calendar
-        </button>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          {onClearWeek ? (
+            <button
+              type="button"
+              className="type-label w-fit cursor-pointer text-error underline decoration-error/40 underline-offset-2"
+              onClick={onClearWeek}
+            >
+              Clear this week
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="type-label w-fit cursor-pointer text-error underline decoration-error/40 underline-offset-2"
+            onClick={() => (onClear ? onClear() : onChange(startOfDay(new Date())))}
+          >
+            Clear calendar
+          </button>
+        </div>
       ) : compact ? null : (
         <Text variant="caption" className="text-foreground-muted">
           Selected Date:{" "}
@@ -356,7 +369,8 @@ export function CalendarStrip({
   return (
     <div
       className={cn(
-        "flex w-full flex-col gap-(--pp-space-16) rounded-md border border-border bg-surface p-card",
+        "flex w-full flex-col rounded-md border border-border bg-surface p-card",
+        look === "intention" ? "gap-3" : "gap-(--pp-space-16)",
         className,
       )}
     >
@@ -364,7 +378,7 @@ export function CalendarStrip({
         monthGrid
       ) : look === "intention" ? (
         <>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <Text as="h2" variant="cardTitle" className="min-w-0 truncate font-(--pp-font-weight-semibold)">
               Plan with Intention
             </Text>

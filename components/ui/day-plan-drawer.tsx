@@ -5,11 +5,21 @@ import { useEffect, useId, useState, type DragEvent, type ReactNode } from "reac
 import { readLibraryDragItems, type LibraryDragPayload } from "@/lib/triggers/drag";
 import { cn } from "@/lib/utils/cn";
 
+import { Button } from "./button";
 import { Divider } from "./divider";
-import { CalendarBlankIcon, CloseIcon, InfoIcon, LightningIcon, TrashIcon } from "./icon";
+import {
+  CalendarBlankIcon,
+  ClipboardIcon,
+  CloseIcon,
+  CopyIcon,
+  InfoIcon,
+  LightningIcon,
+  TrashIcon,
+} from "./icon";
 import { IconButton } from "./icon-button";
 import { IconMark } from "./icon-mark";
 import { Text } from "./text";
+import { Tooltip } from "./tooltip";
 import { Drawer } from "./drawer";
 
 export type DayPlanItem = {
@@ -28,6 +38,13 @@ type DayPlanDrawerProps = {
   triggerCount?: number;
   onRemoveScenario?: (id: string) => void;
   onRemoveTrigger?: (id: string) => void;
+  onCreateScenario?: () => void;
+  onCopyTriggers?: () => void;
+  onPasteTriggers?: () => void;
+  canPasteTriggers?: boolean;
+  onCopyScenarios?: () => void;
+  onPasteScenarios?: () => void;
+  canPasteScenarios?: boolean;
   onClear?: () => void;
   onDropItems?: (items: LibraryDragPayload[]) => void;
 };
@@ -99,6 +116,13 @@ export function DayPlanDrawer({
   triggerCount,
   onRemoveScenario,
   onRemoveTrigger,
+  onCreateScenario,
+  onCopyTriggers,
+  onPasteTriggers,
+  canPasteTriggers = false,
+  onCopyScenarios,
+  onPasteScenarios,
+  canPasteScenarios = false,
   onClear,
   onDropItems,
 }: DayPlanDrawerProps) {
@@ -106,11 +130,34 @@ export function DayPlanDrawer({
   const totalTriggers = triggerCount ?? triggers.length;
   const hasItems = scenarios.length > 0 || triggers.length > 0;
   const [dropActive, setDropActive] = useState(false);
+  const [triggersCopiedFlash, setTriggersCopiedFlash] = useState(false);
+  const [scenariosCopiedFlash, setScenariosCopiedFlash] = useState(false);
   const canDrop = Boolean(onDropItems);
 
   useEffect(() => {
-    if (!open) setDropActive(false);
+    if (!open) {
+      setDropActive(false);
+      setTriggersCopiedFlash(false);
+      setScenariosCopiedFlash(false);
+    }
   }, [open]);
+
+  useEffect(() => {
+    setTriggersCopiedFlash(false);
+    setScenariosCopiedFlash(false);
+  }, [date]);
+
+  useEffect(() => {
+    if (!triggersCopiedFlash) return;
+    const timeout = window.setTimeout(() => setTriggersCopiedFlash(false), 2500);
+    return () => window.clearTimeout(timeout);
+  }, [triggersCopiedFlash]);
+
+  useEffect(() => {
+    if (!scenariosCopiedFlash) return;
+    const timeout = window.setTimeout(() => setScenariosCopiedFlash(false), 2500);
+    return () => window.clearTimeout(timeout);
+  }, [scenariosCopiedFlash]);
 
   function allowDrop(event: DragEvent<HTMLElement>) {
     if (!canDrop) return;
@@ -184,9 +231,38 @@ export function DayPlanDrawer({
 
         <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-auto px-card py-6">
           <section className="flex flex-col gap-4">
-            <Text variant="overline" className="font-(--pp-font-weight-bold) text-primary">
-              Scenarios
-            </Text>
+            <div className="flex min-w-0 items-center gap-1">
+              <Text variant="overline" className="font-(--pp-font-weight-bold) text-primary">
+                Scenarios
+              </Text>
+              {scenarios.length > 0 && onCopyScenarios ? (
+                <Tooltip content={scenariosCopiedFlash ? "Scenarios copied" : "Copy these scenarios"}>
+                  <IconButton
+                    label="Copy scenarios from this date"
+                    look="clear"
+                    size="sm"
+                    onClick={() => {
+                      onCopyScenarios();
+                      setScenariosCopiedFlash(true);
+                    }}
+                  >
+                    <CopyIcon size={16} />
+                  </IconButton>
+                </Tooltip>
+              ) : null}
+              {canPasteScenarios && onPasteScenarios ? (
+                <Tooltip content="Paste copied scenarios">
+                  <IconButton
+                    label="Paste copied scenarios"
+                    look="clear"
+                    size="sm"
+                    onClick={onPasteScenarios}
+                  >
+                    <ClipboardIcon size={16} />
+                  </IconButton>
+                </Tooltip>
+              ) : null}
+            </div>
             {scenarios.length > 0 ? (
               <>
                 <div className="flex flex-col gap-3">
@@ -210,9 +286,51 @@ export function DayPlanDrawer({
           <Divider />
 
           <section className="flex flex-col gap-4">
-            <Text variant="overline" className="font-(--pp-font-weight-bold) text-primary">
-              Individual Triggers
-            </Text>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-1">
+                <Text variant="overline" className="font-(--pp-font-weight-bold) text-primary">
+                  Individual Triggers
+                </Text>
+                {triggers.length > 0 && onCopyTriggers ? (
+                  <Tooltip content={triggersCopiedFlash ? "Triggers copied" : "Copy these triggers"}>
+                    <IconButton
+                      label="Copy triggers from this date"
+                      look="clear"
+                      size="sm"
+                      onClick={() => {
+                        onCopyTriggers();
+                        setTriggersCopiedFlash(true);
+                      }}
+                    >
+                      <CopyIcon size={16} />
+                    </IconButton>
+                  </Tooltip>
+                ) : null}
+                {canPasteTriggers && onPasteTriggers ? (
+                  <Tooltip content="Paste copied triggers">
+                    <IconButton
+                      label="Paste copied triggers"
+                      look="clear"
+                      size="sm"
+                      onClick={onPasteTriggers}
+                    >
+                      <ClipboardIcon size={16} />
+                    </IconButton>
+                  </Tooltip>
+                ) : null}
+
+              </div>
+              {triggers.length > 0 && onCreateScenario ? (
+                <Button
+                  size="sm"
+                  look="outline"
+                  className="h-7 min-h-7 min-w-0 shrink-0 px-2.5"
+                  onClick={onCreateScenario}
+                >
+                  Create scenario
+                </Button>
+              ) : null}
+            </div>
             {triggers.length > 0 ? (
               <>
                 <div className="flex flex-col gap-3">
@@ -245,7 +363,7 @@ export function DayPlanDrawer({
             </button>
           </div>
         ) : canDrop ? (
-          <div className="border-t border-border p-card">
+          <div className="hidden border-t border-border p-card sm:block">
             <Text
               variant="caption"
               className={cn(

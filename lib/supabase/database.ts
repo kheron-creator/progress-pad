@@ -21,6 +21,7 @@ export type Database = {
           avatar_url: string | null;
           onboarding: Json;
           onboarding_completed_at: string | null;
+          home_section_order: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -30,6 +31,7 @@ export type Database = {
           avatar_url?: string | null;
           onboarding?: Json;
           onboarding_completed_at?: string | null;
+          home_section_order?: Json | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -39,6 +41,7 @@ export type Database = {
           avatar_url?: string | null;
           onboarding?: Json;
           onboarding_completed_at?: string | null;
+          home_section_order?: Json | null;
           created_at?: string;
           updated_at?: string;
         };

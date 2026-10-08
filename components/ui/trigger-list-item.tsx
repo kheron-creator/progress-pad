@@ -21,6 +21,7 @@ type TriggerListItemProps = Omit<HTMLAttributes<HTMLElement>, "title"> & {
   checkbox?: boolean;
   leftEmoji?: boolean | ReactNode;
   status?: TriggerListStatus | false;
+  onEdit?: () => void;
   onDelete?: () => void;
   draggable?: boolean;
   look?: "default" | "library";
@@ -45,6 +46,7 @@ export function TriggerListItem({
   checkbox = true,
   leftEmoji = true,
   status = false,
+  onEdit,
   onDelete,
   draggable = false,
   look = "default",
@@ -165,6 +167,20 @@ export function TriggerListItem({
           }}
         >
           <PlusIcon size={library ? 14 : undefined} />
+        </IconButton>
+      ) : null}
+      {onEdit ? (
+        <IconButton
+          label={`Edit ${title}`}
+          look="clear"
+          size={library ? "sm" : "md"}
+          className="shrink-0"
+          onClick={(event) => {
+            event.stopPropagation();
+            onEdit();
+          }}
+        >
+          <PencilIcon size={library ? 14 : undefined} />
         </IconButton>
       ) : null}
       {onDelete ? (

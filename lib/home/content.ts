@@ -48,17 +48,6 @@ export const HOME_WRITING_SECTIONS = [
     items: [],
   },
   {
-    id: "gratitude",
-    title: "Daily Gratitude",
-    description: "Ground your day with conscious appreciation",
-    placeholder: "Today I am grateful for...",
-    accent: "var(--pp-bondi-blue-400)",
-    composer: true,
-    addLabel: "Add Entry",
-    chip: "logged" as const,
-    items: [],
-  },
-  {
     id: "done-list",
     title: "Done List",
     description: "Log completed achievements and celebrate today’s momentum",
@@ -70,6 +59,17 @@ export const HOME_WRITING_SECTIONS = [
     addIcon: "check" as const,
     chip: "done" as const,
     alwaysAchieved: true,
+    items: [],
+  },
+  {
+    id: "gratitude",
+    title: "Daily Gratitude",
+    description: "Ground your day with conscious appreciation",
+    placeholder: "Today I am grateful for...",
+    accent: "var(--pp-bondi-blue-400)",
+    composer: true,
+    addLabel: "Add Entry",
+    chip: "logged" as const,
     items: [],
   },
   {
@@ -152,7 +152,7 @@ export const HOME_PILLARS = [
     id: "romantically",
     title: "Romantically",
     description: "Intimacy, mutual care, connection & warmth.",
-    placeholder: "How have your romantic relationships or connections felt lately?",
+    placeholder: "How have your romantic relationships felt lately?",
   },
 ] as const;
 
@@ -160,7 +160,7 @@ export const ARCHIVE = {
   title: "Archive",
   kicker: "Look back",
   description:
-    "Browse what you logged over time — triggers, gratitude, mind sweep, done list, quotes, journal, reflections, and six pillars — one week, month, or date range at a time.",
+    "Browse what you logged over time — triggers, mind sweep, done list, gratitude, quotes, journal, reflections, and six pillars — one week, month, or date range at a time.",
   grainLabel: "View by",
   categoryLabel: "Filter entries",
   emptyTitle: "Nothing logged here",
@@ -181,6 +181,7 @@ export const ACTIVE_MIND_SWEEP = {
   newLabel: "New mind sweep",
   captureTitle: "Capture new thought / mind sweep",
   searchPlaceholder: "Search mind sweeps, notes…",
+  datePlaceholder: "Jump to date",
   addLabel: "Save to mind sweep",
   placeholder: "Unload a thought, idea, or mental clutter...",
   notesPlaceholder: "Notes or Context (Optional)...",
@@ -188,6 +189,8 @@ export const ACTIVE_MIND_SWEEP = {
   emptyDescription: "Unload a thought, idea, or mental clutter. It will stay here until you achieve it.",
   searchEmptyTitle: "No matching mind sweeps",
   searchEmptyDescription: "Try a different search.",
+  dateEmptyTitle: "Nothing on this date",
+  dateEmptyDescription: "No mind sweep items were captured for this day.",
   stats: {
     active: "Active",
     today: "Today",

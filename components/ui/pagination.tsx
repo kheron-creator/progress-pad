@@ -8,7 +8,7 @@ import { Dropdown } from "./dropdown";
 import { ChevronLeftIcon, ChevronRightIcon } from "./icon";
 import { Text } from "./text";
 
-export const PAGINATION_PAGE_SIZES = [6, 10, 20] as const;
+export const PAGINATION_PAGE_SIZES = [10, 15, 20] as const;
 
 type PaginationProps = {
   page: number;

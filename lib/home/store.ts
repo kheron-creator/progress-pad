@@ -412,6 +412,17 @@ export function removeMindSweepItem(byDate: MindSweepByDate, id: string): MindSw
   return changed ? next : byDate;
 }
 
+export function removeMindSweepItems(
+  byDate: MindSweepByDate,
+  ids: readonly string[],
+): MindSweepByDate {
+  let next = byDate;
+  for (const id of ids) {
+    next = removeMindSweepItem(next, id);
+  }
+  return next;
+}
+
 export function mergeMindSweepItems(byDate: MindSweepByDate, rows: StoredMindSweepItem[]): MindSweepByDate {
   const next: MindSweepByDate = { ...byDate };
   for (const row of rows) {
@@ -426,6 +437,18 @@ export function mergeMindSweepItems(byDate: MindSweepByDate, rows: StoredMindSwe
 
 export async function deleteMindSweepItem(supabase: Client, id: string) {
   const { error } = await supabase.from("mind_sweep_items").delete().eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function deleteMindSweepItems(supabase: Client, ids: readonly string[]) {
+  if (ids.length === 0) {
+    return;
+  }
+
+  const { error } = await supabase.from("mind_sweep_items").delete().in("id", [...ids]);
 
   if (error) {
     throw error;
@@ -453,15 +476,18 @@ export async function savePillarEntries(
   const next = emptyPillarDay();
   const rows = PILLAR_IDS.map((pillar_id) => {
     const rating = clampRating(values[pillar_id]?.rating ?? DEFAULT_PILLAR_RATING);
-    const notes = values[pillar_id]?.notes?.trim() ?? "";
-    next[pillar_id] = { rating, notes };
+    // Keep the typed notes as-is (including trailing spaces) so debounced saves
+    // don't yank characters out of the field while the user is still typing.
+    const notes = values[pillar_id]?.notes ?? "";
+    const emptyNotes = notes.trim().length === 0;
+    next[pillar_id] = { rating, notes: emptyNotes ? "" : notes };
 
     return {
       user_id: userId,
       on_date: onDate,
       pillar_id,
       rating,
-      notes: notes || null,
+      notes: emptyNotes ? null : notes,
     };
   });
 
@@ -480,7 +506,7 @@ async function loadWritingEntries(supabase: Client) {
   const { data, error } = await supabase
     .from("writing_entries")
     .select("id, on_date, kind, title, notes, created_at")
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false });
 
   if (error) {
     throw error;
@@ -533,13 +559,21 @@ function groupMindSweepByDate(rows: StoredMindSweepItem[]): MindSweepByDate {
   return next;
 }
 
+/** Lower sort_order appears first; new captures go above existing items. */
+export function frontMindSweepSortOrder(items: readonly { sort_order: number }[]): number {
+  if (items.length === 0) {
+    return 1;
+  }
+  return Math.min(...items.map((item) => item.sort_order)) - 1;
+}
+
 async function nextMindSweepSortOrder(supabase: Client, userId: string, onDate: string) {
   const { data, error } = await supabase
     .from("mind_sweep_items")
     .select("sort_order")
     .eq("user_id", userId)
     .eq("on_date", onDate)
-    .order("sort_order", { ascending: false })
+    .order("sort_order", { ascending: true })
     .limit(1)
     .maybeSingle();
 
@@ -547,7 +581,7 @@ async function nextMindSweepSortOrder(supabase: Client, userId: string, onDate: 
     throw error;
   }
 
-  return (data?.sort_order ?? 0) + 1;
+  return data == null ? 1 : data.sort_order - 1;
 }
 
 function groupPillarsByDate(

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 
 import { beginLibraryDrag, type LibraryDragPayload } from "@/lib/triggers/drag";
-import { TRIGGERS_PICK_COPY } from "@/lib/triggers/content";
+import { SCENARIOS_LIBRARY, TRIGGERS_PICK_COPY } from "@/lib/triggers/content";
 import { cn } from "@/lib/utils/cn";
 
 import { Button } from "./button";
@@ -31,6 +31,7 @@ export type LibraryScenario = {
 type ScenariosLibraryProps = {
   state?: "default" | "add" | "pick";
   title?: string;
+  subtitle?: string;
   items?: LibraryScenario[];
   notice?: string;
   name?: string;
@@ -38,7 +39,7 @@ type ScenariosLibraryProps = {
   description?: string;
   onDescriptionChange?: (value: string) => void;
   selectedIcon?: string;
-  onIconSelect?: (emoji: string) => void;
+  onIconSelect?: (emoji: string | undefined) => void;
   droppedTriggers?: DroppedTrigger[];
   onDropTrigger?: (item: DroppedTrigger) => void;
   pendingCount?: number;
@@ -48,6 +49,7 @@ type ScenariosLibraryProps = {
   onSave?: () => void;
   onCancel?: () => void;
   saving?: boolean;
+  onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   selectedIds?: ReadonlySet<string>;
   onSelectedChange?: (id: string, checked: boolean) => void;
@@ -59,7 +61,8 @@ type ScenariosLibraryProps = {
 
 export function ScenariosLibrary({
   state = "default",
-  title = "Scenarios Library",
+  title = SCENARIOS_LIBRARY.title,
+  subtitle = SCENARIOS_LIBRARY.subtitle,
   items = [],
   notice,
   name,
@@ -77,6 +80,7 @@ export function ScenariosLibrary({
   onSave,
   onCancel,
   saving = false,
+  onEdit,
   onDelete,
   selectedIds,
   onSelectedChange,
@@ -90,11 +94,18 @@ export function ScenariosLibrary({
   const allSelected = items.length > 0 && Boolean(selectedIds && items.every((item) => selectedIds.has(item.id)));
 
   return (
-    <Card className={cn("flex w-full flex-col gap-section", className)}>
-      <div className="flex shrink-0 items-center justify-between gap-3">
-        <Text as="h2" variant="cardTitle" className="min-w-0 truncate font-(--pp-font-weight-semibold)">
-          {title}
-        </Text>
+    <Card className={cn("flex w-full flex-col gap-3", className)}>
+      <div className="flex shrink-0 items-start justify-between gap-3">
+        <div className="min-w-0 flex flex-col gap-0.5">
+          <Text as="h2" variant="cardTitle" className="truncate font-(--pp-font-weight-semibold)">
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text variant="bodySmall" className="text-pretty text-foreground-muted">
+              {subtitle}
+            </Text>
+          ) : null}
+        </div>
         {state === "add" ? (
           <div className="flex shrink-0 items-center gap-2">
             <Button size="md" variant="primary" look="outline" onClick={onCancel} disabled={saving}>
@@ -113,7 +124,7 @@ export function ScenariosLibrary({
       </div>
 
       {state === "add" ? (
-        <div className="flex flex-col gap-section">
+        <div className="flex flex-col gap-3">
           <TriggerDropzone
             items={droppedTriggers}
             pendingCount={pendingCount}
@@ -141,7 +152,7 @@ export function ScenariosLibrary({
           />
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           {notice ? (
             <Toast tone="success" className="shadow-none">
               {notice}
@@ -198,6 +209,7 @@ export function ScenariosLibrary({
                         </IconMark>
                       )
                     }
+                    onEdit={onEdit ? () => onEdit(item.id) : undefined}
                     onDelete={onDelete ? () => onDelete(item.id) : undefined}
                   />
                 ))}

@@ -1,8 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  DndContext,
+  closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
@@ -20,6 +32,7 @@ import {
   CalendarBlankIcon,
   ChartLineIcon,
   ChecksIcon,
+  DragHandleIcon,
   FilesIcon,
   GridIcon,
   HeadCircuitIcon,
@@ -35,6 +48,7 @@ import {
   CloseIcon,
   CheckIcon,
 } from "@/components/ui/icon";
+import { flowSectionDomId } from "@/components/app/app-flow-navigator";
 import { IconButton } from "@/components/ui/icon-button";
 import { IconMark, type IconMarkSize } from "@/components/ui/icon-mark";
 import { Input } from "@/components/ui/input";
@@ -42,6 +56,7 @@ import { PillarRow } from "@/components/ui/pillar-row";
 import { Progress } from "@/components/ui/progress";
 import { Text } from "@/components/ui/text";
 import { ToastRegion, useToasts } from "@/components/ui/toast-region";
+import { UndoSnackbar, useUndoSnackbar } from "@/components/ui/undo-snackbar";
 import { TriggerCard } from "@/components/ui/trigger-card";
 import { WritingSection, type WritingSectionItem } from "@/components/ui/writing-section";
 import { useSessionStore } from "@/components/app/session-store-provider";
@@ -57,6 +72,13 @@ import {
   HOME_WRITING_SECTIONS,
 } from "@/lib/home/content";
 import {
+  isHomeBannerSection,
+  isHomeContentSection,
+  useHomeSectionOrder,
+  type HomeBannerSectionId,
+  type HomeSectionId,
+} from "@/lib/home/section-order";
+import {
   addMindSweepItem,
   addWritingEntry,
   deleteMindSweepItem,
@@ -64,6 +86,8 @@ import {
   emptyWritingDay,
   emptyPillarDay,
   formatIsoDate,
+  frontMindSweepSortOrder,
+  mergeMindSweepItems,
   mindSweepPatches,
   parseIsoDate,
   pillarDaysEqual,
@@ -91,6 +115,7 @@ import {
   type DateTriggerStatus,
 } from "@/lib/triggers/store";
 import { burstConfetti } from "@/lib/ui/burst-confetti";
+import { SORTABLE_HANDLE_CLASS, useSortableSensors } from "@/lib/ui/dnd-sensors";
 import { cn } from "@/lib/utils/cn";
 
 const HOME_BANNER_IMAGES = {
@@ -167,6 +192,53 @@ function writingItemsFromEntries(entries: StoredWritingEntry[]): WritingSectionI
   }));
 }
 
+function SortableHomeSection({
+  id,
+  label,
+  children,
+  handleClassName,
+}: {
+  id: HomeSectionId;
+  label: string;
+  children: (dragHandle: ReactNode) => ReactNode;
+  handleClassName?: string;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      id={isHomeContentSection(id) ? flowSectionDomId(id) : undefined}
+      style={{
+        transform: CSS.Translate.toString(transform),
+        transition,
+      }}
+      className={cn(
+        "scroll-mt-28",
+        isDragging && "relative z-30 rounded-md bg-surface shadow-lg",
+      )}
+    >
+      {children(
+        <button
+          type="button"
+          className={cn(
+            "inline-flex size-8 shrink-0 cursor-grab items-center justify-center rounded-sm text-foreground-muted hover:bg-background-subtle hover:text-foreground active:cursor-grabbing",
+            SORTABLE_HANDLE_CLASS,
+            handleClassName,
+          )}
+          aria-label={`Reorder ${label}`}
+          {...attributes}
+          {...listeners}
+        >
+          <DragHandleIcon size={22} weight="bold" />
+        </button>,
+      )}
+    </div>
+  );
+}
+
 function writingItemsFromMindSweep(
   items: StoredMindSweepItem[],
   today: string,
@@ -207,6 +279,7 @@ function HomeBanner({
   image,
   imageClassName,
   priority = false,
+  dragHandle,
 }: {
   size: "sm" | "lg";
   kicker: string;
@@ -215,13 +288,23 @@ function HomeBanner({
   image: string;
   imageClassName?: string;
   priority?: boolean;
+  dragHandle?: ReactNode;
 }) {
   return (
     <Banner
       size={size}
       title={title}
       description={description}
-      kicker={<BannerKicker>{kicker}</BannerKicker>}
+      kicker={
+        dragHandle ? (
+          <div className="flex items-center gap-2">
+            {dragHandle}
+            <BannerKicker>{kicker}</BannerKicker>
+          </div>
+        ) : (
+          <BannerKicker>{kicker}</BannerKicker>
+        )
+      }
       media={
         <Image
           src={image}
@@ -236,6 +319,27 @@ function HomeBanner({
     />
   );
 }
+
+const SORTABLE_HOME_BANNERS: Record<
+  HomeBannerSectionId,
+  { label: string; content: (typeof HOME_BANNERS)[keyof typeof HOME_BANNERS]; image: string }
+> = {
+  [HOME_BANNERS.triggers.kicker]: {
+    label: HOME_BANNERS.triggers.title,
+    content: HOME_BANNERS.triggers,
+    image: HOME_BANNER_IMAGES.triggers,
+  },
+  [HOME_BANNERS.writing.kicker]: {
+    label: HOME_BANNERS.writing.title,
+    content: HOME_BANNERS.writing,
+    image: HOME_BANNER_IMAGES.writing,
+  },
+  [HOME_BANNERS.pillars.kicker]: {
+    label: HOME_BANNERS.pillars.title,
+    content: HOME_BANNERS.pillars,
+    image: HOME_BANNER_IMAGES.pillars,
+  },
+};
 
 function SectionIcon({ children, size = "lg" }: { children: ReactNode; size?: IconMarkSize }) {
   return <IconMark size={size}>{children}</IconMark>;
@@ -310,6 +414,7 @@ export function HomePage() {
     onDate: string;
   } | null>(null);
   const { toasts, showToast, dismissToast } = useToasts();
+  const { banner, showUndo, undo, dismissBanner } = useUndoSnackbar();
   const [celebrateName, setCelebrateName] = useState<string | null>(null);
   const celebrateNoteRef = useRef<HTMLParagraphElement>(null);
   const celebrateTimer = useRef(0);
@@ -356,14 +461,6 @@ export function HomePage() {
     };
   }, []);
 
-  function changeDate(next: Date) {
-    setShowAllTriggers(false);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("date", isoDate(next));
-    const hash = typeof window !== "undefined" ? window.location.hash : "";
-    router.replace(`${pathname}?${params.toString()}${hash}`, { scroll: false });
-  }
-
   const onDate = isoDate(date);
   const today = formatIsoDate(new Date());
   const dayPillars = pillarsByDate[onDate] ?? emptyPillarDay();
@@ -371,9 +468,24 @@ export function HomePage() {
   const dayNoteDrafts = noteDraftsByDate[onDate] ?? emptyWritingDrafts();
   const composerDirty = hasComposerDrafts(draftsByDate, noteDraftsByDate);
   const pillarsDirty = !pillarsByDateEqual(pillarsByDate, savedPillarsByDate);
-  useRegisterUnsavedLeave(
+  const { confirmLeave } = useRegisterUnsavedLeave(
     composerDirty || pillarsDirty || dirtyItemKeys.size > 0,
   );
+
+  function changeDate(next: Date) {
+    const nextDate = isoDate(next);
+    if (nextDate === onDate) {
+      return;
+    }
+
+    confirmLeave(() => {
+      setShowAllTriggers(false);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("date", nextDate);
+      const hash = typeof window !== "undefined" ? window.location.hash : "";
+      router.replace(`${pathname}?${params.toString()}${hash}`, { scroll: false });
+    });
+  }
   const triggers = useMemo(
     () =>
       flattenDayTriggers(
@@ -1023,12 +1135,9 @@ export function HomePage() {
 
     try {
       if (sectionId === "mind-sweep") {
-        const sortOrder = (mindSweepByDate[onDate]?.length ?? 0) + 1;
+        const sortOrder = frontMindSweepSortOrder(mindSweepByDate[onDate] ?? []);
         const row = await addMindSweepItem(createClient(), { onDate, title, notes, sortOrder });
-        setMindSweepByDate((current) => ({
-          ...current,
-          [onDate]: [...(current[onDate] ?? []), { ...row, on_date: onDate }],
-        }));
+        setMindSweepByDate((current) => mergeMindSweepItems(current, [{ ...row, on_date: onDate }]));
       } else {
         const kind = writingKindForSection(sectionId);
         if (!kind) {
@@ -1042,7 +1151,7 @@ export function HomePage() {
             ...current,
             [onDate]: {
               ...day,
-              [kind]: [...day[kind], { ...row, on_date: onDate }],
+              [kind]: [{ ...row, on_date: onDate }, ...day[kind]],
             },
           };
         });
@@ -1061,10 +1170,47 @@ export function HomePage() {
         celebrateTrigger(title);
       }
     } catch {
+      setDraftsByDate((current) => ({
+        ...current,
+        [onDate]: { ...(current[onDate] ?? emptyWritingDrafts()), [sectionId]: title },
+      }));
+      setNoteDraftsByDate((current) => ({
+        ...current,
+        [onDate]: {
+          ...(current[onDate] ?? emptyWritingDrafts()),
+          [sectionId]: notes?.trim() ?? "",
+        },
+      }));
       showToast("Couldn't save that entry. Please try again.", "error");
     } finally {
       markSaving(sectionId, false);
     }
+  }
+
+  function deleteMindSweepDirect(id: string) {
+    if (deletePending) {
+      return;
+    }
+
+    const previous = mindSweepByDate;
+    const next = removeMindSweepItem(previous, id);
+    setMindSweepByDate(next);
+
+    showUndo({
+      message: "Task deleted.",
+      onUndo: () => {
+        setMindSweepByDate(previous);
+      },
+      onCommit: async () => {
+        try {
+          await deleteMindSweepItem(createClient(), id);
+          await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
+        } catch {
+          setMindSweepByDate(previous);
+          showToast("Couldn't delete that entry. Please try again.", "error");
+        }
+      },
+    });
   }
 
   async function confirmDelete() {
@@ -1072,42 +1218,35 @@ export function HomePage() {
       return;
     }
 
+    if (pendingDelete.sectionId === "mind-sweep") {
+      setPendingDelete(null);
+      deleteMindSweepDirect(pendingDelete.id);
+      return;
+    }
+
     setDeletePending(true);
 
     try {
-      if (pendingDelete.sectionId === "mind-sweep") {
-        const previous = mindSweepByDate;
-        const next = removeMindSweepItem(previous, pendingDelete.id);
-        setMindSweepByDate(next);
-        try {
-          await deleteMindSweepItem(createClient(), pendingDelete.id);
-          await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
-        } catch (error) {
-          setMindSweepByDate(previous);
-          throw error;
-        }
-      } else {
-        const kind = writingKindForSection(pendingDelete.sectionId);
-        if (!kind) {
-          return;
-        }
-
-        await deleteWritingEntry(createClient(), pendingDelete.id);
-        setWritingByDate((current) => {
-          const day = current[pendingDelete.onDate];
-          if (!day) {
-            return current;
-          }
-
-          return {
-            ...current,
-            [pendingDelete.onDate]: {
-              ...day,
-              [kind]: day[kind].filter((item) => item.id !== pendingDelete.id),
-            },
-          };
-        });
+      const kind = writingKindForSection(pendingDelete.sectionId);
+      if (!kind) {
+        return;
       }
+
+      await deleteWritingEntry(createClient(), pendingDelete.id);
+      setWritingByDate((current) => {
+        const day = current[pendingDelete.onDate];
+        if (!day) {
+          return current;
+        }
+
+        return {
+          ...current,
+          [pendingDelete.onDate]: {
+            ...day,
+            [kind]: day[kind].filter((item) => item.id !== pendingDelete.id),
+          },
+        };
+      });
 
       setPendingDelete(null);
     } catch {
@@ -1208,7 +1347,36 @@ export function HomePage() {
     flushPillarSaves();
   }, [onDate]);
 
-  function writingSection(section: (typeof HOME_WRITING_SECTIONS)[number]) {
+  const [sectionOrder, setSectionOrder] = useHomeSectionOrder();
+  const sectionDndId = useId();
+  const sectionSensors = useSortableSensors();
+  const writingById = useMemo(() => {
+    const next = new Map<string, (typeof HOME_WRITING_SECTIONS)[number]>();
+    for (const section of HOME_WRITING_SECTIONS) {
+      next.set(section.id, section);
+    }
+    return next;
+  }, []);
+
+  function handleSectionDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      return;
+    }
+    setSectionOrder((current) => {
+      const oldIndex = current.indexOf(active.id as HomeSectionId);
+      const newIndex = current.indexOf(over.id as HomeSectionId);
+      if (oldIndex < 0 || newIndex < 0) {
+        return current;
+      }
+      return arrayMove(current, oldIndex, newIndex);
+    });
+  }
+
+  function writingSection(
+    section: (typeof HOME_WRITING_SECTIONS)[number],
+    sectionDragHandle?: ReactNode,
+  ) {
     const isGratitude = section.id === "gratitude";
     const isMindSweep = section.id === "mind-sweep";
     const isDoneList = section.id === "done-list";
@@ -1320,10 +1488,15 @@ export function HomePage() {
         }
         onReorder={isMindSweep ? (orderedIds) => void reorderMindSweepItems(orderedIds) : undefined}
         onItemDirtyChange={(id, dirty) => setWritingItemDirty(section.id, id, dirty)}
+        sectionDragHandle={sectionDragHandle}
         onAdd={isComposer ? (title, notes) => addWritingItem(section.id, title, notes) : undefined}
         onDelete={
           isComposer
             ? (id) => {
+              if (section.id === "mind-sweep") {
+                void deleteMindSweepDirect(id);
+                return;
+              }
               const item = items.find((entry) => entry.id === id);
               setPendingDelete({
                 sectionId: section.id,
@@ -1339,7 +1512,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="flex w-full flex-col gap-4 md:gap-6">
+    <div className="flex w-full flex-col gap-4 pb-20 md:gap-6 md:pb-24">
       <HomeBanner
         size="lg"
         kicker={HOME_HERO.kicker}
@@ -1386,193 +1559,246 @@ export function HomePage() {
         />
       </div>
 
-      <HomeBanner
-        size="sm"
-        kicker={HOME_BANNERS.triggers.kicker}
-        title={HOME_BANNERS.triggers.title}
-        description={HOME_BANNERS.triggers.description}
-        image={HOME_BANNER_IMAGES.triggers}
-      />
-
-      <Card id="flow-triggers" className="flex w-full scroll-mt-28 flex-col gap-section">
-        <TriggerCard
-          title={HOME_TRIGGER_SECTION.title}
-          description={HOME_TRIGGER_SECTION.description}
-          leftIcon={
-            <SectionIcon size="lg">
-              <LightningIcon />
-            </SectionIcon>
-          }
-          tag={
-            <CountChip>
-              {achievedCount} / {triggers.length} Achieved
-            </CountChip>
-          }
-          action={
-            addingTrigger ? undefined : (
-              <Button size="md" className="shrink-0 max-sm:hidden" onClick={openAddTrigger}>
-                <PlusIcon size={16} />
-                Add Trigger
-              </Button>
-            )
-          }
-        />
-
-        {addingTrigger ? addTriggerPanel : null}
-
-        {triggers.length === 0 && !addingTrigger ? (
-          <EmptyState
-            className="border-0 bg-transparent py-8"
-            media={<FilesIcon size="xl" className="text-(--pp-spring-green-700)" />}
-            title="No triggers yet"
-            description="Add your first trigger to start building small actions that create big change over time."
-            action={
-              <Button size="md" onClick={openAddTrigger}>
-                <PlusIcon size={16} />
-                Add Your First Trigger
-              </Button>
-            }
-          />
-        ) : triggers.length > 0 ? (
-          <>
-            <Progress value={triggerProgress} size="md" label="Today’s trigger progress" />
-
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {triggers.map((trigger, index) => {
-                const hiddenOnMobile = !showAllTriggers && index >= MOBILE_TRIGGER_COUNT;
-
+      <DndContext
+        id={sectionDndId}
+        sensors={sectionSensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleSectionDragEnd}
+      >
+        <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
+          <div className="flex w-full flex-col gap-4 md:gap-6">
+            {sectionOrder.map((sectionId) => {
+              if (isHomeBannerSection(sectionId)) {
+                const banner = SORTABLE_HOME_BANNERS[sectionId];
                 return (
-                  <TriggerCard
-                    key={trigger.id}
-                    kind="item"
-                    state={trigger.status}
-                    title={trigger.name}
-                    leftIcon={
-                      trigger.status === "achieved" || !trigger.emoji ? undefined : (
-                        <IconMark size="sm" tone="surface" className="text-(length:--pp-font-size-14) leading-none">
-                          <span aria-hidden>{trigger.emoji}</span>
-                        </IconMark>
-                      )
-                    }
-                    leftEmoji={false}
-                    showDescription={false}
-                    className={cn("cursor-pointer", hiddenOnMobile && "hidden md:flex")}
-                    onClick={() => void toggleTrigger(trigger.id)}
-                    onDelete={() => void removeTriggerFromDay(trigger.id)}
-                  />
+                  <SortableHomeSection
+                    key={sectionId}
+                    id={sectionId}
+                    label={banner.label}
+                    handleClassName="bg-transparent text-(--pp-grey-0)! hover:bg-(--pp-grey-0)/20! hover:text-(--pp-grey-0)!"
+                  >
+                    {(dragHandle) => (
+                      <HomeBanner
+                        size="sm"
+                        kicker={banner.content.kicker}
+                        title={banner.content.title}
+                        description={banner.content.description}
+                        image={banner.image}
+                        dragHandle={dragHandle}
+                      />
+                    )}
+                  </SortableHomeSection>
                 );
-              })}
-            </div>
+              }
 
-            {!addingTrigger ? (
-              <Button className="md:hidden max-sm:w-full" size="md" onClick={openAddTrigger}>
-                <PlusIcon size={16} />
-                Add Trigger
-              </Button>
-            ) : null}
+              if (sectionId === "triggers") {
+                return (
+                  <SortableHomeSection key={sectionId} id={sectionId} label="Today’s triggers">
+                    {(dragHandle) => (
+                      <Card className="flex w-full flex-col gap-section">
+                        <TriggerCard
+                          title={HOME_TRIGGER_SECTION.title}
+                          description={HOME_TRIGGER_SECTION.description}
+                          dragHandle={dragHandle}
+                          leftIcon={
+                            <SectionIcon size="lg">
+                              <LightningIcon />
+                            </SectionIcon>
+                          }
+                          tag={
+                            <CountChip>
+                              {achievedCount} / {triggers.length} Achieved
+                            </CountChip>
+                          }
+                          action={
+                            addingTrigger ? undefined : (
+                              <Button
+                                size="md"
+                                className="shrink-0 max-sm:hidden"
+                                onClick={openAddTrigger}
+                              >
+                                <PlusIcon size={16} />
+                                Add Trigger
+                              </Button>
+                            )
+                          }
+                        />
 
-            {triggers.length > MOBILE_TRIGGER_COUNT ? (
-              <Button
-                className="md:hidden max-sm:w-full"
-                size="md"
-                variant="secondary"
-                look="outline"
-                onClick={() => setShowAllTriggers((open) => !open)}
-              >
-                {showAllTriggers ? "Show less" : "Show all triggers"}
-              </Button>
-            ) : null}
-          </>
-        ) : null}
-      </Card>
+                        {addingTrigger ? addTriggerPanel : null}
 
-      <div id={`flow-${HOME_WRITING_SECTIONS[0].id}`} className="scroll-mt-28">
-        {writingSection(HOME_WRITING_SECTIONS[0])}
-      </div>
+                        {triggers.length === 0 && !addingTrigger ? (
+                          <EmptyState
+                            className="border-0 bg-transparent py-8"
+                            media={
+                              <FilesIcon size="xl" className="text-(--pp-spring-green-700)" />
+                            }
+                            title="No triggers yet"
+                            description="Add your first trigger to start building small actions that create big change over time."
+                            action={
+                              <Button size="md" onClick={openAddTrigger}>
+                                <PlusIcon size={16} />
+                                Add Your First Trigger
+                              </Button>
+                            }
+                          />
+                        ) : triggers.length > 0 ? (
+                          <>
+                            <Progress
+                              value={triggerProgress}
+                              size="md"
+                              label="Today’s trigger progress"
+                            />
 
-      <HomeBanner
-        size="sm"
-        kicker={HOME_BANNERS.writing.kicker}
-        title={HOME_BANNERS.writing.title}
-        description={HOME_BANNERS.writing.description}
-        image={HOME_BANNER_IMAGES.writing}
-      />
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                              {triggers.map((trigger, index) => {
+                                const hiddenOnMobile =
+                                  !showAllTriggers && index >= MOBILE_TRIGGER_COUNT;
 
-      {HOME_WRITING_SECTIONS.slice(1, 3).map((section) => (
-        <div key={section.id} id={`flow-${section.id}`} className="scroll-mt-28">
-          {writingSection(section)}
-        </div>
-      ))}
+                                return (
+                                  <TriggerCard
+                                    key={trigger.id}
+                                    kind="item"
+                                    state={trigger.status}
+                                    title={trigger.name}
+                                    leftIcon={
+                                      trigger.status === "achieved" || !trigger.emoji ? undefined : (
+                                        <IconMark
+                                          size="sm"
+                                          tone="surface"
+                                          className="text-(length:--pp-font-size-14) leading-none"
+                                        >
+                                          <span aria-hidden>{trigger.emoji}</span>
+                                        </IconMark>
+                                      )
+                                    }
+                                    leftEmoji={false}
+                                    showDescription={false}
+                                    className={cn(
+                                      "cursor-pointer",
+                                      hiddenOnMobile && "hidden md:flex",
+                                    )}
+                                    onClick={() => void toggleTrigger(trigger.id)}
+                                    onDelete={() => void removeTriggerFromDay(trigger.id)}
+                                  />
+                                );
+                              })}
+                            </div>
 
+                            {!addingTrigger ? (
+                              <Button
+                                className="md:hidden max-sm:w-full"
+                                size="md"
+                                onClick={openAddTrigger}
+                              >
+                                <PlusIcon size={16} />
+                                Add Trigger
+                              </Button>
+                            ) : null}
 
-      <HomeBanner
-        size="sm"
-        kicker={HOME_BANNERS.pillars.kicker}
-        title={HOME_BANNERS.pillars.title}
-        description={HOME_BANNERS.pillars.description}
-        image={HOME_BANNER_IMAGES.pillars}
-      />
+                            {triggers.length > MOBILE_TRIGGER_COUNT ? (
+                              <Button
+                                className="md:hidden max-sm:w-full"
+                                size="md"
+                                variant="secondary"
+                                look="outline"
+                                onClick={() => setShowAllTriggers((open) => !open)}
+                              >
+                                {showAllTriggers ? "Show less" : "Show all triggers"}
+                              </Button>
+                            ) : null}
+                          </>
+                        ) : null}
+                      </Card>
+                    )}
+                  </SortableHomeSection>
+                );
+              }
 
-      <div id="flow-quotes" className="scroll-mt-28">
-        {writingSection(HOME_WRITING_SECTIONS[3])}
-      </div>
-      {HOME_WRITING_SECTIONS.slice(4).map((section) => (
-        <div key={section.id} id={`flow-${section.id}`} className="scroll-mt-28">
-          {writingSection(section)}
-        </div>
-      ))}
+              if (sectionId === "pillars") {
+                return (
+                  <SortableHomeSection
+                    key={sectionId}
+                    id={sectionId}
+                    label={HOME_PILLAR_SECTION.title}
+                  >
+                    {(dragHandle) => (
+                      <Card className="flex w-full flex-col gap-section">
+                        <TriggerCard
+                          title={HOME_PILLAR_SECTION.title}
+                          description={HOME_PILLAR_SECTION.description}
+                          dragHandle={dragHandle}
+                          leftIcon={
+                            <IconMark size="lg" tone="accent">
+                              <ChartLineIcon />
+                            </IconMark>
+                          }
+                          tag={
+                            <CountChip>
+                              <span className="max-sm:hidden">Progression Balance: </span>
+                              {pillarAverage.toFixed(1)}/10
+                            </CountChip>
+                          }
+                        />
+                        <div className="flex flex-col gap-(--pp-space-12)">
+                          {HOME_PILLARS.map((pillar) => (
+                            <PillarRow
+                              key={pillar.id}
+                              title={pillar.title}
+                              description={pillar.description}
+                              placeholder={pillar.placeholder}
+                              value={dayPillars[pillar.id]?.rating ?? 5}
+                              notes={dayPillars[pillar.id]?.notes ?? ""}
+                              onChange={(value) => {
+                                updatePillar(pillar.id, { rating: value });
+                                pendingPillarDatesRef.current.add(onDate);
+                                flushPillarSaves();
+                              }}
+                              onNotesChange={(value) => {
+                                updatePillar(pillar.id, { notes: value });
+                                schedulePillarSave(onDate);
+                              }}
+                              onNotesBlur={() => {
+                                pendingPillarDatesRef.current.add(onDate);
+                                flushPillarSaves();
+                              }}
+                              icon={<ItemIcon>{PILLAR_ICONS[pillar.id]}</ItemIcon>}
+                            />
+                          ))}
+                        </div>
+                      </Card>
+                    )}
+                  </SortableHomeSection>
+                );
+              }
 
-      <Card id="flow-pillars" className="flex w-full scroll-mt-28 flex-col gap-section">
-        <TriggerCard
-          title={HOME_PILLAR_SECTION.title}
-          description={HOME_PILLAR_SECTION.description}
-          leftIcon={
-            <IconMark size="lg" tone="accent">
-              <ChartLineIcon />
-            </IconMark>
-          }
-          tag={
-            <CountChip>
-              <span className="max-sm:hidden">Progression Balance: </span>
-              {pillarAverage.toFixed(1)}/10
-            </CountChip>
-          }
-        />
-        <div className="flex flex-col gap-(--pp-space-12)">
-          {HOME_PILLARS.map((pillar) => (
-            <PillarRow
-              key={pillar.id}
-              title={pillar.title}
-              description={pillar.description}
-              placeholder={pillar.placeholder}
-              value={dayPillars[pillar.id]?.rating ?? 5}
-              notes={dayPillars[pillar.id]?.notes ?? ""}
-              onChange={(value) => {
-                updatePillar(pillar.id, { rating: value });
-                pendingPillarDatesRef.current.add(onDate);
-                flushPillarSaves();
-              }}
-              onNotesChange={(value) => {
-                updatePillar(pillar.id, { notes: value });
-                schedulePillarSave(onDate);
-              }}
-              onNotesBlur={() => {
-                pendingPillarDatesRef.current.add(onDate);
-                flushPillarSaves();
-              }}
-              icon={<ItemIcon>{PILLAR_ICONS[pillar.id]}</ItemIcon>}
-            />
-          ))}
-        </div>
-      </Card>
+              const section = writingById.get(sectionId);
+              if (!section) {
+                return null;
+              }
+
+              return (
+                <SortableHomeSection key={sectionId} id={sectionId} label={section.title}>
+                  {(dragHandle) => writingSection(section, dragHandle)}
+                </SortableHomeSection>
+              );
+            })}
+          </div>
+        </SortableContext>
+      </DndContext>
       {celebrateName ? (
         <p
           ref={celebrateNoteRef}
           role="status"
-          className="type-status pointer-events-none fixed bottom-6 left-1/2 z-50 w-fit max-w-[min(100%-2rem,24rem)] -translate-x-1/2 truncate rounded-full border border-(--pp-bondi-blue-600) bg-(--pp-bondi-blue-25) px-4 py-2 text-center text-(--pp-bondi-blue-700) shadow-md animate-[pp-ready-check-pop_0.45s_cubic-bezier(0.22,1.15,0.36,1)_both]"
+          className={cn(
+            "type-status pointer-events-none fixed left-1/2 z-50 w-fit max-w-[min(100%-2rem,24rem)] -translate-x-1/2 truncate rounded-full border border-(--pp-bondi-blue-600) bg-(--pp-bondi-blue-25) px-4 py-2 text-center text-(--pp-bondi-blue-700) shadow-md animate-[pp-ready-check-pop_0.45s_cubic-bezier(0.22,1.15,0.36,1)_both]",
+            banner ? "bottom-24" : "bottom-6",
+          )}
         >
           Achieved ‘{celebrateName}’
         </p>
+      ) : null}
+      {banner ? (
+        <UndoSnackbar message={banner.message} onUndo={undo} onDismiss={dismissBanner} />
       ) : null}
       <ToastRegion toasts={toasts} onDismiss={dismissToast} />
 
