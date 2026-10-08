@@ -363,7 +363,7 @@ export function DayPlanDrawer({
             </button>
           </div>
         ) : canDrop ? (
-          <div className="border-t border-border p-card">
+          <div className="hidden border-t border-border p-card sm:block">
             <Text
               variant="caption"
               className={cn(
