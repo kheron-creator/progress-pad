@@ -161,6 +161,7 @@ export function TriggersPage() {
   const [scenarioDescription, setScenarioDescription] = useState("");
   const [scenarioIcon, setScenarioIcon] = useState<string>();
   const [scenarioTriggers, setScenarioTriggers] = useState<DroppedTrigger[]>([]);
+  const [convertDayKey, setConvertDayKey] = useState<string | null>(null);
   const [assignments, setAssignments] = useState<Record<string, DayAssignment[]>>(
     () => savedAssignments,
   );
@@ -203,7 +204,43 @@ export function TriggersPage() {
     setScenarioDescription("");
     setScenarioIcon(undefined);
     setScenarioTriggers([]);
+    setConvertDayKey(null);
     setAddingScenario(false);
+    clearAssignSelection();
+  }
+
+  function startCreateScenarioFromDay() {
+    const key = isoDate(date);
+    const dayItems = (assignments[key] ?? []).filter(
+      (item) => item.kind === "trigger" && !item.id.startsWith("pending:"),
+    );
+    if (dayItems.length === 0) {
+      showToast("Add at least one saved trigger before creating a scenario.", "error");
+      return;
+    }
+
+    const dropped: DroppedTrigger[] = [];
+    for (const item of dayItems) {
+      const trigger = triggerById.get(item.id);
+      if (!trigger) {
+        continue;
+      }
+      dropped.push({ id: trigger.id, name: trigger.name, icon: trigger.icon });
+    }
+
+    if (dropped.length === 0) {
+      showToast("Couldn't find those triggers. Please try again.", "error");
+      return;
+    }
+
+    setScenarioName("");
+    setScenarioDescription("");
+    setScenarioIcon(undefined);
+    setScenarioTriggers(dropped);
+    setConvertDayKey(key);
+    cancelTrigger();
+    setDayDrawerOpen(false);
+    setAddingScenario(true);
     clearAssignSelection();
   }
 
@@ -320,6 +357,7 @@ export function TriggersPage() {
     if (!title || !scenarioIcon || scenarioTriggers.length === 0 || savingScenario) return;
 
     setSavingScenario(true);
+    const dayKey = convertDayKey;
     try {
       const supabase = createClient();
       const created = await addLibraryScenario(supabase, {
@@ -329,13 +367,58 @@ export function TriggersPage() {
         triggerIds: scenarioTriggers.map((item) => item.id),
       });
       addLibraryScenarioToStore(created);
+
+      if (dayKey) {
+        const previous = assignments;
+        const dayList = previous[dayKey] ?? [];
+        const withoutTriggers = dayList.filter((item) => item.kind !== "trigger");
+        const nextList = withoutTriggers.some(
+          (item) => item.kind === "scenario" && item.id === created.id,
+        )
+          ? withoutTriggers
+          : [...withoutTriggers, { kind: "scenario" as const, id: created.id }];
+        const next = { ...previous, [dayKey]: nextList };
+        setAssignments(next);
+        setSavedAssignments(next);
+        try {
+          await saveDateAssignments(supabase, previous, next);
+          setStates((current) =>
+            pruneStatesToAssignments(current, next, (scenarioId) =>
+              scenarioId === created.id
+                ? created.triggerIds
+                : scenarioById.get(scenarioId)?.triggerIds,
+            ),
+          );
+        } catch {
+          setAssignments(previous);
+          setSavedAssignments(previous);
+          showToast(
+            "Scenario saved to your library, but couldn't assign it to this date.",
+            "error",
+          );
+          setScenarioName("");
+          setScenarioDescription("");
+          setScenarioIcon(undefined);
+          setScenarioTriggers([]);
+          setConvertDayKey(null);
+          setAddingScenario(false);
+          clearAssignSelection();
+          return;
+        }
+      }
+
       setScenarioName("");
       setScenarioDescription("");
       setScenarioIcon(undefined);
       setScenarioTriggers([]);
+      setConvertDayKey(null);
       setAddingScenario(false);
       clearAssignSelection();
-      showToast("Scenario added to your library.");
+      showToast(
+        dayKey
+          ? "Scenario created and assigned to this date."
+          : "Scenario added to your library.",
+      );
     } catch {
       showToast("Couldn't add that scenario. Please try again.", "error");
     } finally {
@@ -717,6 +800,11 @@ export function TriggersPage() {
             onAdd={() => {
               cancelTrigger();
               setDayDrawerOpen(false);
+              setScenarioName("");
+              setScenarioDescription("");
+              setScenarioIcon(undefined);
+              setScenarioTriggers([]);
+              setConvertDayKey(null);
               setAddingScenario(true);
             }}
             onDelete={(id) => {
@@ -815,6 +903,7 @@ export function TriggersPage() {
         onRemoveTrigger={(id) => {
           void removeFromDate("trigger", id);
         }}
+        onCreateScenario={startCreateScenarioFromDay}
         onClear={() => {
           setPendingDelete({ kind: "date-clear" });
         }}

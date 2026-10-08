@@ -5,6 +5,7 @@ import { useEffect, useId, useState, type DragEvent, type ReactNode } from "reac
 import { readLibraryDragItems, type LibraryDragPayload } from "@/lib/triggers/drag";
 import { cn } from "@/lib/utils/cn";
 
+import { Button } from "./button";
 import { Divider } from "./divider";
 import { CalendarBlankIcon, CloseIcon, InfoIcon, LightningIcon, TrashIcon } from "./icon";
 import { IconButton } from "./icon-button";
@@ -28,6 +29,7 @@ type DayPlanDrawerProps = {
   triggerCount?: number;
   onRemoveScenario?: (id: string) => void;
   onRemoveTrigger?: (id: string) => void;
+  onCreateScenario?: () => void;
   onClear?: () => void;
   onDropItems?: (items: LibraryDragPayload[]) => void;
 };
@@ -99,6 +101,7 @@ export function DayPlanDrawer({
   triggerCount,
   onRemoveScenario,
   onRemoveTrigger,
+  onCreateScenario,
   onClear,
   onDropItems,
 }: DayPlanDrawerProps) {
@@ -210,9 +213,21 @@ export function DayPlanDrawer({
           <Divider />
 
           <section className="flex flex-col gap-4">
-            <Text variant="overline" className="font-(--pp-font-weight-bold) text-primary">
-              Individual Triggers
-            </Text>
+            <div className="flex items-center justify-between gap-3">
+              <Text variant="overline" className="font-(--pp-font-weight-bold) text-primary">
+                Individual Triggers
+              </Text>
+              {triggers.length > 0 && onCreateScenario ? (
+                <Button
+                  size="sm"
+                  look="outline"
+                  className="h-7 min-h-7 min-w-0 shrink-0 px-2.5"
+                  onClick={onCreateScenario}
+                >
+                  Create scenario
+                </Button>
+              ) : null}
+            </div>
             {triggers.length > 0 ? (
               <>
                 <div className="flex flex-col gap-3">
