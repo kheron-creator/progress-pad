@@ -64,6 +64,8 @@ import {
   emptyWritingDay,
   emptyPillarDay,
   formatIsoDate,
+  frontMindSweepSortOrder,
+  mergeMindSweepItems,
   mindSweepPatches,
   parseIsoDate,
   pillarDaysEqual,
@@ -1023,12 +1025,9 @@ export function HomePage() {
 
     try {
       if (sectionId === "mind-sweep") {
-        const sortOrder = (mindSweepByDate[onDate]?.length ?? 0) + 1;
+        const sortOrder = frontMindSweepSortOrder(mindSweepByDate[onDate] ?? []);
         const row = await addMindSweepItem(createClient(), { onDate, title, notes, sortOrder });
-        setMindSweepByDate((current) => ({
-          ...current,
-          [onDate]: [...(current[onDate] ?? []), { ...row, on_date: onDate }],
-        }));
+        setMindSweepByDate((current) => mergeMindSweepItems(current, [{ ...row, on_date: onDate }]));
       } else {
         const kind = writingKindForSection(sectionId);
         if (!kind) {

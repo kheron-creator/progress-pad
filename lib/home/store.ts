@@ -533,13 +533,21 @@ function groupMindSweepByDate(rows: StoredMindSweepItem[]): MindSweepByDate {
   return next;
 }
 
+/** Lower sort_order appears first; new captures go above existing items. */
+export function frontMindSweepSortOrder(items: readonly { sort_order: number }[]): number {
+  if (items.length === 0) {
+    return 1;
+  }
+  return Math.min(...items.map((item) => item.sort_order)) - 1;
+}
+
 async function nextMindSweepSortOrder(supabase: Client, userId: string, onDate: string) {
   const { data, error } = await supabase
     .from("mind_sweep_items")
     .select("sort_order")
     .eq("user_id", userId)
     .eq("on_date", onDate)
-    .order("sort_order", { ascending: false })
+    .order("sort_order", { ascending: true })
     .limit(1)
     .maybeSingle();
 
@@ -547,7 +555,7 @@ async function nextMindSweepSortOrder(supabase: Client, userId: string, onDate: 
     throw error;
   }
 
-  return (data?.sort_order ?? 0) + 1;
+  return data == null ? 1 : data.sort_order - 1;
 }
 
 function groupPillarsByDate(

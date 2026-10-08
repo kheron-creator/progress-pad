@@ -23,6 +23,7 @@ import {
   deleteMindSweepItem,
   flattenMindSweepItems,
   formatIsoDate,
+  frontMindSweepSortOrder,
   incompleteMindSweepItems,
   mapMindSweepItem,
   mergeMindSweepItems,
@@ -243,7 +244,7 @@ export function ActiveMindSweepPage() {
     setAddSaving(true);
     try {
       const onDate = payload.onDate.slice(0, 10);
-      const sortOrder = (mindSweepByDate[onDate]?.length ?? 0) + 1;
+      const sortOrder = frontMindSweepSortOrder(mindSweepByDate[onDate] ?? []);
       const row = await addMindSweepItem(createClient(), { ...payload, onDate, sortOrder });
       setMindSweepByDate((current) => mergeMindSweepItems(current, [row]));
       setDraftTitle("");
