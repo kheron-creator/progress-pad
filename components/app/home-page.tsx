@@ -5,17 +5,12 @@ import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   DndContext,
-  KeyboardSensor,
-  PointerSensor,
   closestCenter,
   type DragEndEvent,
-  useSensor,
-  useSensors,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   arrayMove,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
@@ -120,6 +115,7 @@ import {
   type DateTriggerStatus,
 } from "@/lib/triggers/store";
 import { burstConfetti } from "@/lib/ui/burst-confetti";
+import { SORTABLE_HANDLE_CLASS, useSortableSensors } from "@/lib/ui/dnd-sensors";
 import { cn } from "@/lib/utils/cn";
 
 const HOME_BANNER_IMAGES = {
@@ -224,7 +220,10 @@ function SortableHomeSection({
     >
       <button
         type="button"
-        className="mt-2.5 inline-flex size-7 shrink-0 cursor-grab items-center justify-center rounded-sm text-foreground-muted hover:bg-background-subtle hover:text-foreground active:cursor-grabbing"
+        className={cn(
+          "mt-2.5 inline-flex size-7 shrink-0 cursor-grab items-center justify-center rounded-sm text-foreground-muted hover:bg-background-subtle hover:text-foreground active:cursor-grabbing",
+          SORTABLE_HANDLE_CLASS,
+        )}
         aria-label={`Reorder ${label}`}
         {...attributes}
         {...listeners}
@@ -1343,10 +1342,7 @@ export function HomePage() {
 
   const [sectionOrder, setSectionOrder] = useHomeSectionOrder();
   const sectionDndId = useId();
-  const sectionSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
+  const sectionSensors = useSortableSensors();
   const writingById = useMemo(() => {
     const next = new Map<string, (typeof HOME_WRITING_SECTIONS)[number]>();
     for (const section of HOME_WRITING_SECTIONS) {

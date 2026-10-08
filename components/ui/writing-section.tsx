@@ -2,23 +2,19 @@
 
 import {
   DndContext,
-  KeyboardSensor,
-  PointerSensor,
   closestCenter,
   type DragEndEvent,
-  useSensor,
-  useSensors,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   arrayMove,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 
+import { SORTABLE_HANDLE_CLASS, useSortableSensors } from "@/lib/ui/dnd-sensors";
 import { cn } from "@/lib/utils/cn";
 
 import { Button } from "./button";
@@ -176,7 +172,10 @@ function SortableWritingItem(props: SortableItemProps) {
           sortable ? (
             <button
               type="button"
-              className="inline-flex size-6.5 shrink-0 cursor-grab items-center justify-center rounded-sm text-foreground-muted hover:bg-background-subtle hover:text-foreground active:cursor-grabbing"
+              className={cn(
+                "inline-flex size-6.5 shrink-0 cursor-grab items-center justify-center rounded-sm text-foreground-muted hover:bg-background-subtle hover:text-foreground active:cursor-grabbing",
+                SORTABLE_HANDLE_CLASS,
+              )}
               aria-label={`Reorder ${item.title}`}
               {...attributes}
               {...listeners}
@@ -229,10 +228,7 @@ export function WritingSection({
   const showNotes = Boolean(notesPlaceholder);
   const showCheckbox = itemLocked || (itemCheckbox ?? !composer);
   const sortable = sortableReady && Boolean(onReorder) && items.length > 1;
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
+  const sensors = useSortableSensors();
 
   useEffect(() => {
     setSortableReady(true);
