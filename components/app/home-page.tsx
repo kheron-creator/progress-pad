@@ -358,14 +358,6 @@ export function HomePage() {
     };
   }, []);
 
-  function changeDate(next: Date) {
-    setShowAllTriggers(false);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("date", isoDate(next));
-    const hash = typeof window !== "undefined" ? window.location.hash : "";
-    router.replace(`${pathname}?${params.toString()}${hash}`, { scroll: false });
-  }
-
   const onDate = isoDate(date);
   const today = formatIsoDate(new Date());
   const dayPillars = pillarsByDate[onDate] ?? emptyPillarDay();
@@ -373,9 +365,24 @@ export function HomePage() {
   const dayNoteDrafts = noteDraftsByDate[onDate] ?? emptyWritingDrafts();
   const composerDirty = hasComposerDrafts(draftsByDate, noteDraftsByDate);
   const pillarsDirty = !pillarsByDateEqual(pillarsByDate, savedPillarsByDate);
-  useRegisterUnsavedLeave(
+  const { confirmLeave } = useRegisterUnsavedLeave(
     composerDirty || pillarsDirty || dirtyItemKeys.size > 0,
   );
+
+  function changeDate(next: Date) {
+    const nextDate = isoDate(next);
+    if (nextDate === onDate) {
+      return;
+    }
+
+    confirmLeave(() => {
+      setShowAllTriggers(false);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("date", nextDate);
+      const hash = typeof window !== "undefined" ? window.location.hash : "";
+      router.replace(`${pathname}?${params.toString()}${hash}`, { scroll: false });
+    });
+  }
   const triggers = useMemo(
     () =>
       flattenDayTriggers(
