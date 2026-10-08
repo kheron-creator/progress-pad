@@ -12,9 +12,9 @@ import type { FlattenedDayTrigger } from "@/lib/triggers/store";
 
 export const ARCHIVE_CATEGORIES = [
   "triggers",
-  "gratitude",
   "mind-sweep",
   "done-list",
+  "gratitude",
   "quotes",
   "journal",
   "reflections",
