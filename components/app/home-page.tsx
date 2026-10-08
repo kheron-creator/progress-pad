@@ -1067,6 +1067,17 @@ export function HomePage() {
         celebrateTrigger(title);
       }
     } catch {
+      setDraftsByDate((current) => ({
+        ...current,
+        [onDate]: { ...(current[onDate] ?? emptyWritingDrafts()), [sectionId]: title },
+      }));
+      setNoteDraftsByDate((current) => ({
+        ...current,
+        [onDate]: {
+          ...(current[onDate] ?? emptyWritingDrafts()),
+          [sectionId]: notes?.trim() ?? "",
+        },
+      }));
       showToast("Couldn't save that entry. Please try again.", "error");
     } finally {
       markSaving(sectionId, false);

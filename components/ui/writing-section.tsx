@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
@@ -221,6 +221,8 @@ export function WritingSection({
   className,
 }: WritingSectionProps) {
   const dndId = useId();
+  const titleRef = useRef<HTMLTextAreaElement>(null);
+  const wasSavingRef = useRef(false);
   const [sortableReady, setSortableReady] = useState(false);
   const showNotes = Boolean(notesPlaceholder);
   const showCheckbox = itemLocked || (itemCheckbox ?? !composer);
@@ -234,6 +236,13 @@ export function WritingSection({
     setSortableReady(true);
   }, []);
 
+  useEffect(() => {
+    if (wasSavingRef.current && !saving) {
+      titleRef.current?.focus({ preventScroll: true });
+    }
+    wasSavingRef.current = Boolean(saving);
+  }, [saving]);
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const next = value?.trim();
@@ -241,7 +250,11 @@ export function WritingSection({
       return;
     }
 
-    void onAdd(next, notesValue?.trim() || undefined);
+    const submittedNotes = notesValue?.trim() || undefined;
+    onChange?.("");
+    onNotesChange?.("");
+    titleRef.current?.focus({ preventScroll: true });
+    void onAdd(next, submittedNotes);
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -331,6 +344,7 @@ export function WritingSection({
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <Textarea
+                ref={titleRef}
                 autoSize
                 value={value}
                 onChange={(event) => onChange?.(event.currentTarget.value)}
@@ -342,7 +356,6 @@ export function WritingSection({
                 }}
                 placeholder={placeholder}
                 aria-label={placeholder}
-                disabled={saving}
               />
             </div>
             <Button type="submit" size="md" disabled={!value?.trim() || saving} loading={saving} className="max-sm:hidden">
@@ -361,7 +374,6 @@ export function WritingSection({
               onChange={(event) => onNotesChange?.(event.currentTarget.value)}
               placeholder={notesPlaceholder}
               aria-label={notesPlaceholder}
-              disabled={saving}
             />
           ) : null}
           <Button type="submit" size="md" disabled={!value?.trim() || saving} loading={saving} className="w-full sm:hidden">
