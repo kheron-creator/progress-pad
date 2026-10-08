@@ -39,6 +39,7 @@ type PendingDelete =
   | { kind: "library-scenario"; id: string; name: string }
   | { kind: "date-scenario"; id: string; name: string }
   | { kind: "date-clear" }
+  | { kind: "week-clear" }
   | { kind: "calendar-clear" };
 
 const DELETE_COPY: Record<
@@ -67,6 +68,12 @@ const DELETE_COPY: Record<
       "All scenarios and triggers will be removed from this date. They will stay in your library.",
     confirm: "Clear",
   },
+  "week-clear": {
+    title: "Clear current week?",
+    description: () =>
+      "All scenarios and triggers will be removed from this week. They will stay in your library.",
+    confirm: "Clear week",
+  },
   "calendar-clear": {
     title: "Clear calendar?",
     description: () =>
@@ -74,6 +81,17 @@ const DELETE_COPY: Record<
     confirm: "Clear calendar",
   },
 };
+
+function weekDateKeys(anchor: Date) {
+  const start = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
+  const day = start.getDay();
+  start.setDate(start.getDate() - (day === 0 ? 6 : day - 1));
+  return Array.from({ length: 7 }, (_, index) => {
+    const next = new Date(start);
+    next.setDate(start.getDate() + index);
+    return isoDate(next);
+  });
+}
 
 function EmojiMark({ children }: { children: string }) {
   return (
@@ -477,6 +495,31 @@ export function TriggersPage() {
     return persistDayChange(next, () => clearDateAssignments(createClient(), key));
   }
 
+  async function clearWeek() {
+    const keys = new Set(weekDateKeys(date));
+    const previous = assignments;
+    const next: Record<string, DayAssignment[]> = {};
+    for (const [onDate, items] of Object.entries(assignments)) {
+      if (!keys.has(onDate)) {
+        next[onDate] = items;
+      }
+    }
+    setAssignments(next);
+    setSavedAssignments(next);
+
+    try {
+      await saveDateAssignments(createClient(), previous, next);
+      setStates((current) =>
+        pruneStatesToAssignments(current, next, (scenarioId) => scenarioById.get(scenarioId)?.triggerIds),
+      );
+      showToast("Current week cleared.");
+    } catch {
+      setAssignments(previous);
+      setSavedAssignments(previous);
+      showToast("Couldn't clear this week. Please try again.", "error");
+    }
+  }
+
   async function clearCalendar() {
     const previous = assignments;
     const next: Record<string, DayAssignment[]> = {};
@@ -589,6 +632,17 @@ export function TriggersPage() {
       return;
     }
 
+    if (pendingDelete.kind === "week-clear") {
+      setDeletePending(true);
+      try {
+        await clearWeek();
+        setPendingDelete(null);
+      } finally {
+        setDeletePending(false);
+      }
+      return;
+    }
+
     if (pendingDelete.kind === "calendar-clear") {
       setDeletePending(true);
       try {
@@ -691,6 +745,7 @@ export function TriggersPage() {
             cancelTrigger();
             setDayDrawerOpen(true);
           }}
+          onClearWeek={() => setPendingDelete({ kind: "week-clear" })}
           onClear={() => setPendingDelete({ kind: "calendar-clear" })}
         />
       </div>

@@ -40,6 +40,7 @@ type CalendarStripProps = {
   selectionCount?: number;
   onDayClick?: (date: Date) => void;
   onClear?: () => void;
+  onClearWeek?: () => void;
   compact?: boolean;
   className?: string;
 };
@@ -121,6 +122,7 @@ export function CalendarStrip({
   selectionCount = 0,
   onDayClick,
   onClear,
+  onClearWeek,
   compact = false,
   className,
 }: CalendarStripProps) {
@@ -337,13 +339,24 @@ export function CalendarStrip({
         })}
       </div>
       {look === "intention" ? (
-        <button
-          type="button"
-          className="type-label w-fit cursor-pointer text-error underline decoration-error/40 underline-offset-2"
-          onClick={() => (onClear ? onClear() : onChange(startOfDay(new Date())))}
-        >
-          Clear calendar
-        </button>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          {onClearWeek ? (
+            <button
+              type="button"
+              className="type-label w-fit cursor-pointer text-error underline decoration-error/40 underline-offset-2"
+              onClick={onClearWeek}
+            >
+              Clear this week
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="type-label w-fit cursor-pointer text-error underline decoration-error/40 underline-offset-2"
+            onClick={() => (onClear ? onClear() : onChange(startOfDay(new Date())))}
+          >
+            Clear calendar
+          </button>
+        </div>
       ) : compact ? null : (
         <Text variant="caption" className="text-foreground-muted">
           Selected Date:{" "}
