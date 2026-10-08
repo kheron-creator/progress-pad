@@ -1505,7 +1505,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="flex w-full flex-col gap-4 md:gap-6">
+    <div className="flex w-full flex-col gap-4 pb-20 md:gap-6 md:pb-24">
       <HomeBanner
         size="lg"
         kicker={HOME_HERO.kicker}

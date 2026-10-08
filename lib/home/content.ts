@@ -152,7 +152,7 @@ export const HOME_PILLARS = [
     id: "romantically",
     title: "Romantically",
     description: "Intimacy, mutual care, connection & warmth.",
-    placeholder: "How have your romantic relationships or connections felt lately?",
+    placeholder: "How have your romantic relationships felt lately?",
   },
 ] as const;
 
