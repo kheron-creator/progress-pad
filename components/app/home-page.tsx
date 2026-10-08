@@ -42,6 +42,7 @@ import { PillarRow } from "@/components/ui/pillar-row";
 import { Progress } from "@/components/ui/progress";
 import { Text } from "@/components/ui/text";
 import { ToastRegion, useToasts } from "@/components/ui/toast-region";
+import { UndoSnackbar, useUndoSnackbar } from "@/components/ui/undo-snackbar";
 import { TriggerCard } from "@/components/ui/trigger-card";
 import { WritingSection, type WritingSectionItem } from "@/components/ui/writing-section";
 import { useSessionStore } from "@/components/app/session-store-provider";
@@ -312,6 +313,7 @@ export function HomePage() {
     onDate: string;
   } | null>(null);
   const { toasts, showToast, dismissToast } = useToasts();
+  const { banner, showUndo, undo, dismissBanner } = useUndoSnackbar();
   const [celebrateName, setCelebrateName] = useState<string | null>(null);
   const celebrateNoteRef = useRef<HTMLParagraphElement>(null);
   const celebrateTimer = useRef(0);
@@ -1084,25 +1086,30 @@ export function HomePage() {
     }
   }
 
-  async function deleteMindSweepDirect(id: string) {
+  function deleteMindSweepDirect(id: string) {
     if (deletePending) {
       return;
     }
 
-    setDeletePending(true);
     const previous = mindSweepByDate;
     const next = removeMindSweepItem(previous, id);
     setMindSweepByDate(next);
 
-    try {
-      await deleteMindSweepItem(createClient(), id);
-      await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
-    } catch {
-      setMindSweepByDate(previous);
-      showToast("Couldn't delete that entry. Please try again.", "error");
-    } finally {
-      setDeletePending(false);
-    }
+    showUndo({
+      message: "Task deleted.",
+      onUndo: () => {
+        setMindSweepByDate(previous);
+      },
+      onCommit: async () => {
+        try {
+          await deleteMindSweepItem(createClient(), id);
+          await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
+        } catch {
+          setMindSweepByDate(previous);
+          showToast("Couldn't delete that entry. Please try again.", "error");
+        }
+      },
+    });
   }
 
   async function confirmDelete() {
@@ -1112,7 +1119,7 @@ export function HomePage() {
 
     if (pendingDelete.sectionId === "mind-sweep") {
       setPendingDelete(null);
-      await deleteMindSweepDirect(pendingDelete.id);
+      deleteMindSweepDirect(pendingDelete.id);
       return;
     }
 
@@ -1604,10 +1611,16 @@ export function HomePage() {
         <p
           ref={celebrateNoteRef}
           role="status"
-          className="type-status pointer-events-none fixed bottom-6 left-1/2 z-50 w-fit max-w-[min(100%-2rem,24rem)] -translate-x-1/2 truncate rounded-full border border-(--pp-bondi-blue-600) bg-(--pp-bondi-blue-25) px-4 py-2 text-center text-(--pp-bondi-blue-700) shadow-md animate-[pp-ready-check-pop_0.45s_cubic-bezier(0.22,1.15,0.36,1)_both]"
+          className={cn(
+            "type-status pointer-events-none fixed left-1/2 z-50 w-fit max-w-[min(100%-2rem,24rem)] -translate-x-1/2 truncate rounded-full border border-(--pp-bondi-blue-600) bg-(--pp-bondi-blue-25) px-4 py-2 text-center text-(--pp-bondi-blue-700) shadow-md animate-[pp-ready-check-pop_0.45s_cubic-bezier(0.22,1.15,0.36,1)_both]",
+            banner ? "bottom-24" : "bottom-6",
+          )}
         >
           Achieved ‘{celebrateName}’
         </p>
+      ) : null}
+      {banner ? (
+        <UndoSnackbar message={banner.message} onUndo={undo} onDismiss={dismissBanner} />
       ) : null}
       <ToastRegion toasts={toasts} onDismiss={dismissToast} />
 

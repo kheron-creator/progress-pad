@@ -16,6 +16,7 @@ import { Pagination, PAGINATION_PAGE_SIZES } from "@/components/ui/pagination";
 import { Tabs } from "@/components/ui/tabs";
 import { Text } from "@/components/ui/text";
 import { ToastRegion, useToasts } from "@/components/ui/toast-region";
+import { UndoSnackbar, useUndoSnackbar } from "@/components/ui/undo-snackbar";
 import { WrittenItem } from "@/components/ui/written-item";
 import { ACTIVE_MIND_SWEEP } from "@/lib/home/content";
 import {
@@ -39,6 +40,7 @@ import {
 } from "@/lib/home/store";
 import { createClient } from "@/lib/supabase/client";
 import { burstConfetti } from "@/lib/ui/burst-confetti";
+import { cn } from "@/lib/utils/cn";
 
 const COMPOSER_ID = "active-mind-sweep-composer";
 const COMPOSER_TITLE_ID = "active-mind-sweep-title";
@@ -130,6 +132,7 @@ export function ActiveMindSweepPage() {
     },
   ];
   const { toasts, showToast, dismissToast } = useToasts();
+  const { banner, showUndo, undo, dismissBanner } = useUndoSnackbar();
   const [filter, setFilter] = useState<SweepFilter>("active");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -139,7 +142,6 @@ export function ActiveMindSweepPage() {
   const [draftDate, setDraftDate] = useState(today);
   const [addSaving, setAddSaving] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
-  const [deletePending, setDeletePending] = useState(false);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null);
   const [celebrateName, setCelebrateName] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
@@ -231,6 +233,21 @@ export function ActiveMindSweepPage() {
 
     try {
       await setMindSweepStatus(createClient(), item.id, status);
+      if (status === "achieved") {
+        showUndo({
+          message: "Marked as done.",
+          onUndo: async () => {
+            setCelebrateName(null);
+            setMindSweepByDate(previous);
+            try {
+              await setMindSweepStatus(createClient(), item.id, "todo");
+            } catch {
+              setMindSweepByDate((current) => mapMindSweepItem(current, item.id, { status: "achieved" }));
+              showToast("Couldn't undo that change. Please try again.", "error");
+            }
+          },
+        });
+      }
     } catch {
       setMindSweepByDate(previous);
       setCelebrateName(null);
@@ -261,12 +278,11 @@ export function ActiveMindSweepPage() {
     }
   }
 
-  async function deleteItems(ids: readonly string[]) {
-    if (ids.length === 0 || deletePending) {
+  function deleteItems(ids: readonly string[]) {
+    if (ids.length === 0) {
       return;
     }
 
-    setDeletePending(true);
     const previous = mindSweepByDate;
     const next =
       ids.length === 1
@@ -280,26 +296,32 @@ export function ActiveMindSweepPage() {
       }
       return remaining;
     });
+    setPendingDeleteIds(null);
 
-    try {
-      if (ids.length === 1) {
-        await deleteMindSweepItem(createClient(), ids[0]!);
-      } else {
-        await deleteMindSweepItems(createClient(), ids);
-      }
-      await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
-      setPendingDeleteIds(null);
-    } catch {
-      setMindSweepByDate(previous);
-      showToast(
-        ids.length === 1
-          ? "Couldn't delete that item. Please try again."
-          : "Couldn't delete those items. Please try again.",
-        "error",
-      );
-    } finally {
-      setDeletePending(false);
-    }
+    showUndo({
+      message: ids.length === 1 ? "Task deleted." : `${ids.length} tasks deleted.`,
+      onUndo: () => {
+        setMindSweepByDate(previous);
+      },
+      onCommit: async () => {
+        try {
+          if (ids.length === 1) {
+            await deleteMindSweepItem(createClient(), ids[0]!);
+          } else {
+            await deleteMindSweepItems(createClient(), ids);
+          }
+          await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
+        } catch {
+          setMindSweepByDate(previous);
+          showToast(
+            ids.length === 1
+              ? "Couldn't delete that item. Please try again."
+              : "Couldn't delete those items. Please try again.",
+            "error",
+          );
+        }
+      },
+    });
   }
 
   function requestDelete(item: StoredMindSweepItem) {
@@ -307,14 +329,14 @@ export function ActiveMindSweepPage() {
       setPendingDeleteIds([...selectedIds]);
       return;
     }
-    void deleteItems([item.id]);
+    deleteItems([item.id]);
   }
 
-  async function confirmDelete() {
-    if (!pendingDeleteIds || deletePending) {
+  function confirmDelete() {
+    if (!pendingDeleteIds) {
       return;
     }
-    await deleteItems(pendingDeleteIds);
+    deleteItems(pendingDeleteIds);
   }
 
   function toggleSelected(id: string) {
@@ -362,6 +384,19 @@ export function ActiveMindSweepPage() {
 
     try {
       await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
+      const dateLabel = formatItemDate(nextDate, today);
+      showUndo({
+        message: `Date changed to ${dateLabel}.`,
+        onUndo: async () => {
+          setMindSweepByDate(previous);
+          try {
+            await persistMindSweepPatches(createClient(), mindSweepPatches(next, previous));
+          } catch {
+            setMindSweepByDate(next);
+            showToast("Couldn't undo that date change. Please try again.", "error");
+          }
+        },
+      });
     } catch {
       setMindSweepByDate(previous);
       showToast("Couldn't update that date. Please try again.", "error");
@@ -393,11 +428,21 @@ export function ActiveMindSweepPage() {
       await persistMindSweepPatches(createClient(), mindSweepPatches(previous, nextState));
       setSelectedIds(new Set());
       const dateLabel = formatItemDate(nextDate, today);
-      showToast(
-        ids.length === 1
-          ? `Task assigned to ${dateLabel}.`
-          : `${ids.length} tasks assigned to ${dateLabel}.`,
-      );
+      showUndo({
+        message:
+          ids.length === 1
+            ? `Date changed to ${dateLabel}.`
+            : `${ids.length} tasks moved to ${dateLabel}.`,
+        onUndo: async () => {
+          setMindSweepByDate(previous);
+          try {
+            await persistMindSweepPatches(createClient(), mindSweepPatches(nextState, previous));
+          } catch {
+            setMindSweepByDate(nextState);
+            showToast("Couldn't undo that date change. Please try again.", "error");
+          }
+        },
+      });
     } catch {
       setMindSweepByDate(previous);
       showToast("Couldn't assign those tasks. Please try again.", "error");
@@ -596,7 +641,7 @@ export function ActiveMindSweepPage() {
       <Dialog
         open={pendingDeleteIds !== null}
         onOpenChange={(open) => {
-          if (!open && !deletePending) setPendingDeleteIds(null);
+          if (!open) setPendingDeleteIds(null);
         }}
         title={
           pendingDeleteIds
@@ -605,18 +650,15 @@ export function ActiveMindSweepPage() {
         }
         description={
           pendingDeleteIds
-            ? `${pendingDeleteIds.length} tasks will be removed. This cannot be undone.`
+            ? `${pendingDeleteIds.length} tasks will be removed.`
             : undefined
         }
       >
         <DialogConfirmActions
           danger
-          pending={deletePending}
           confirmLabel="Delete"
-          onCancel={() => {
-            if (!deletePending) setPendingDeleteIds(null);
-          }}
-          onConfirm={() => void confirmDelete()}
+          onCancel={() => setPendingDeleteIds(null)}
+          onConfirm={() => confirmDelete()}
         />
       </Dialog>
 
@@ -624,10 +666,16 @@ export function ActiveMindSweepPage() {
         <p
           ref={celebrateNoteRef}
           role="status"
-          className="type-status pointer-events-none fixed bottom-6 left-1/2 z-50 w-fit max-w-[min(100%-2rem,24rem)] -translate-x-1/2 truncate rounded-full border border-(--pp-bondi-blue-600) bg-(--pp-bondi-blue-25) px-4 py-2 text-center text-(--pp-bondi-blue-700) shadow-md animate-[pp-ready-check-pop_0.45s_cubic-bezier(0.22,1.15,0.36,1)_both]"
+          className={cn(
+            "type-status pointer-events-none fixed left-1/2 z-50 w-fit max-w-[min(100%-2rem,24rem)] -translate-x-1/2 truncate rounded-full border border-(--pp-bondi-blue-600) bg-(--pp-bondi-blue-25) px-4 py-2 text-center text-(--pp-bondi-blue-700) shadow-md animate-[pp-ready-check-pop_0.45s_cubic-bezier(0.22,1.15,0.36,1)_both]",
+            banner ? "bottom-24" : "bottom-6",
+          )}
         >
           Achieved ‘{celebrateName}’
         </p>
+      ) : null}
+      {banner ? (
+        <UndoSnackbar message={banner.message} onUndo={undo} onDismiss={dismissBanner} />
       ) : null}
       <ToastRegion toasts={toasts} onDismiss={dismissToast} />
     </div>
