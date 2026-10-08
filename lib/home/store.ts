@@ -412,6 +412,17 @@ export function removeMindSweepItem(byDate: MindSweepByDate, id: string): MindSw
   return changed ? next : byDate;
 }
 
+export function removeMindSweepItems(
+  byDate: MindSweepByDate,
+  ids: readonly string[],
+): MindSweepByDate {
+  let next = byDate;
+  for (const id of ids) {
+    next = removeMindSweepItem(next, id);
+  }
+  return next;
+}
+
 export function mergeMindSweepItems(byDate: MindSweepByDate, rows: StoredMindSweepItem[]): MindSweepByDate {
   const next: MindSweepByDate = { ...byDate };
   for (const row of rows) {
@@ -426,6 +437,18 @@ export function mergeMindSweepItems(byDate: MindSweepByDate, rows: StoredMindSwe
 
 export async function deleteMindSweepItem(supabase: Client, id: string) {
   const { error } = await supabase.from("mind_sweep_items").delete().eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function deleteMindSweepItems(supabase: Client, ids: readonly string[]) {
+  if (ids.length === 0) {
+    return;
+  }
+
+  const { error } = await supabase.from("mind_sweep_items").delete().in("id", [...ids]);
 
   if (error) {
     throw error;

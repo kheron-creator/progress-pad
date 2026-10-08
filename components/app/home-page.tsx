@@ -1066,47 +1066,61 @@ export function HomePage() {
     }
   }
 
+  async function deleteMindSweepDirect(id: string) {
+    if (deletePending) {
+      return;
+    }
+
+    setDeletePending(true);
+    const previous = mindSweepByDate;
+    const next = removeMindSweepItem(previous, id);
+    setMindSweepByDate(next);
+
+    try {
+      await deleteMindSweepItem(createClient(), id);
+      await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
+    } catch {
+      setMindSweepByDate(previous);
+      showToast("Couldn't delete that entry. Please try again.", "error");
+    } finally {
+      setDeletePending(false);
+    }
+  }
+
   async function confirmDelete() {
     if (!pendingDelete || deletePending) {
+      return;
+    }
+
+    if (pendingDelete.sectionId === "mind-sweep") {
+      setPendingDelete(null);
+      await deleteMindSweepDirect(pendingDelete.id);
       return;
     }
 
     setDeletePending(true);
 
     try {
-      if (pendingDelete.sectionId === "mind-sweep") {
-        const previous = mindSweepByDate;
-        const next = removeMindSweepItem(previous, pendingDelete.id);
-        setMindSweepByDate(next);
-        try {
-          await deleteMindSweepItem(createClient(), pendingDelete.id);
-          await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
-        } catch (error) {
-          setMindSweepByDate(previous);
-          throw error;
-        }
-      } else {
-        const kind = writingKindForSection(pendingDelete.sectionId);
-        if (!kind) {
-          return;
-        }
-
-        await deleteWritingEntry(createClient(), pendingDelete.id);
-        setWritingByDate((current) => {
-          const day = current[pendingDelete.onDate];
-          if (!day) {
-            return current;
-          }
-
-          return {
-            ...current,
-            [pendingDelete.onDate]: {
-              ...day,
-              [kind]: day[kind].filter((item) => item.id !== pendingDelete.id),
-            },
-          };
-        });
+      const kind = writingKindForSection(pendingDelete.sectionId);
+      if (!kind) {
+        return;
       }
+
+      await deleteWritingEntry(createClient(), pendingDelete.id);
+      setWritingByDate((current) => {
+        const day = current[pendingDelete.onDate];
+        if (!day) {
+          return current;
+        }
+
+        return {
+          ...current,
+          [pendingDelete.onDate]: {
+            ...day,
+            [kind]: day[kind].filter((item) => item.id !== pendingDelete.id),
+          },
+        };
+      });
 
       setPendingDelete(null);
     } catch {
@@ -1323,6 +1337,10 @@ export function HomePage() {
         onDelete={
           isComposer
             ? (id) => {
+              if (section.id === "mind-sweep") {
+                void deleteMindSweepDirect(id);
+                return;
+              }
               const item = items.find((entry) => entry.id === id);
               setPendingDelete({
                 sectionId: section.id,

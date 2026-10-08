@@ -21,6 +21,7 @@ import { ACTIVE_MIND_SWEEP } from "@/lib/home/content";
 import {
   addMindSweepItem,
   deleteMindSweepItem,
+  deleteMindSweepItems,
   flattenMindSweepItems,
   formatIsoDate,
   frontMindSweepSortOrder,
@@ -32,6 +33,7 @@ import {
   persistMindSweepPatches,
   relocateMindSweepItem,
   removeMindSweepItem,
+  removeMindSweepItems,
   setMindSweepStatus,
   type StoredMindSweepItem,
 } from "@/lib/home/store";
@@ -138,7 +140,7 @@ export function ActiveMindSweepPage() {
   const [addSaving, setAddSaving] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<StoredMindSweepItem | null>(null);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null);
   const [celebrateName, setCelebrateName] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
   const celebrateNoteRef = useRef<HTMLParagraphElement>(null);
@@ -259,25 +261,60 @@ export function ActiveMindSweepPage() {
     }
   }
 
-  async function confirmDelete() {
-    if (!pendingDelete || deletePending) {
+  async function deleteItems(ids: readonly string[]) {
+    if (ids.length === 0 || deletePending) {
       return;
     }
 
     setDeletePending(true);
     const previous = mindSweepByDate;
-    const next = removeMindSweepItem(previous, pendingDelete.id);
+    const next =
+      ids.length === 1
+        ? removeMindSweepItem(previous, ids[0]!)
+        : removeMindSweepItems(previous, ids);
     setMindSweepByDate(next);
+    setSelectedIds((current) => {
+      const remaining = new Set(current);
+      for (const id of ids) {
+        remaining.delete(id);
+      }
+      return remaining;
+    });
+
     try {
-      await deleteMindSweepItem(createClient(), pendingDelete.id);
+      if (ids.length === 1) {
+        await deleteMindSweepItem(createClient(), ids[0]!);
+      } else {
+        await deleteMindSweepItems(createClient(), ids);
+      }
       await persistMindSweepPatches(createClient(), mindSweepPatches(previous, next));
-      setPendingDelete(null);
+      setPendingDeleteIds(null);
     } catch {
       setMindSweepByDate(previous);
-      showToast("Couldn't delete that item. Please try again.", "error");
+      showToast(
+        ids.length === 1
+          ? "Couldn't delete that item. Please try again."
+          : "Couldn't delete those items. Please try again.",
+        "error",
+      );
     } finally {
       setDeletePending(false);
     }
+  }
+
+  function requestDelete(item: StoredMindSweepItem) {
+    if (selectedIds.size > 1 && selectedIds.has(item.id)) {
+      setPendingDeleteIds([...selectedIds]);
+      return;
+    }
+    void deleteItems([item.id]);
+  }
+
+  async function confirmDelete() {
+    if (!pendingDeleteIds || deletePending) {
+      return;
+    }
+    await deleteItems(pendingDeleteIds);
   }
 
   function toggleSelected(id: string) {
@@ -516,7 +553,7 @@ export function ActiveMindSweepPage() {
                   onSelect={() => toggleSelected(item.id)}
                   onDateChange={(nextDate) => void changeItemDate(item, nextDate)}
                   onCheckedChange={(checked) => void toggleItem(item, checked)}
-                  onDelete={() => setPendingDelete(item)}
+                  onDelete={() => requestDelete(item)}
                 />
               );
             })}
@@ -557,14 +594,18 @@ export function ActiveMindSweepPage() {
       )}
 
       <Dialog
-        open={pendingDelete !== null}
+        open={pendingDeleteIds !== null}
         onOpenChange={(open) => {
-          if (!open && !deletePending) setPendingDelete(null);
+          if (!open && !deletePending) setPendingDeleteIds(null);
         }}
-        title="Delete this item?"
+        title={
+          pendingDeleteIds
+            ? `Delete ${pendingDeleteIds.length} tasks?`
+            : "Delete tasks?"
+        }
         description={
-          pendingDelete
-            ? `“${pendingDelete.title}” will be removed. This cannot be undone.`
+          pendingDeleteIds
+            ? `${pendingDeleteIds.length} tasks will be removed. This cannot be undone.`
             : undefined
         }
       >
@@ -573,7 +614,7 @@ export function ActiveMindSweepPage() {
           pending={deletePending}
           confirmLabel="Delete"
           onCancel={() => {
-            if (!deletePending) setPendingDelete(null);
+            if (!deletePending) setPendingDeleteIds(null);
           }}
           onConfirm={() => void confirmDelete()}
         />
