@@ -196,10 +196,12 @@ function SortableHomeSection({
   id,
   label,
   children,
+  handleClassName,
 }: {
   id: HomeSectionId;
   label: string;
-  children: ReactNode;
+  children: (dragHandle: ReactNode) => ReactNode;
+  handleClassName?: string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
@@ -214,31 +216,25 @@ function SortableHomeSection({
         transition,
       }}
       className={cn(
-        "flex scroll-mt-28 items-start gap-2",
-        isDragging && "relative z-30",
+        "scroll-mt-28",
+        isDragging && "relative z-30 rounded-md bg-surface shadow-lg",
       )}
     >
-      <button
-        type="button"
-        className={cn(
-          "mt-2.5 inline-flex size-7 shrink-0 cursor-grab items-center justify-center rounded-sm text-foreground-muted hover:bg-background-subtle hover:text-foreground active:cursor-grabbing",
-          SORTABLE_HANDLE_CLASS,
-        )}
-        aria-label={`Reorder ${label}`}
-        {...attributes}
-        {...listeners}
-      >
-        <DragHandleIcon size={16} />
-      </button>
-      <div
-        className={cn(
-          "min-w-0 flex-1",
-          // Keep an opaque surface while dragging so overlapping sections don’t bleed through gaps.
-          isDragging && "rounded-md bg-surface shadow-lg",
-        )}
-      >
-        {children}
-      </div>
+      {children(
+        <button
+          type="button"
+          className={cn(
+            "inline-flex size-8 shrink-0 cursor-grab items-center justify-center rounded-sm text-foreground-muted hover:bg-background-subtle hover:text-foreground active:cursor-grabbing",
+            SORTABLE_HANDLE_CLASS,
+            handleClassName,
+          )}
+          aria-label={`Reorder ${label}`}
+          {...attributes}
+          {...listeners}
+        >
+          <DragHandleIcon size={22} weight="bold" />
+        </button>,
+      )}
     </div>
   );
 }
@@ -283,6 +279,7 @@ function HomeBanner({
   image,
   imageClassName,
   priority = false,
+  dragHandle,
 }: {
   size: "sm" | "lg";
   kicker: string;
@@ -291,13 +288,23 @@ function HomeBanner({
   image: string;
   imageClassName?: string;
   priority?: boolean;
+  dragHandle?: ReactNode;
 }) {
   return (
     <Banner
       size={size}
       title={title}
       description={description}
-      kicker={<BannerKicker>{kicker}</BannerKicker>}
+      kicker={
+        dragHandle ? (
+          <div className="flex items-center gap-2">
+            {dragHandle}
+            <BannerKicker>{kicker}</BannerKicker>
+          </div>
+        ) : (
+          <BannerKicker>{kicker}</BannerKicker>
+        )
+      }
       media={
         <Image
           src={image}
@@ -1366,7 +1373,10 @@ export function HomePage() {
     });
   }
 
-  function writingSection(section: (typeof HOME_WRITING_SECTIONS)[number]) {
+  function writingSection(
+    section: (typeof HOME_WRITING_SECTIONS)[number],
+    sectionDragHandle?: ReactNode,
+  ) {
     const isGratitude = section.id === "gratitude";
     const isMindSweep = section.id === "mind-sweep";
     const isDoneList = section.id === "done-list";
@@ -1478,6 +1488,7 @@ export function HomePage() {
         }
         onReorder={isMindSweep ? (orderedIds) => void reorderMindSweepItems(orderedIds) : undefined}
         onItemDirtyChange={(id, dirty) => setWritingItemDirty(section.id, id, dirty)}
+        sectionDragHandle={sectionDragHandle}
         onAdd={isComposer ? (title, notes) => addWritingItem(section.id, title, notes) : undefined}
         onDelete={
           isComposer
@@ -1560,14 +1571,22 @@ export function HomePage() {
               if (isHomeBannerSection(sectionId)) {
                 const banner = SORTABLE_HOME_BANNERS[sectionId];
                 return (
-                  <SortableHomeSection key={sectionId} id={sectionId} label={banner.label}>
-                    <HomeBanner
-                      size="sm"
-                      kicker={banner.content.kicker}
-                      title={banner.content.title}
-                      description={banner.content.description}
-                      image={banner.image}
-                    />
+                  <SortableHomeSection
+                    key={sectionId}
+                    id={sectionId}
+                    label={banner.label}
+                    handleClassName="bg-transparent text-(--pp-grey-0)! hover:bg-(--pp-grey-0)/20! hover:text-(--pp-grey-0)!"
+                  >
+                    {(dragHandle) => (
+                      <HomeBanner
+                        size="sm"
+                        kicker={banner.content.kicker}
+                        title={banner.content.title}
+                        description={banner.content.description}
+                        image={banner.image}
+                        dragHandle={dragHandle}
+                      />
+                    )}
                   </SortableHomeSection>
                 );
               }
@@ -1575,119 +1594,122 @@ export function HomePage() {
               if (sectionId === "triggers") {
                 return (
                   <SortableHomeSection key={sectionId} id={sectionId} label="Today’s triggers">
-                    <Card className="flex w-full flex-col gap-section">
-                      <TriggerCard
-                        title={HOME_TRIGGER_SECTION.title}
-                        description={HOME_TRIGGER_SECTION.description}
-                        leftIcon={
-                          <SectionIcon size="lg">
-                            <LightningIcon />
-                          </SectionIcon>
-                        }
-                        tag={
-                          <CountChip>
-                            {achievedCount} / {triggers.length} Achieved
-                          </CountChip>
-                        }
-                        action={
-                          addingTrigger ? undefined : (
-                            <Button
-                              size="md"
-                              className="shrink-0 max-sm:hidden"
-                              onClick={openAddTrigger}
-                            >
-                              <PlusIcon size={16} />
-                              Add Trigger
-                            </Button>
-                          )
-                        }
-                      />
-
-                      {addingTrigger ? addTriggerPanel : null}
-
-                      {triggers.length === 0 && !addingTrigger ? (
-                        <EmptyState
-                          className="border-0 bg-transparent py-8"
-                          media={
-                            <FilesIcon size="xl" className="text-(--pp-spring-green-700)" />
+                    {(dragHandle) => (
+                      <Card className="flex w-full flex-col gap-section">
+                        <TriggerCard
+                          title={HOME_TRIGGER_SECTION.title}
+                          description={HOME_TRIGGER_SECTION.description}
+                          dragHandle={dragHandle}
+                          leftIcon={
+                            <SectionIcon size="lg">
+                              <LightningIcon />
+                            </SectionIcon>
                           }
-                          title="No triggers yet"
-                          description="Add your first trigger to start building small actions that create big change over time."
+                          tag={
+                            <CountChip>
+                              {achievedCount} / {triggers.length} Achieved
+                            </CountChip>
+                          }
                           action={
-                            <Button size="md" onClick={openAddTrigger}>
-                              <PlusIcon size={16} />
-                              Add Your First Trigger
-                            </Button>
+                            addingTrigger ? undefined : (
+                              <Button
+                                size="md"
+                                className="shrink-0 max-sm:hidden"
+                                onClick={openAddTrigger}
+                              >
+                                <PlusIcon size={16} />
+                                Add Trigger
+                              </Button>
+                            )
                           }
                         />
-                      ) : triggers.length > 0 ? (
-                        <>
-                          <Progress
-                            value={triggerProgress}
-                            size="md"
-                            label="Today’s trigger progress"
+
+                        {addingTrigger ? addTriggerPanel : null}
+
+                        {triggers.length === 0 && !addingTrigger ? (
+                          <EmptyState
+                            className="border-0 bg-transparent py-8"
+                            media={
+                              <FilesIcon size="xl" className="text-(--pp-spring-green-700)" />
+                            }
+                            title="No triggers yet"
+                            description="Add your first trigger to start building small actions that create big change over time."
+                            action={
+                              <Button size="md" onClick={openAddTrigger}>
+                                <PlusIcon size={16} />
+                                Add Your First Trigger
+                              </Button>
+                            }
                           />
-
-                          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                            {triggers.map((trigger, index) => {
-                              const hiddenOnMobile =
-                                !showAllTriggers && index >= MOBILE_TRIGGER_COUNT;
-
-                              return (
-                                <TriggerCard
-                                  key={trigger.id}
-                                  kind="item"
-                                  state={trigger.status}
-                                  title={trigger.name}
-                                  leftIcon={
-                                    trigger.status === "achieved" || !trigger.emoji ? undefined : (
-                                      <IconMark
-                                        size="sm"
-                                        tone="surface"
-                                        className="text-(length:--pp-font-size-14) leading-none"
-                                      >
-                                        <span aria-hidden>{trigger.emoji}</span>
-                                      </IconMark>
-                                    )
-                                  }
-                                  leftEmoji={false}
-                                  showDescription={false}
-                                  className={cn(
-                                    "cursor-pointer",
-                                    hiddenOnMobile && "hidden md:flex",
-                                  )}
-                                  onClick={() => void toggleTrigger(trigger.id)}
-                                  onDelete={() => void removeTriggerFromDay(trigger.id)}
-                                />
-                              );
-                            })}
-                          </div>
-
-                          {!addingTrigger ? (
-                            <Button
-                              className="md:hidden max-sm:w-full"
+                        ) : triggers.length > 0 ? (
+                          <>
+                            <Progress
+                              value={triggerProgress}
                               size="md"
-                              onClick={openAddTrigger}
-                            >
-                              <PlusIcon size={16} />
-                              Add Trigger
-                            </Button>
-                          ) : null}
+                              label="Today’s trigger progress"
+                            />
 
-                          {triggers.length > MOBILE_TRIGGER_COUNT ? (
-                            <Button
-                              className="md:hidden max-sm:w-full"
-                              size="md"
-                              variant="secondary"
-                              look="outline"
-                              onClick={() => setShowAllTriggers((open) => !open)}
-                            >
-                              {showAllTriggers ? "Show less" : "Show all triggers"}
-                            </Button>
-                          ) : null}
-                        </>
-                      ) : null}
-                    </Card>
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                              {triggers.map((trigger, index) => {
+                                const hiddenOnMobile =
+                                  !showAllTriggers && index >= MOBILE_TRIGGER_COUNT;
+
+                                return (
+                                  <TriggerCard
+                                    key={trigger.id}
+                                    kind="item"
+                                    state={trigger.status}
+                                    title={trigger.name}
+                                    leftIcon={
+                                      trigger.status === "achieved" || !trigger.emoji ? undefined : (
+                                        <IconMark
+                                          size="sm"
+                                          tone="surface"
+                                          className="text-(length:--pp-font-size-14) leading-none"
+                                        >
+                                          <span aria-hidden>{trigger.emoji}</span>
+                                        </IconMark>
+                                      )
+                                    }
+                                    leftEmoji={false}
+                                    showDescription={false}
+                                    className={cn(
+                                      "cursor-pointer",
+                                      hiddenOnMobile && "hidden md:flex",
+                                    )}
+                                    onClick={() => void toggleTrigger(trigger.id)}
+                                    onDelete={() => void removeTriggerFromDay(trigger.id)}
+                                  />
+                                );
+                              })}
+                            </div>
+
+                            {!addingTrigger ? (
+                              <Button
+                                className="md:hidden max-sm:w-full"
+                                size="md"
+                                onClick={openAddTrigger}
+                              >
+                                <PlusIcon size={16} />
+                                Add Trigger
+                              </Button>
+                            ) : null}
+
+                            {triggers.length > MOBILE_TRIGGER_COUNT ? (
+                              <Button
+                                className="md:hidden max-sm:w-full"
+                                size="md"
+                                variant="secondary"
+                                look="outline"
+                                onClick={() => setShowAllTriggers((open) => !open)}
+                              >
+                                {showAllTriggers ? "Show less" : "Show all triggers"}
+                              </Button>
+                            ) : null}
+                          </>
+                        ) : null}
+                      </Card>
+                    )}
                   </SortableHomeSection>
                 );
               }
@@ -1699,49 +1721,52 @@ export function HomePage() {
                     id={sectionId}
                     label={HOME_PILLAR_SECTION.title}
                   >
-                    <Card className="flex w-full flex-col gap-section">
-                      <TriggerCard
-                        title={HOME_PILLAR_SECTION.title}
-                        description={HOME_PILLAR_SECTION.description}
-                        leftIcon={
-                          <IconMark size="lg" tone="accent">
-                            <ChartLineIcon />
-                          </IconMark>
-                        }
-                        tag={
-                          <CountChip>
-                            <span className="max-sm:hidden">Progression Balance: </span>
-                            {pillarAverage.toFixed(1)}/10
-                          </CountChip>
-                        }
-                      />
-                      <div className="flex flex-col gap-(--pp-space-12)">
-                        {HOME_PILLARS.map((pillar) => (
-                          <PillarRow
-                            key={pillar.id}
-                            title={pillar.title}
-                            description={pillar.description}
-                            placeholder={pillar.placeholder}
-                            value={dayPillars[pillar.id]?.rating ?? 5}
-                            notes={dayPillars[pillar.id]?.notes ?? ""}
-                            onChange={(value) => {
-                              updatePillar(pillar.id, { rating: value });
-                              pendingPillarDatesRef.current.add(onDate);
-                              flushPillarSaves();
-                            }}
-                            onNotesChange={(value) => {
-                              updatePillar(pillar.id, { notes: value });
-                              schedulePillarSave(onDate);
-                            }}
-                            onNotesBlur={() => {
-                              pendingPillarDatesRef.current.add(onDate);
-                              flushPillarSaves();
-                            }}
-                            icon={<ItemIcon>{PILLAR_ICONS[pillar.id]}</ItemIcon>}
-                          />
-                        ))}
-                      </div>
-                    </Card>
+                    {(dragHandle) => (
+                      <Card className="flex w-full flex-col gap-section">
+                        <TriggerCard
+                          title={HOME_PILLAR_SECTION.title}
+                          description={HOME_PILLAR_SECTION.description}
+                          dragHandle={dragHandle}
+                          leftIcon={
+                            <IconMark size="lg" tone="accent">
+                              <ChartLineIcon />
+                            </IconMark>
+                          }
+                          tag={
+                            <CountChip>
+                              <span className="max-sm:hidden">Progression Balance: </span>
+                              {pillarAverage.toFixed(1)}/10
+                            </CountChip>
+                          }
+                        />
+                        <div className="flex flex-col gap-(--pp-space-12)">
+                          {HOME_PILLARS.map((pillar) => (
+                            <PillarRow
+                              key={pillar.id}
+                              title={pillar.title}
+                              description={pillar.description}
+                              placeholder={pillar.placeholder}
+                              value={dayPillars[pillar.id]?.rating ?? 5}
+                              notes={dayPillars[pillar.id]?.notes ?? ""}
+                              onChange={(value) => {
+                                updatePillar(pillar.id, { rating: value });
+                                pendingPillarDatesRef.current.add(onDate);
+                                flushPillarSaves();
+                              }}
+                              onNotesChange={(value) => {
+                                updatePillar(pillar.id, { notes: value });
+                                schedulePillarSave(onDate);
+                              }}
+                              onNotesBlur={() => {
+                                pendingPillarDatesRef.current.add(onDate);
+                                flushPillarSaves();
+                              }}
+                              icon={<ItemIcon>{PILLAR_ICONS[pillar.id]}</ItemIcon>}
+                            />
+                          ))}
+                        </div>
+                      </Card>
+                    )}
                   </SortableHomeSection>
                 );
               }
@@ -1753,7 +1778,7 @@ export function HomePage() {
 
               return (
                 <SortableHomeSection key={sectionId} id={sectionId} label={section.title}>
-                  {writingSection(section)}
+                  {(dragHandle) => writingSection(section, dragHandle)}
                 </SortableHomeSection>
               );
             })}
