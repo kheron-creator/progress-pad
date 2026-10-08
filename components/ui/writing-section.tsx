@@ -70,6 +70,7 @@ type WritingSectionProps = {
   progress?: number;
   progressLabel?: string;
   accent?: string;
+  sectionDragHandle?: ReactNode;
   className?: string;
 };
 
@@ -218,6 +219,7 @@ export function WritingSection({
   progress,
   progressLabel,
   accent = "var(--pp-bondi-blue-400)",
+  sectionDragHandle,
   className,
 }: WritingSectionProps) {
   const dndId = useId();
@@ -331,6 +333,7 @@ export function WritingSection({
         }
         tag={tag}
         action={action}
+        dragHandle={sectionDragHandle}
       />
       {progress != null ? (
         <Progress value={progress} size="md" label={progressLabel ?? `${title} progress`} />

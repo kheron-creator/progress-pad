@@ -25,6 +25,7 @@ type TriggerCardProps = HTMLAttributes<HTMLElement> & {
   tag?: ReactNode;
   action?: ReactNode;
   secondaryAction?: ReactNode;
+  dragHandle?: ReactNode;
   onDelete?: () => void;
 };
 
@@ -98,6 +99,7 @@ export function TriggerCard({
   tag,
   action,
   secondaryAction,
+  dragHandle,
   onDelete,
   className,
   ...props
@@ -153,6 +155,7 @@ export function TriggerCard({
       )}
       {...props}
     >
+      {dragHandle}
       {leadingIcon}
       {emoji}
       <div className="min-w-0 flex-1">
