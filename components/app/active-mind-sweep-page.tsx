@@ -130,7 +130,7 @@ export function ActiveMindSweepPage() {
     },
   ];
   const { toasts, showToast, dismissToast } = useToasts();
-  const [filter, setFilter] = useState<SweepFilter>("all");
+  const [filter, setFilter] = useState<SweepFilter>("active");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
   const [query, setQuery] = useState("");
