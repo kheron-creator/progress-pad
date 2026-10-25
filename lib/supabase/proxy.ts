@@ -23,7 +23,14 @@ const protectedPrefixes = [
   "/active-mind-sweep",
   "/coming-soon",
   "/api",
+  "/oauth",
 ];
+
+// Remembers an OAuth consent request across sign in, so connecting an app resumes after login.
+const OAUTH_RETURN_COOKIE = "pp-oauth-return";
+const OAUTH_RETURN_MAX_AGE = 60 * 10;
+const OAUTH_CONSENT_PATH = "/oauth/consent";
+const oauthResumePaths = new Set(["/", "/home", "/onboarding"]);
 
 function isProtectedPath(pathname: string) {
   return protectedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -119,6 +126,30 @@ export async function updateSession(request: NextRequest) {
 
   if (isSignedIn && inRecovery && !isRecoveryPath(pathname)) {
     return redirectTo("/reset-password");
+  }
+
+  const oauthReturn = request.cookies.get(OAUTH_RETURN_COOKIE)?.value;
+
+  if (isSignedIn && oauthReturn && oauthResumePaths.has(pathname)) {
+    const consentUrl = request.nextUrl.clone();
+    consentUrl.pathname = OAUTH_CONSENT_PATH;
+    consentUrl.search = oauthReturn.startsWith("?") ? oauthReturn : "";
+    const response = NextResponse.redirect(consentUrl);
+    copySetCookies(supabaseResponse, response);
+    response.cookies.set(OAUTH_RETURN_COOKIE, "", { path: "/", maxAge: 0 });
+    return finish(response);
+  }
+
+  if (!isSignedIn && pathname === OAUTH_CONSENT_PATH) {
+    const response = redirectTo("/login");
+    response.cookies.set(OAUTH_RETURN_COOKIE, request.nextUrl.search, {
+      path: "/",
+      maxAge: OAUTH_RETURN_MAX_AGE,
+      sameSite: "lax",
+      httpOnly: true,
+      secure,
+    });
+    return response;
   }
 
   if (isSignedIn && pathname === "/") {
