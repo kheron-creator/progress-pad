@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 
-import { ComingSoonPage } from "@/components/app/status-page";
+import { DashboardPage } from "@/components/app/dashboard-page";
 
 export const metadata: Metadata = {
   title: "Dashboard · Progress Pad",
-  description: "Dashboard is coming soon.",
+  description: "Your whole Progress Pad for the day in one place.",
 };
 
 export default function DashboardRoute() {
-  return <ComingSoonPage />;
+  return <DashboardPage />;
 }
