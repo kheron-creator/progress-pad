@@ -6,7 +6,14 @@ import { z } from "zod";
 import { PILLAR_IDS, type PillarId, type WritingKind } from "@/lib/home/store";
 import type { McpUser } from "@/lib/mcp/auth";
 import { addDays, MCP_TIME_ZONE, resolveDate, todayIso } from "@/lib/mcp/dates";
-import { flattenDayTriggers, loadDatePlan } from "@/lib/triggers/store";
+import {
+  type DateAssignmentItem,
+  flattenDayTriggers,
+  loadDatePlan,
+  loadLibraryScenarios,
+  loadLibraryTriggers,
+  removeTriggerFromDayAssignments,
+} from "@/lib/triggers/store";
 
 const WRITING_KINDS = ["gratitude", "quotes", "journal", "reflections", "done"] as const;
 
@@ -29,8 +36,29 @@ const SERVER_INSTRUCTIONS = `Progress Pad is a personal journal and habit dashbo
 - Six Life Pillars: daily 1-10 ratings for mentally, emotionally, professionally, physically, socially, romantically. A drop of 3+ points is a "disaster pattern" worth gently asking about.
 - Writing sections per day: gratitude, quotes, journal ("Let's Journal"), reflections, and done (the Done List of wins).
 - Mind Sweep: a brain dump of open loops, each todo or achieved.
-- Triggers: small habit cues planned onto days (directly or through scenarios), each todo or achieved for that day.
-Write what the user said in their own words. Nothing here deletes data; deleting stays in the app.`;
+- Triggers: small habit cues planned onto days (directly or through scenarios), each todo or achieved for that day. The library holds every trigger and scenario; plan_triggers puts them on days, unplan_trigger takes them off a day (the library keeps them), and create_trigger adds a new one to the library.
+Write what the user said in their own words. Nothing here deletes library items or writing; deleting those stays in the app.`;
+
+function matchByName<T extends { id: string; name: string }>(items: T[], needle: string, label: string) {
+  const raw = needle.trim();
+  const lower = raw.toLowerCase();
+  const exact =
+    items.find((item) => item.id === raw) ?? items.find((item) => item.name.trim().toLowerCase() === lower);
+  if (exact) {
+    return exact;
+  }
+
+  const partial = items.filter((item) => item.name.toLowerCase().includes(lower));
+  if (partial.length === 1) {
+    return partial[0];
+  }
+
+  throw new Error(
+    partial.length > 1
+      ? `"${raw}" matches more than one ${label}: ${partial.map((item) => item.name).join(", ")}. Use the full name or id.`
+      : `No ${label} in the library matches "${raw}".`,
+  );
+}
 
 function json(value: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }] };
@@ -60,7 +88,7 @@ function checkRange(from: string, to: string) {
 export function createProgressPadServer(user: McpUser) {
   const { supabase, userId } = user;
   const server = new McpServer(
-    { name: "progress-pad", title: "Progress Pad", version: "0.1.0" },
+    { name: "progress-pad", title: "Progress Pad", version: "0.2.0" },
     { instructions: SERVER_INSTRUCTIONS },
   );
 
@@ -76,6 +104,71 @@ export function createProgressPadServer(user: McpUser) {
 
     const statuses = Object.fromEntries((states.data ?? []).map((row) => [row.trigger_id, row.status]));
     return flattenDayTriggers(plan.assignments[onDate] ?? [], plan.triggers, plan.scenarios, statuses);
+  }
+
+  async function dayAssignments(onDate: string): Promise<DateAssignmentItem[]> {
+    const { data, error } = await supabase
+      .from("date_assignments")
+      .select("kind, trigger_id, scenario_id")
+      .eq("on_date", onDate)
+      .order("position", { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    return (data ?? []).flatMap((row): DateAssignmentItem[] =>
+      row.kind === "trigger" && row.trigger_id
+        ? [{ kind: "trigger", id: row.trigger_id }]
+        : row.kind === "scenario" && row.scenario_id
+          ? [{ kind: "scenario", id: row.scenario_id }]
+          : [],
+    );
+  }
+
+  /** Replace one day's plan, then drop achieved/todo states for triggers no longer on it. */
+  async function writeDay(onDate: string, items: DateAssignmentItem[]) {
+    const { error: deleteError } = await supabase.from("date_assignments").delete().eq("on_date", onDate);
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    if (items.length > 0) {
+      const { error } = await supabase.from("date_assignments").insert(
+        items.map((item, position) => ({
+          user_id: userId,
+          on_date: onDate,
+          kind: item.kind,
+          trigger_id: item.kind === "trigger" ? item.id : null,
+          scenario_id: item.kind === "scenario" ? item.id : null,
+          position,
+        })),
+      );
+      if (error) {
+        throw error;
+      }
+    }
+
+    const keep = new Set((await dayTriggers(onDate)).map((item) => item.id));
+    const { data: states, error: readError } = await supabase
+      .from("date_trigger_states")
+      .select("trigger_id")
+      .eq("on_date", onDate);
+    if (readError) {
+      throw readError;
+    }
+
+    const drop = (states ?? []).map((row) => row.trigger_id).filter((id) => !keep.has(id));
+    if (drop.length > 0) {
+      const { error } = await supabase
+        .from("date_trigger_states")
+        .delete()
+        .eq("on_date", onDate)
+        .in("trigger_id", drop);
+      if (error) {
+        throw error;
+      }
+    }
   }
 
   server.registerTool(
@@ -587,7 +680,7 @@ export function createProgressPadServer(user: McpUser) {
     {
       title: "List triggers",
       description:
-        "The triggers planned for a day (from single triggers and scenarios) and whether each is achieved. Set include_library to also see every trigger in the library.",
+        "The triggers planned for a day (from single triggers and scenarios) and whether each is achieved. Set include_library to also see every trigger and scenario in the library.",
       inputSchema: { date: dateArg, include_library: z.boolean().optional() },
       annotations: { readOnlyHint: true },
     },
@@ -595,21 +688,29 @@ export function createProgressPadServer(user: McpUser) {
       try {
         const onDate = resolveDate(date);
         const planned = await dayTriggers(onDate);
-        let library: { id: string; name: string; emoji: string | null }[] | undefined;
 
-        if (include_library) {
-          const { data, error } = await supabase
-            .from("triggers")
-            .select("id, name, emoji")
-            .is("deleted_at", null)
-            .order("created_at", { ascending: true });
-          if (error) {
-            throw error;
-          }
-          library = data ?? [];
+        if (!include_library) {
+          return json({ date: onDate, planned });
         }
 
-        return json({ date: onDate, planned, ...(library ? { library } : {}) });
+        const [triggers, scenarios] = await Promise.all([
+          loadLibraryTriggers(supabase),
+          loadLibraryScenarios(supabase),
+        ]);
+        const nameById = new Map(triggers.map((item) => [item.id, item.name]));
+
+        return json({
+          date: onDate,
+          planned,
+          library: triggers.map(({ id, name, emoji }) => ({ id, name, emoji })),
+          scenarios: scenarios.map(({ id, name, emoji, description, triggerIds }) => ({
+            id,
+            name,
+            emoji,
+            description,
+            triggers: triggerIds.map((triggerId) => nameById.get(triggerId)).filter(Boolean),
+          })),
+        });
       } catch (error) {
         return fail(error);
       }
@@ -664,6 +765,183 @@ export function createProgressPadServer(user: McpUser) {
         }
 
         return json({ date: onDate, trigger: match.name, status });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "plan_triggers",
+    {
+      title: "Plan triggers onto days",
+      description:
+        "Add library triggers and/or scenarios to one or more days, after anything already planned. Pass names (as in list_triggers with include_library) or ids. Things already on a day are skipped. Use `dates` to plan across several days at once.",
+      inputSchema: {
+        triggers: z.array(z.string().min(1)).max(30).optional().describe("Trigger names or ids"),
+        scenarios: z.array(z.string().min(1)).max(10).optional().describe("Scenario names or ids"),
+        date: dateArg,
+        dates: z
+          .array(z.string())
+          .max(31)
+          .optional()
+          .describe("Several dates (YYYY-MM-DD, today, yesterday). Overrides `date`."),
+      },
+      annotations: { idempotentHint: true },
+    },
+    async ({ triggers, scenarios, date, dates }) => {
+      try {
+        if (!triggers?.length && !scenarios?.length) {
+          throw new Error("Pass at least one trigger or scenario");
+        }
+
+        const [libraryTriggers, libraryScenarios] = await Promise.all([
+          triggers?.length ? loadLibraryTriggers(supabase) : Promise.resolve([]),
+          scenarios?.length ? loadLibraryScenarios(supabase) : Promise.resolve([]),
+        ]);
+        const wanted: (DateAssignmentItem & { name: string })[] = [
+          ...(scenarios ?? []).map((needle) => {
+            const match = matchByName(libraryScenarios, needle, "scenario");
+            return { kind: "scenario" as const, id: match.id, name: match.name };
+          }),
+          ...(triggers ?? []).map((needle) => {
+            const match = matchByName(libraryTriggers, needle, "trigger");
+            return { kind: "trigger" as const, id: match.id, name: match.name };
+          }),
+        ];
+
+        const onDates = [...new Set((dates?.length ? dates : [date]).map((value) => resolveDate(value)))];
+        const results = [];
+
+        for (const onDate of onDates) {
+          const current = await dayAssignments(onDate);
+          const onDay = new Set((await dayTriggers(onDate)).map((item) => item.id));
+          const next = [...current];
+          const added: string[] = [];
+          const skipped: string[] = [];
+
+          for (const item of wanted) {
+            const already =
+              next.some((existing) => existing.kind === item.kind && existing.id === item.id) ||
+              (item.kind === "trigger" && onDay.has(item.id));
+            if (already) {
+              skipped.push(item.name);
+              continue;
+            }
+            next.push({ kind: item.kind, id: item.id });
+            added.push(item.name);
+          }
+
+          if (added.length > 0) {
+            await writeDay(onDate, next);
+          }
+          results.push({ date: onDate, added, alreadyPlanned: skipped });
+        }
+
+        return json({ planned: results });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "unplan_trigger",
+    {
+      title: "Take a trigger off a day",
+      description:
+        "Remove a trigger or a whole scenario from a day's plan. The library keeps it. If the trigger came from a scenario, only that trigger leaves; the scenario's others stay on the day.",
+      inputSchema: {
+        trigger: z.string().min(1).optional().describe("Trigger name or id, as planned for the day"),
+        scenario: z.string().min(1).optional().describe("Scenario name or id, to remove the whole scenario"),
+        date: dateArg,
+      },
+      annotations: { destructiveHint: true, idempotentHint: true },
+    },
+    async ({ trigger, scenario, date }) => {
+      try {
+        if (!trigger === !scenario) {
+          throw new Error("Pass exactly one of `trigger` or `scenario`");
+        }
+
+        const onDate = resolveDate(date);
+        const plan = await loadDatePlan(supabase);
+        const current = plan.assignments[onDate] ?? [];
+        let next: DateAssignmentItem[];
+        let removed: string;
+
+        if (trigger) {
+          const match = matchByName(await dayTriggers(onDate), trigger, `trigger planned for ${onDate}`);
+          next = removeTriggerFromDayAssignments(current, match.id, plan.scenarios);
+          removed = match.name;
+        } else {
+          const plannedScenarios = plan.scenarios.filter((item) =>
+            current.some((existing) => existing.kind === "scenario" && existing.id === item.id),
+          );
+          const match = matchByName(plannedScenarios, scenario!, `scenario planned for ${onDate}`);
+          next = current.filter((item) => !(item.kind === "scenario" && item.id === match.id));
+          removed = match.name;
+        }
+
+        await writeDay(onDate, next);
+        return json({ date: onDate, removed, stillPlanned: (await dayTriggers(onDate)).map((item) => item.name) });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "create_trigger",
+    {
+      title: "Create a trigger",
+      description:
+        "Add a new trigger to the library with a name and an emoji. If one with the same name already exists, that one is returned instead. Optionally plan it onto a day straight away.",
+      inputSchema: {
+        name: z.string().min(1).max(120),
+        emoji: z.string().min(1).max(16),
+        plan_on: z.string().optional().describe('Also plan it onto this date (YYYY-MM-DD, "today", "yesterday")'),
+      },
+    },
+    async ({ name, emoji, plan_on }) => {
+      try {
+        const cleanName = name.trim();
+        const cleanEmoji = emoji.trim();
+        if (!cleanName || !cleanEmoji) {
+          throw new Error("Name and emoji are required");
+        }
+
+        const library = await loadLibraryTriggers(supabase);
+        let trigger = library.find((item) => item.name.trim().toLowerCase() === cleanName.toLowerCase());
+        const existed = Boolean(trigger);
+
+        if (!trigger) {
+          const { data, error } = await supabase
+            .from("triggers")
+            .insert({ user_id: userId, name: cleanName, emoji: cleanEmoji })
+            .select("id, name, emoji, source_key")
+            .single();
+          if (error) {
+            throw error;
+          }
+          trigger = data;
+        }
+
+        let plannedOn: string | undefined;
+        if (plan_on) {
+          plannedOn = resolveDate(plan_on);
+          const current = await dayAssignments(plannedOn);
+          const onDay = (await dayTriggers(plannedOn)).some((item) => item.id === trigger.id);
+          if (!onDay) {
+            await writeDay(plannedOn, [...current, { kind: "trigger", id: trigger.id }]);
+          }
+        }
+
+        return json({
+          trigger: { id: trigger.id, name: trigger.name, emoji: trigger.emoji },
+          alreadyInLibrary: existed,
+          ...(plannedOn ? { plannedOn } : {}),
+        });
       } catch (error) {
         return fail(error);
       }
