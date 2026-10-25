@@ -1,0 +1,1067 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Progress Pad Today</title>
+<script>
+// Follow the app's light/dark choice when shown inside the Dashboard page.
+(function(){
+  try {
+    var host = window.parent && window.parent !== window ? window.parent.document.documentElement : null;
+    if (!host) return;
+    var sync = function(){ var t = host.dataset.theme; if (t) document.documentElement.dataset.theme = t; };
+    sync();
+    new MutationObserver(sync).observe(host, {attributes:true, attributeFilter:["data-theme"]});
+  } catch(e){}
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Dosis:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.3/confetti.browser.min.js"></script>
+<style>
+/* Layout: the Progress Today app in one column. Logo bar, a photo hero holding the Mind Sweep box, then section cards like the app's home page, one open at a time, and a save bar that appears when drafts are waiting. Colours and type are the app's own design tokens. */
+:root{
+  --bg:#F5F6F6; --surface:#FFFFFF; --raised:#FFFFFF; --sunk:#EEEFEF; --line:#DEE0E0; --line-soft:#EEEFEF;
+  --ink:#121414; --ink-2:#4A5352; --muted:#7D8685;
+  --brand:#00872D; --brand-hover:#005A1F; --on-brand:#FFFFFF; --brand-soft:#E4FEEE; --brand-text:#00872D; --spring:#00E14B;
+  --bondi:#007C99; --bondi-soft:#E3F2F7;
+  --warn:#C17000; --warn-soft:#FFF2E2; --err:#C30000; --err-soft:#FFE3DE;
+  --a-pillars:#007C99; --a-triggers:#00872D; --a-mind:#FF8700; --a-done:#00B53B; --a-grat:#0097AF; --a-quotes:#6C3BAA; --a-journal:#B9467E; --a-refl:#2E6CDC;
+  --mark-ink:#FFFFFF;
+  --shadow:0 4px 16px rgba(18,20,20,.08); --shadow-lg:0 12px 32px rgba(18,20,20,.12);
+  --head:"Poppins", "Segoe UI", system-ui, sans-serif;
+  --body:"Dosis", "Avenir Next Condensed", "Segoe UI", system-ui, sans-serif;
+  --r-sm:8px; --r-md:12px; --r-lg:16px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121414; --surface:#252929; --raised:#373E3D; --sunk:#1B1E1E; --line:#373E3D; --line-soft:#2C3131;
+  --ink:#EEEFEF; --ink-2:#BEC2C2; --muted:#9DA4A3;
+  --brand:#00B53B; --brand-hover:#44EF97; --on-brand:#121414; --brand-soft:#002D0F; --brand-text:#44EF97; --spring:#00E14B;
+  --bondi:#50B1C2; --bondi-soft:#00191F;
+  --warn:#FFB862; --warn-soft:#2A1A05; --err:#FF655B; --err-soft:#2A0805;
+  --a-pillars:#50B1C2; --a-triggers:#00B53B; --a-mind:#FF8700; --a-done:#00B53B; --a-grat:#0097AF; --a-quotes:#9B6FD6; --a-journal:#E07AAD; --a-refl:#6E9CF0;
+  --mark-ink:#121414;
+  --shadow:0 4px 16px rgba(0,0,0,.45); --shadow-lg:0 12px 32px rgba(0,0,0,.55);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121414; --surface:#252929; --raised:#373E3D; --sunk:#1B1E1E; --line:#373E3D; --line-soft:#2C3131;
+  --ink:#EEEFEF; --ink-2:#BEC2C2; --muted:#9DA4A3;
+  --brand:#00B53B; --brand-hover:#44EF97; --on-brand:#121414; --brand-soft:#002D0F; --brand-text:#44EF97; --spring:#00E14B;
+  --bondi:#50B1C2; --bondi-soft:#00191F;
+  --warn:#FFB862; --warn-soft:#2A1A05; --err:#FF655B; --err-soft:#2A0805;
+  --a-pillars:#50B1C2; --a-triggers:#00B53B; --a-mind:#FF8700; --a-done:#00B53B; --a-grat:#0097AF; --a-quotes:#9B6FD6; --a-journal:#E07AAD; --a-refl:#6E9CF0;
+  --mark-ink:#121414;
+  --shadow:0 4px 16px rgba(0,0,0,.45); --shadow-lg:0 12px 32px rgba(0,0,0,.55);
+  color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45;font-weight:500;-webkit-font-smoothing:antialiased;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 120px}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:var(--head);text-wrap:balance;margin:0;line-height:1.2;font-weight:600}
+button,textarea,input,select{font:inherit;color:inherit}
+button:not(:disabled){cursor:pointer}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+svg.i{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* top bar */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.logo{height:26px;width:auto;display:block}
+.logo-dark{display:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .logo-light{display:none}:root:not([data-theme="light"]) .logo-dark{display:block}}
+:root[data-theme="dark"] .logo-light{display:none}:root[data-theme="dark"] .logo-dark{display:block}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:var(--shadow)}
+.seg button{border:0;background:none;padding:6px 16px;border-radius:999px;font-weight:600;font-size:15px;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--brand);color:var(--on-brand)}
+
+/* hero */
+.hero{transition:background-image .4s;position:relative;border-radius:var(--r-lg);overflow:hidden;color:#fff;background:#121414 url("hero.jpg") center/cover no-repeat;box-shadow:var(--shadow-lg)}
+.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(160deg,rgba(18,20,20,.78) 0%,rgba(18,20,20,.62) 45%,rgba(0,45,15,.88) 100%)}
+.hero-in{position:relative;padding:22px 20px 20px;display:flex;flex-direction:column;gap:14px}
+.kicker{font-family:var(--head);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--spring)}
+.hero h1{font-size:30px;font-weight:700;color:#fff}
+.hero .sub{color:#DEE0E0;font-size:17px;margin-top:2px}
+.prog{display:flex;flex-direction:column;gap:6px}
+.progtop{display:flex;justify-content:space-between;gap:8px;font-size:15px;color:#DEE0E0;font-weight:600}
+.progtop b{color:#fff;font-family:var(--head);font-weight:600}
+.bar{height:8px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--spring);border-radius:999px;width:0}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:width .5s ease}}
+.talk{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:var(--r-md);padding:14px;display:flex;flex-direction:column;gap:10px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.talktoggle{all:unset;cursor:pointer;display:grid;grid-template-columns:1fr auto;align-items:center;column-gap:8px;width:100%}
+.talktoggle .mq{grid-column:1;color:#EEEFEF;font-size:15px;font-style:italic;line-height:1.35;margin-top:4px}
+.talktoggle .mq b{font-style:normal;font-weight:600;color:#BEC2C2;font-size:13px}
+.talktoggle .ma{grid-column:1;color:var(--spring);font-size:15px;font-weight:600;line-height:1.35;margin-top:4px}
+.talktoggle .chev2{grid-column:2;grid-row:1;color:#fff;font-size:20px;transition:transform .2s}
+.talktoggle[aria-expanded="true"] .chev2{transform:rotate(180deg)}
+.talktoggle:focus-visible{outline:2px solid var(--spring);outline-offset:4px;border-radius:6px}
+.talkbody{display:flex;flex-direction:column;gap:10px}
+.talk h2{font-size:17px;color:#fff;display:flex;align-items:center;gap:8px}
+.talk h2 svg{color:var(--spring);font-size:20px}
+.talk p{margin:0;color:#DEE0E0;font-size:16px}
+.talk textarea{background:#FFFFFF;color:#121414;border:0;border-radius:var(--r-sm);padding:12px;min-height:96px;resize:vertical;width:100%;font-size:17px}
+.talk textarea::placeholder{color:#7D8685}
+.talk .status{font-size:15px;color:#DEE0E0}
+.btn-spring{background:var(--spring);color:#121414}
+.btn-ghost-light{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5)}
+
+/* buttons */
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:1px solid transparent;border-radius:var(--r-sm);padding:9px 16px;font-family:var(--head);font-weight:600;font-size:14px;background:var(--brand);color:var(--on-brand);display:inline-flex;align-items:center;gap:6px;line-height:1.3}
+.btn:hover:not(:disabled){background:var(--brand-hover)}
+.btn.btn-spring:hover:not(:disabled){background:#44EF97}
+.btn.btn-ghost-light:hover:not(:disabled){background:rgba(255,255,255,.12)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.quiet{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.btn.quiet:hover:not(:disabled){background:var(--sunk)}
+
+/* banner */
+.banner{border-radius:var(--r-md);padding:12px 14px;background:var(--warn-soft);color:var(--ink);display:flex;flex-direction:column;gap:8px;border:1px solid color-mix(in srgb,var(--warn) 35%,transparent)}
+.banner b{color:var(--warn)}
+
+/* week strip */
+.week{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 10px 12px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px}
+.wk-top{display:flex;align-items:center;gap:6px}
+.wk-top h2{font-size:15px;font-weight:600;flex:1;min-width:0;padding-left:4px}
+.wk-nav{border:1px solid var(--line);background:var(--surface);color:var(--ink);width:32px;height:32px;border-radius:999px;display:grid;place-items:center;font-size:16px}
+.wk-nav:hover{border-color:var(--brand)}
+.wk-today{border:1px solid var(--line);background:var(--surface);color:var(--brand-text);border-radius:999px;padding:5px 12px;font-family:var(--head);font-weight:600;font-size:12px}
+.wk-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.wd{border:1px solid transparent;background:none;border-radius:12px;padding:6px 0 7px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;color:var(--ink)}
+.wd:hover{background:var(--sunk)}
+.wd .dn{font-family:var(--head);font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted)}
+.wd .ring{position:relative;width:36px;height:36px;display:grid;place-items:center}
+.wd .ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.wd .ring .trk{stroke:var(--line);fill:none;stroke-width:3}
+.wd .ring .val{stroke:var(--brand);fill:none;stroke-width:3;stroke-linecap:round}
+.wd .num{font-family:var(--head);font-weight:600;font-size:14px;position:relative}
+.wd .ct{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1}
+.wd.today .num{color:var(--brand-text)}
+.wd.today .dn{color:var(--brand-text)}
+.wd[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.wd[aria-pressed="true"] .dn,.wd[aria-pressed="true"] .ct,.wd[aria-pressed="true"] .num{color:var(--on-brand)}
+.wd[aria-pressed="true"] .ring .trk{stroke:color-mix(in srgb,var(--on-brand) 30%,transparent)}
+.wd[aria-pressed="true"] .ring .val{stroke:var(--on-brand)}
+.wd.future{opacity:.6}
+.wk-sum{font-size:14px;color:var(--muted);padding:0 4px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.wk-sum b{color:var(--ink);font-family:var(--head);font-weight:600;font-size:13px}
+
+/* tabs */
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px;margin:0 -2px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:7px 14px;font-family:var(--head);font-weight:600;font-size:13px;white-space:nowrap}
+.tab .ct{font-size:11px;padding:1px 7px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.tab[aria-selected="true"] .ct{background:color-mix(in srgb,var(--bg) 22%,transparent);color:var(--bg)}
+.tab.allgood .ct{background:var(--brand-soft);color:var(--brand-text)}
+.viewtabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:4px;box-shadow:var(--shadow)}
+.viewtabs button{border:0;background:none;border-radius:9px;padding:9px 6px;font-family:var(--head);font-weight:600;font-size:14px;color:var(--ink-2);display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2}
+.viewtabs button small{font-family:var(--body);font-weight:500;font-size:13px;color:var(--muted)}
+.viewtabs button[aria-selected="true"]{background:var(--brand);color:var(--on-brand)}
+.viewtabs button[aria-selected="true"] small{color:inherit;opacity:.85}
+.sugg{display:flex;flex-wrap:wrap;gap:6px}
+.sugg button{border:1px dashed var(--line);background:none;border-radius:999px;padding:6px 12px;font-size:15px;color:var(--ink-2)}
+.sugg button:hover:not(:disabled){border-color:var(--brand);color:var(--ink)}
+.empty{font-size:15px;color:var(--muted);margin:0;padding:10px 12px;border-radius:var(--r-sm);background:var(--sunk)}
+
+/* section heading */
+.sechead{display:flex;flex-direction:column;gap:2px;padding:6px 2px 0}
+.sechead h2{font-size:20px}
+.sechead p{margin:0;color:var(--muted);font-size:16px}
+
+/* step cards */
+.steps{display:flex;flex-direction:column;gap:10px}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden}
+.step.open{box-shadow:var(--shadow);border-color:color-mix(in srgb,var(--acc) 55%,var(--line))}
+.stephead{width:100%;display:flex;align-items:center;gap:12px;background:none;border:0;padding:14px;text-align:left}
+.mark{width:38px;height:38px;flex:none;border-radius:10px;display:grid;place-items:center;background:var(--acc);color:var(--mark-ink);font-size:20px}
+.mark.sm{width:28px;height:28px;border-radius:8px;font-size:15px}
+.mark.soft{background:color-mix(in srgb,var(--acc) 14%,var(--surface));color:var(--acc)}
+.htext{flex:1;min-width:0;display:flex;flex-direction:column}
+.htext h3{font-size:16px;font-weight:600}
+.htext span{font-size:15px;color:var(--muted);line-height:1.3}
+.pill{font-family:var(--head);font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap;border:1px solid var(--line);color:var(--ink-2);background:var(--surface)}
+.pill.done{background:var(--brand-soft);color:var(--brand-text);border-color:transparent}
+.pill.draft{background:color-mix(in srgb,var(--a-mind) 16%,var(--surface));color:var(--a-mind);border-color:transparent}
+.chev{color:var(--muted);font-size:18px;transition:transform .2s}
+.step.open .chev{transform:rotate(180deg)}
+.steprow{display:flex;align-items:stretch}
+.steprow .stephead{flex:1;min-width:0}
+.grip{flex:none;width:34px;display:grid;place-items:center;border:0;background:none;color:var(--muted);cursor:grab;touch-action:none;padding:0 0 0 6px;font-size:18px}
+.grip:hover,.grip:focus-visible{color:var(--ink)}
+.grip:active{cursor:grabbing}
+.step.dragging{box-shadow:0 12px 28px rgba(0,0,0,.18);position:relative;z-index:5;border-color:var(--brand)}
+body.reordering{user-select:none;-webkit-user-select:none}
+.orderbar{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;color:var(--muted);padding:0 4px}
+.orderbar button{border:0;background:none;color:var(--brand-text);font-family:var(--head);font-weight:600;font-size:13px;padding:4px 0}
+.stepbody{padding:0 14px 16px;display:flex;flex-direction:column;gap:12px}
+.prompt{font-family:var(--head);font-size:18px;font-weight:500;margin:0;line-height:1.35}
+.stepbody textarea,.field{width:100%;border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 12px;background:var(--surface);color:var(--ink);font-size:17px}
+.stepbody textarea{min-height:104px;resize:vertical}
+.stepbody textarea:focus,.field:focus{outline:none;border-color:var(--ink-2)}
+textarea::placeholder,.field::placeholder{color:var(--muted)}
+.hint{font-size:15px;color:var(--muted);margin:-6px 0 0}
+.lab{font-family:var(--head);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.logged{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.logged li{font-size:16px;padding:9px 12px;border-radius:var(--r-sm);background:var(--sunk);overflow-wrap:anywhere;border-left:3px solid var(--acc)}
+.logged li.lab{background:none;padding:0;border:0}
+.msg{font-size:15px;font-weight:600}
+.msg.err{color:var(--err)}
+.msg.ok{color:var(--brand-text)}
+
+/* pillars */
+.pillars{display:flex;flex-direction:column;gap:10px}
+.pillar{border:1px solid var(--line);border-radius:var(--r-md);padding:12px;display:flex;flex-direction:column;gap:10px}
+.ptop{display:flex;align-items:center;gap:10px}
+.pname{flex:1;min-width:0;display:flex;flex-direction:column}
+.pname b{font-family:var(--head);font-weight:600;font-size:15px}
+.pname span{font-size:14px;color:var(--brand-text)}
+.score{font-family:var(--head);font-size:12px;font-weight:600;padding:4px 12px;border-radius:999px;border:1px solid var(--bondi);background:var(--bondi-soft);color:var(--bondi);white-space:nowrap}
+.score.empty{border-color:var(--line);background:none;color:var(--muted)}
+.pmeta{font-size:14px;color:var(--muted)}
+.pmeta.drop{color:var(--warn);font-weight:700}
+.scale{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.scale button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 0;font-family:var(--head);font-weight:600;font-size:13px;min-width:0;color:var(--ink-2)}
+.scale button:hover{border-color:var(--bondi)}
+.scale button[aria-pressed="true"]{background:var(--bondi);border-color:var(--bondi);color:#fff}
+.scale button.past{background:var(--bondi-soft);border-color:transparent;color:var(--bondi)}
+
+/* ticks */
+.ticks{display:flex;flex-direction:column;gap:6px;list-style:none;margin:0;padding:0}
+.tick{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-md);padding:10px 12px;font-size:16px}
+.tick:hover:not(:disabled){border-color:var(--brand)}
+.tick .box{width:22px;height:22px;flex:none;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;color:var(--on-brand);font-size:14px}
+.tick[aria-pressed="true"]{background:color-mix(in srgb,var(--brand) 7%,var(--surface))}
+.tick[aria-pressed="true"] .box{background:var(--brand);border-color:var(--brand)}
+.tick[aria-pressed="true"] .tt{color:var(--muted);text-decoration:line-through}
+.tick .em{font-size:18px;width:24px;text-align:center;flex:none}
+.tick .tt{flex:1;min-width:0;overflow-wrap:anywhere}
+.tick .when{font-family:var(--head);font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;text-transform:uppercase;letter-spacing:.06em}
+.tick:disabled{opacity:.6}
+.linkbtn{background:none;border:0;padding:0;color:var(--brand-text);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+a{color:var(--brand-text)}
+
+/* save bar */
+.savebar{position:fixed;left:0;right:0;bottom:0;z-index:5;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:color-mix(in srgb,var(--surface) 92%,transparent);border-top:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.savebar-in{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.savebar-in .txt{flex:1;min-width:160px;font-size:15px;color:var(--ink-2)}
+.savebar-in .txt b{color:var(--ink);font-family:var(--head);font-weight:600;font-size:14px;display:block}
+.foot{text-align:center;color:var(--muted);font-size:15px;padding:6px 8px}
+.foot button{margin-top:6px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:6;background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-family:var(--head);font-weight:600;font-size:14px;max-width:calc(100% - 32px);box-shadow:var(--shadow-lg);text-align:center}
+@media (min-width:640px){.hero-in{padding:28px 28px 24px}.hero h1{font-size:36px}.stephead{padding:16px 18px}.stepbody{padding:0 18px 18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="week" aria-label="Choose a day">
+    <div class="wk-top">
+      <button class="wk-nav" id="wk-prev" aria-label="Previous week"><svg class="i" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+      <h2 id="wk-label"></h2>
+      <button class="wk-today" id="wk-today" hidden>Today</button>
+      <button class="wk-nav" id="wk-next" aria-label="Next week"><svg class="i" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+    </div>
+    <div class="wk-days" id="wk-days"></div>
+    <div class="wk-sum" id="wk-sum"></div>
+  </section>
+
+  <section class="hero" aria-labelledby="hero-h">
+    <div class="hero-in">
+      <div>
+        <div class="kicker">Back to the T</div>
+        <h1 id="hero-h">Personal Progression</h1>
+        <div class="sub" id="datelabel"></div>
+      </div>
+      <div class="prog" aria-live="polite">
+        <div class="progtop"><span>Engage for growth</span><b id="progtext"></b></div>
+        <div class="bar"><i id="progbar"></i></div>
+      </div>
+      <div class="talk">
+        <button class="talktoggle" id="talktoggle" aria-expanded="false" aria-controls="talkbody"><h2><svg class="i" viewBox="0 0 24 24"><path d="M9 4a3 3 0 0 0-3 3v.3A3 3 0 0 0 4 10a3 3 0 0 0 1.2 2.4A3 3 0 0 0 7 17.5a3 3 0 0 0 5 1.3V6a2.5 2.5 0 0 0-3-2zM15 4a3 3 0 0 1 3 3v.3A3 3 0 0 1 20 10a3 3 0 0 1-1.2 2.4A3 3 0 0 1 17 17.5a3 3 0 0 1-5 1.3"/></svg>Mind Sweep</h2><span class="mq" id="mq"></span><span class="ma" id="ma"></span><svg class="i chev2" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div id="talkbody" class="talkbody" hidden>
+        <p>Unload everything that's on your mind. Say it with your phone's mic or Wispr Flow, or type it, one thing per line. Each line becomes a Mind Sweep item, and you check them before they save.</p>
+        <textarea id="dump" aria-label="Everything on your mind" placeholder="For example: Need to call the bank about the card, sort laundry, reply to Sam's email, and I keep thinking about the proposal deadline..."></textarea>
+        <div class="row">
+          <button class="btn btn-spring" id="sort">Sweep my mind</button>
+          <button class="btn btn-ghost-light" id="stop" hidden>Stop</button>
+          <span class="status" id="sortstatus" aria-live="polite"></span>
+        </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <div class="viewtabs" role="tablist" aria-label="When">
+    <button role="tab" id="v-am" aria-selected="false">Morning<small id="v-am-c"></small></button>
+    <button role="tab" id="v-pm" aria-selected="false">Evening<small id="v-pm-c"></small></button>
+    <button role="tab" id="v-all" aria-selected="false">Everything<small id="v-all-c"></small></button>
+  </div>
+  <div class="orderbar" id="orderbar" hidden><span>Drag the dots to put sections in your order.</span><button id="orderreset" hidden>Reset order</button></div>
+  <div class="steps" id="steps"></div>
+
+  <div class="foot">
+    You can also just tell Claude in a chat with your Progress Pad connector, and it will fill in your pad for you.<br>
+    <button class="btn quiet" id="copyall">Copy my notes for the chat</button>
+  </div>
+</div>
+
+<div class="savebar" id="savebar" hidden>
+  <div class="savebar-in">
+    <div class="txt"><b id="draftcount"></b><span id="draftsum"></span></div>
+    <button class="btn" id="saveall">Save all to my pad</button>
+  </div>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+// Inside the website, every read and write goes through /api/pad as the signed-in user,
+// using the same tools Claude uses through the MCP connector.
+const API = "/api/pad";
+const PILLARS = [["mentally","Mentally"],["emotionally","Emotionally"],["professionally","Professionally"],["physically","Physically"],["socially","Socially"],["romantically","Romantically"]];
+const STEPS = [
+  {key:"pillars", when:"am", title:"Six Pillars", desc:"Rate each pillar and capture its context", icon:"chart", acc:"--a-pillars", prompt:"How are you doing today? Rate each pillar from 1 to 10."},
+  {key:"triggers", when:"am", title:"Today's triggers", desc:"Small actions over time create big change", icon:"bolt", acc:"--a-triggers", prompt:"Plan your triggers, then tick them off as you go."},
+  {key:"gratitude", when:"am", kind:"gratitude", section:"Gratitude", title:"Daily Gratitude", desc:"Ground your day with conscious appreciation", icon:"sparkle", acc:"--a-grat", prompt:"What are you grateful for today?", hint:"One thing per line.", ph:"Today I am grateful for...", save:"Add entry", multi:true},
+  {key:"mind", when:"am", title:"Mind Sweep", desc:"Clear your mental RAM: thoughts, ideas, to-dos", icon:"brain", acc:"--a-mind", prompt:"What's on your mind? Unload every open loop.", hint:"One thing per line. Tick older ones off below when they're done.", ph:"Unload a thought, idea, or mental clutter...", save:"Capture"},
+  {key:"done", when:"pm", kind:"done", section:"Done List", title:"Done List", desc:"Log completed achievements and celebrate momentum", icon:"check", acc:"--a-done", prompt:"What did you get done today, planned or not?", hint:"One win per line. Small ones count.", ph:"What did you get done?", save:"Achieved", multi:true},
+  {key:"quotes", when:"pm", kind:"quotes", section:"Quotes", title:"Impactful Quotes", desc:"Quotes to anchor your mindset today", icon:"quote", acc:"--a-quotes", prompt:"Any words that stuck with you today?", hint:"One quote per line.", ph:"Write or paste an inspiring quote...", save:"Save quote", multi:true},
+  {key:"journal", when:"pm", kind:"journal", section:"Let's Journal", title:"Let's Journal", desc:"What's on your heart or mind today", icon:"book", acc:"--a-journal", prompt:"What happened today, and how did it feel?", hint:"Write as much as you like. It saves as one entry.", ph:"Reflect on your day: feelings, thoughts, mindset shifts...", save:"Save journal"},
+  {key:"reflections", when:"pm", kind:"reflections", section:"Reflections", title:"Reflections", desc:"Key lessons and insights discovered today", icon:"bulb", acc:"--a-refl", prompt:"What did today teach you? What would you do differently?", hint:"It saves as one entry.", ph:"Today I learned that...", save:"Log lesson"}
+];
+const PILLAR_INFO = {
+  mentally:{icon:"brain", desc:"Focus, clarity, learning, cognitive alertness.", ph:"How clear and focused has your mind felt today?"},
+  emotionally:{icon:"smile", desc:"Peace of mind, resilience, mood balance.", ph:"What has your emotional state been like today?"},
+  professionally:{icon:"case", desc:"Execution, leverage, career milestones.", ph:"How satisfied have you felt with your work today?"},
+  physically:{icon:"barbell", desc:"Energy, workout, hydration, nutrition, sleep.", ph:"How has your body been feeling today?"},
+  socially:{icon:"users", desc:"Friendships, conversations, family presence.", ph:"How connected have you felt to people today?"},
+  romantically:{icon:"heart", desc:"Love, intimacy, partnership.", ph:"How connected have you felt in love today?"}
+};
+const ICONS = {
+  chart:'<path d="M4 19h16M5 15l4-5 4 3 6-7"/>',
+  bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  sparkle:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z"/>',
+  brain:'<path d="M9 4a3 3 0 0 0-3 3v.3A3 3 0 0 0 4 10a3 3 0 0 0 1.2 2.4A3 3 0 0 0 7 17.5a3 3 0 0 0 5 1.3V6a2.5 2.5 0 0 0-3-2zM15 4a3 3 0 0 1 3 3v.3A3 3 0 0 1 20 10a3 3 0 0 1-1.2 2.4A3 3 0 0 1 17 17.5a3 3 0 0 1-5 1.3"/>',
+  check:'<circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.7 2.7L16.5 9"/>',
+  quote:'<path d="M5 17c2-1 3-3 3-6V7H4v4h4M14 17c2-1 3-3 3-6V7h-4v4h4"/>',
+  book:'<path d="M4 19V5a2 2 0 0 1 2-2h14v14H6a2 2 0 0 0-2 2 2 2 0 0 0 2 2h14M8 7h8"/>',
+  bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.8 10.6c.6.5.8 1.2.8 1.9V16h6v-.5c0-.7.2-1.4.8-1.9A6 6 0 0 0 12 3z"/>',
+  smile:'<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4 4 0 0 0 7 0M9 10h.01M15 10h.01"/>',
+  case:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',
+  barbell:'<path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/>',
+  users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0M16 5.2a3 3 0 0 1 0 5.6M18 14.3A5.5 5.5 0 0 1 21 19.5"/>',
+  heart:'<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z"/>',
+  chev:'<path d="m6 9 6 6 6-6"/>'
+};
+const PILLAR_SHORT = {mentally:"Mental", emotionally:"Emotional", professionally:"Professional", physically:"Physical", socially:"Social", romantically:"Romantic"};
+// Kheron's own trigger library, sorted into the six pillars. New triggers are sorted by keyword.
+const TRIG_CAT = {
+  "get pipeline update!":"professionally","review high-level pipeline":"professionally","sync with va":"professionally","check diary and events":"professionally",
+  "review recent meeting action points":"professionally","identify required client slides":"professionally","content - record. edit. filter. caption. schedule. save.":"professionally",
+  "schedule for mind sweep tasks":"professionally","start a 25-minute pomodoro focus block":"professionally","take a 5-minute pomodoro break":"professionally",
+  "sort tasks with the eisenhower matrix":"professionally","clear your inbox to zero":"professionally","review your top 3 goals for the week":"professionally",
+  "plan tomorrow":"professionally","review what's unfinished":"professionally","money management":"professionally","lock in 1 win":"professionally",
+  "edit content":"professionally","filtering":"professionally","captioning":"professionally","scheduling":"professionally","write down 3 wins from today":"professionally",
+  "call rachael from hartpury college  to confirm new bank details":"professionally",
+  "mind sweep":"mentally","do a brain dump of everything on your mind":"mentally","journal your thoughts for 5 minutes":"mentally","read for 10 minutes":"mentally",
+  "learn something new for 10 minutes":"mentally","take 5 minutes of stillness":"mentally","do a 2-minute breathing exercise":"mentally","wind down screens 30 minutes before bed":"mentally",
+  "minimal":"mentally","the alignment hour":"mentally","rap record":"mentally",
+  "have a prayerful moment":"emotionally","reflect on one thing you're grateful for":"emotionally","set a boundary between work and home time":"emotionally",
+  "listen to affirmations":"emotionally","bible study":"emotionally","solo nature walk:":"emotionally",
+  "exercise":"physically","25 push-ups x 4":"physically","25 press ups":"physically","go for a walk":"physically","stretch for 5 minutes":"physically","drink water":"physically",
+  "cook a healthy meal":"physically","get 10 minutes of sunlight or fresh air":"physically","take the stairs":"physically","take a proper lunch break away from your desk":"physically",
+  "make your bed":"physically","make my bed":"physically","tidy my workspace":"physically","tidy up":"physically","declutter your room for 10 minutes":"physically",
+  "laundry":"physically","tidy up the car":"physically",
+  "check in with a family member or friend":"socially","give someone a genuine compliment":"socially","schedule time with a friend this week":"socially",
+  "act of service":"socially","do one random act of kindness":"socially","drop off khera to performing arts":"socially"
+};
+const TRIG_WORDS = [
+  ["romantically",/\b(date night|partner|wife|husband|girlfriend|boyfriend|romant|love)\b/i],
+  ["socially",/\b(friend|family|call (mum|dad|my)|kindness|compliment|service|community|drop off)\b/i],
+  ["physically",/\b(walk|run|gym|exercise|workout|push|press|stretch|water|sleep|meal|cook|tidy|clean|bed|laundry|declutter|sunlight|stairs)\b/i],
+  ["emotionally",/\b(pray|grateful|gratitude|affirmation|boundar|bible|faith|church|nature)\b/i],
+  ["mentally",/\b(read|learn|journal|breath|stillness|meditat|mind|brain|screen|focus hour)\b/i]
+];
+function trigCat(t){
+  const name = String(t.name||"").trim().toLowerCase();
+  if (TRIG_CAT[name]) return TRIG_CAT[name];
+  for (const [k,re] of TRIG_WORDS) if (re.test(name)) return k;
+  return "professionally";
+}
+function icon(name){ const n=document.createElementNS("http://www.w3.org/2000/svg","svg"); n.setAttribute("class","i"); n.setAttribute("viewBox","0 0 24 24"); n.setAttribute("aria-hidden","true"); n.innerHTML=ICONS[name]||""; return n; }
+function celebrate(){
+  try { if (window.confetti && !matchMedia("(prefers-reduced-motion: reduce)").matches) window.confetti({particleCount:70, spread:70, origin:{y:.8}, colors:["#00E14B","#00872D","#FF8700","#0097AF","#FFFFFF"], disableForReducedMotion:true}); } catch(e){}
+}
+const TEXT_KEYS = ["gratitude","mind","done","quotes","journal","reflections"];
+
+let sample = null, ready = false;
+const S = {
+  offset: 0, date: "", day: null, prev: null, triggers: [], loadErr: null,
+  open: 0, view: "", trigTab: "all", showAll: {}, drafts: {}, pillars: {}, pnotes: {}, busy: {}, msgs: {}, showAllOpen: false
+};
+
+/* ---------- dates (Europe/London) ---------- */
+function londonDate(daysBack){
+  const d = new Date(Date.now() - daysBack*864e5);
+  return new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
+}
+function shiftDate(iso, n){ const d = new Date(iso+"T12:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+function niceDate(iso){ return new Date(iso+"T12:00:00Z").toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",timeZone:"UTC"}); }
+function shortDate(iso){ return new Date(iso+"T12:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short",timeZone:"UTC"}); }
+
+/* ---------- drafts kept in this browser until saved ---------- */
+function draftKey(){ return "ppad-drafts-"+S.date; }
+function loadDrafts(){
+  S.drafts = {}; S.pillars = {}; S.pnotes = {};
+  try { const v = JSON.parse(localStorage.getItem(draftKey())||"null"); if (v){ S.drafts=v.drafts||{}; S.pillars=v.pillars||{}; S.pnotes=v.pnotes||{}; } } catch(e){}
+}
+function saveDrafts(){
+  try { localStorage.setItem(draftKey(), JSON.stringify({drafts:S.drafts,pillars:S.pillars,pnotes:S.pnotes})); } catch(e){}
+}
+
+/* ---------- connector ---------- */
+async function call(tool, input){
+  let res;
+  try {
+    res = await fetch(API, {method:"POST", headers:{"content-type":"application/json"}, credentials:"same-origin", body:JSON.stringify({tool, input})});
+  } catch(e){ throw {code:"server_unavailable"}; }
+  const data = await res.json().catch(()=>null);
+  if (!data) throw {code: res.redirected || res.status===401 ? "unauthorized" : "server_unavailable"};
+  if (data.error) throw data.error;
+  return data.payload;
+}
+function errText(e){
+  const c = e && e.code;
+  if (c === "unauthorized") return "You've been signed out. Refresh the page and sign in again.";
+  if (c === "server_unavailable") return "Your Progress Pad didn't answer just now. Give it a moment and try again.";
+  if (c === "tool_error") return "Your Progress Pad said no: " + (e.message || "something went wrong") + ".";
+  return "Something went wrong reaching your Progress Pad. Try again in a moment.";
+}
+const PAGE_LEVEL = new Set(["unauthorized"]);
+
+async function load(){
+  S.loadErr = null;
+  const d = S.date, p = shiftDate(d,-1);
+  try {
+    const [day, prev, trig] = await Promise.all([
+      call("get_day",{date:d}),
+      call("get_day",{date:p}).catch(()=>null),
+      call("list_triggers",{date:d, include_library:true}).catch(()=>null)
+    ]);
+    if (S.date !== d) return;
+    S.day = day; S.prev = prev; S.week[d] = day;
+    S.triggers = (trig && trig.planned) || (day && day.triggers) || [];
+    S.library = (trig && trig.library) || [];
+    S.scenarios = (trig && trig.scenarios) || [];
+    // start on the first step with nothing logged yet
+    if (!ready){ if (!S.view) S.view = defaultView(); S.open = firstOpen(); }
+    ready = true;
+  } catch(e){
+    S.loadErr = e;
+  }
+  render();
+}
+
+/* ---------- state helpers ---------- */
+function written(section){ const w = S.day && S.day.writing; return (w && w[section]) || []; }
+function isDone(s){ return S.day ? doneFor(s, S.day, S.triggers) : false; }
+function doneFor(s, day, triggers){
+  if (s.key==="pillars") return PILLARS.some(([k])=>day.pillars && day.pillars[k] != null);
+  if (s.key==="triggers"){ triggers = triggers || day.triggers || []; return triggers.length>0 && triggers.every(t=>t.status==="achieved"); }
+  if (s.key==="mind") return (day.mindSweep||[]).length>0;
+  const w = day.writing && day.writing[s.section]; return !!(w && w.length);
+}
+
+/* ---------- week strip ---------- */
+const TODAY = () => londonDate(0);
+function weekStart(iso){ const d = new Date(iso+"T12:00:00Z"); const wd = (d.getUTCDay()+6)%7; return shiftDate(iso,-wd); }
+S.week = {}; S.weekOf = "";
+async function loadWeek(force){
+  const ws = weekStart(S.date);
+  if (ws === S.weekOf && !force) return;
+  S.weekOf = ws;
+  const days = Array.from({length:7},(_,k)=>shiftDate(ws,k));
+  await Promise.all(days.map(async d=>{
+    if (S.week[d] && !force) return;
+    try { const day = await call("get_day",{date:d}); S.week[d] = day; } catch(e){ /* leave blank */ }
+  }));
+  if (S.weekOf === ws) renderWeek();
+}
+function renderWeek(){
+  const ws = weekStart(S.date), today = TODAY();
+  const days = Array.from({length:7},(_,k)=>shiftDate(ws,k));
+  const a = new Date(ws+"T12:00:00Z"), b = new Date(days[6]+"T12:00:00Z");
+  const fmt = (d,o)=>d.toLocaleDateString("en-GB",{timeZone:"UTC",...o});
+  $("wk-label").textContent = a.getUTCMonth()===b.getUTCMonth() ? fmt(a,{day:"numeric"})+" \u2013 "+fmt(b,{day:"numeric",month:"long"}) : fmt(a,{day:"numeric",month:"short"})+" \u2013 "+fmt(b,{day:"numeric",month:"short"});
+  $("wk-today").hidden = S.date===today;
+  const box = $("wk-days"); box.replaceChildren();
+  let wins=0, filledDays=0, trigDone=0, trigAll=0;
+  for (const d of days){
+    const day = S.week[d];
+    const n = day ? STEPS.filter(s=>doneFor(s, day, d===S.date ? S.triggers : null)).length : 0;
+    if (day){ wins += ((day.writing && day.writing["Done List"])||[]).length; if (n) filledDays++; const tr = (d===S.date ? S.triggers : day.triggers)||[]; trigAll += tr.length; trigDone += tr.filter(t=>t.status==="achieved").length; }
+    const dt = new Date(d+"T12:00:00Z");
+    const C = 2*Math.PI*15.5, frac = n/STEPS.length;
+    const ring = document.createElementNS("http://www.w3.org/2000/svg","svg");
+    ring.setAttribute("viewBox","0 0 36 36"); ring.setAttribute("aria-hidden","true");
+    ring.innerHTML = '<circle class="trk" cx="18" cy="18" r="15.5"/>' + (n ? '<circle class="val" cx="18" cy="18" r="15.5" stroke-dasharray="'+(C*frac).toFixed(1)+' '+C.toFixed(1)+'"/>' : '');
+    box.append(el("button",{class:"wd"+(d===today?" today":"")+(d>today?" future":""), "aria-pressed": d===S.date,
+      "aria-label": fmt(dt,{weekday:"long",day:"numeric",month:"long"})+(day ? ", "+n+" of "+STEPS.length+" sections filled" : ""),
+      onclick:()=>setDate(d)},
+      el("span",{class:"dn", text: fmt(dt,{weekday:"short"}).toUpperCase()}),
+      el("span",{class:"ring"}, ring, el("span",{class:"num", text:String(dt.getUTCDate())})),
+      el("span",{class:"ct", text: day ? (d>today && !n ? "\u00a0" : n+"/"+STEPS.length) : "\u00a0"})));
+  }
+  const sum = $("wk-sum"); sum.replaceChildren();
+  if (Object.keys(S.week).length){
+    sum.append(el("span",null, el("b",{text:String(filledDays)}), " days logged"),
+      el("span",null, el("b",{text:String(wins)}), wins===1?" win":" wins"),
+      el("span",null, el("b",{text: trigAll ? trigDone+"/"+trigAll : "0"}), " triggers"));
+  }
+}
+function hasDraft(s){
+  if (s.key==="pillars") return Object.keys(S.pillars).length>0 || Object.keys(S.pnotes).some(k=>S.pnotes[k]);
+  if (s.key==="triggers") return false;
+  return !!(S.drafts[s.key]||"").trim();
+}
+function stateLabel(s){
+  if (!S.day) return "";
+  if (s.key==="pillars"){ const n = PILLARS.filter(([k])=>S.day.pillars && S.day.pillars[k]!=null).length; return n ? n+" of 6 rated" : "Not rated"; }
+  if (s.key==="triggers"){ if (!S.triggers.length) return "None planned"; const n=S.triggers.filter(t=>t.status==="achieved").length; return n+" of "+S.triggers.length+" done"; }
+  if (s.key==="mind"){ const n=(S.day.mindSweep||[]).length; return n ? n+" added" : "Empty"; }
+  const n = written(s.section).length; return n ? n+(n===1?" entry":" entries") : "Empty";
+}
+function lines(t){ return (t||"").split(/\n+/).map(x=>x.replace(/^\s*[-*•]\s*/,"").trim()).filter(Boolean); }
+function entryText(e){ return typeof e === "string" ? e : (e && (e.text || e.title)) || ""; }
+
+/* ---------- render ---------- */
+const $ = id => document.getElementById(id);
+function el(tag, attrs, ...kids){
+  const n = document.createElement(tag);
+  for (const k in (attrs||{})){
+    const v = attrs[k];
+    if (k==="class") n.className=v; else if (k==="text") n.textContent=v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (k.startsWith("aria-")) n.setAttribute(k, String(v));
+    else if (v===true) n.setAttribute(k,""); else if (v!==false && v!=null) n.setAttribute(k,v);
+  }
+  for (const c of kids.flat()) if (c!=null) n.append(c);
+  return n;
+}
+
+function render(){
+  $("datelabel").textContent = niceDate(S.date);
+  renderWeek();
+
+  // banner
+  const b = $("banner"); b.replaceChildren();
+  const pageErr = S.loadErr && PAGE_LEVEL.has(S.loadErr.code);
+  if (S.loadErr){
+    b.append(el("div",null, el("b",{text: pageErr ? "Signed out. " : "Couldn't load your pad. "}), errText(S.loadErr)));
+    const retry = el("button",{class:"btn", onclick:()=>{ if (pageErr){ (window.top||window).location.href="/login"; return; } b.hidden=true; load(); }, text: pageErr ? "Sign in" : "Try again"});
+    b.append(el("div",{class:"row"}, retry));
+    b.hidden = false;
+  } else if (!ready){
+    b.append(el("div",null,"Opening your Progress Pad…")); b.hidden = false;
+  } else b.hidden = true;
+
+  // progress
+  const doneN = ready ? STEPS.filter(isDone).length : 0;
+  $("progtext").textContent = ready ? doneN+" of "+STEPS.length+" sections filled" : "";
+  $("progbar").style.width = (ready ? Math.round(doneN/STEPS.length*100) : 0)+"%";
+
+  // steps
+  const wrap = $("steps"); const focusId = document.activeElement && document.activeElement.id;
+  wrap.replaceChildren();
+  // view tabs
+  if (!S.view) S.view = defaultView();
+  paintHero();
+  for (const v of ["am","pm","all"]){
+    const b2 = $("v-"+v); b2.setAttribute("aria-selected", S.view===v);
+    const list = STEPS.filter(s=> v==="all" || s.when===v);
+    $("v-"+v+"-c").textContent = ready ? list.filter(isDone).length+" of "+list.length+" done" : (v==="am"?"Start the day":v==="pm"?"Close the day":"All 8");
+  }
+  const canDrag = S.view==="all";
+  $("orderbar").hidden = !canDrag;
+  $("orderreset").hidden = S.order.join()===DEFAULT_ORDER.join();
+  ordered().forEach(i=>{
+    const s = STEPS[i];
+    if (!inView(s)) return;
+    const open = S.open===i;
+    const card = el("section",{class:"step"+(open?" open":""), style:"--acc:var("+s.acc+")", "data-key":s.key});
+    const draft = hasDraft(s), done = isDone(s);
+    const head = el("button",{class:"stephead","aria-expanded":open, id:"head-"+s.key, onclick:()=>{ S.open = open ? -1 : i; render(); }},
+      el("span",{class:"mark"}, icon(s.icon)),
+      el("span",{class:"htext"}, el("h3",{text:s.title}), el("span",{text:s.desc})),
+      el("span",{class:"pill"+(draft?" draft":done?" done":""), text: draft ? "Not saved" : (done && s.key!=="triggers" ? "\u2713 " : "")+stateLabel(s)}),
+      el("span",{class:"chev"}, icon("chev")));
+    if (canDrag){
+      const grip = el("button",{class:"grip", "aria-label":"Move "+s.title+". Use the arrow keys, or drag.", title:"Drag to reorder"}, "\u283F");
+      grip.addEventListener("pointerdown", e=>startDrag(e, card));
+      grip.addEventListener("keydown", e=>{ if (e.key==="ArrowUp"||e.key==="ArrowDown"){ e.preventDefault(); moveKey(s.key, e.key==="ArrowUp"?-1:1); } });
+      grip.id = "grip-"+s.key;
+      card.append(el("div",{class:"steprow"}, grip, head));
+    } else card.append(head);
+    if (open) card.append(body(s,i));
+    wrap.append(card);
+  });
+  if (focusId && $(focusId)) { const f=$(focusId); f.focus({preventScroll:true}); if (f.setSelectionRange && f.value!=null && f.tagName==="TEXTAREA") { const L=f.value.length; f.setSelectionRange(L,L);} }
+
+  saveBar();
+  $("saveall").textContent = S.busy.all ? "Saving\u2026" : "Save all to my pad";
+}
+function moveKey(key, d){
+  const o = S.order, i = o.indexOf(key), j = i+d;
+  if (j<0 || j>=o.length) return;
+  [o[i],o[j]] = [o[j],o[i]]; saveOrder(); render(); const g=$("grip-"+key); if (g) g.focus();
+}
+function startDrag(e, card){
+  if (e.button!=null && e.button!==0) return;
+  e.preventDefault();
+  if (card.classList.contains("open")){ const k = card.dataset.key; S.open = -1; render(); card = document.querySelector('#steps > [data-key="'+k+'"]'); }
+  const wrap = $("steps"), grab = e.clientY - card.getBoundingClientRect().top;
+  let moved = false; const startY = e.clientY;
+  card.classList.add("dragging"); document.body.classList.add("reordering");
+  const onMove = ev=>{
+    const y = ev.clientY; if (Math.abs(y-startY)>4) moved = true;
+    let before = null;
+    for (const c of wrap.children){ if (c===card) continue; const r = c.getBoundingClientRect(); if (y < r.top + r.height/2){ before = c; break; } }
+    if (before){ if (before !== card.nextElementSibling) wrap.insertBefore(card, before); }
+    else if (card !== wrap.lastElementChild) wrap.append(card);
+    card.style.transform = "";
+    const top = card.getBoundingClientRect().top;
+    card.style.transform = "translateY("+(y - grab - top)+"px)";
+    if (y < 60) window.scrollBy(0,-12); else if (y > innerHeight-60) window.scrollBy(0,12);
+  };
+  const onUp = ()=>{
+    removeEventListener("pointermove", onMove); removeEventListener("pointerup", onUp); removeEventListener("pointercancel", onUp);
+    card.classList.remove("dragging"); card.style.transform = ""; document.body.classList.remove("reordering");
+    if (!moved) return;
+    const shown = [...wrap.children].map(c=>c.dataset.key);
+    const rest = S.order.filter(k=>!shown.includes(k));
+    S.order = shown.concat(rest); saveOrder(); render();
+  };
+  addEventListener("pointermove", onMove); addEventListener("pointerup", onUp); addEventListener("pointercancel", onUp);
+}
+$("orderreset").onclick = ()=>{ S.order = DEFAULT_ORDER.slice(); saveOrder(); render(); };
+function saveBar(){
+  const pending = STEPS.filter(hasDraft);
+  $("savebar").hidden = !pending.length;
+  $("draftcount").textContent = pending.length+" section"+(pending.length>1?"s":"")+" waiting to save";
+  $("draftsum").textContent = pending.map(s=>s.title).join(", ");
+  $("saveall").disabled = !pending.length || !ready || S.busy.all;
+}
+
+function defaultView(){
+  try { const v = localStorage.getItem("ppad-view"); if (v==="am"||v==="pm"||v==="all") return v; } catch(e){}
+  const h = Number(new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",hour:"numeric",hourCycle:"h23"}).format(new Date()));
+  return S.date===TODAY() && h < 14 ? "am" : "pm";
+}
+const DEFAULT_ORDER = ["triggers","mind","done","gratitude","quotes","journal","reflections","pillars"];
+function loadOrder(){
+  let o = null; try { o = JSON.parse(localStorage.getItem("ppad-order")||"null"); } catch(e){}
+  const keys = STEPS.map(x=>x.key);
+  o = Array.isArray(o) ? o.filter(k=>keys.includes(k)) : DEFAULT_ORDER.slice();
+  for (const k of keys) if (!o.includes(k)) o.push(k);
+  return o;
+}
+S.order = loadOrder();
+function saveOrder(){ try { localStorage.setItem("ppad-order", JSON.stringify(S.order)); } catch(e){} }
+function ordered(){ return S.order.map(k=>STEPS.findIndex(x=>x.key===k)); }
+function firstOpen(){ const o = ordered(); const i = o.find(j=>inView(STEPS[j]) && !isDone(STEPS[j])); return i!=null ? i : o.find(j=>inView(STEPS[j])); }
+function inView(s){ return S.view==="all" || s.when===S.view; }
+function setView(v){
+  S.view = v; try { localStorage.setItem("ppad-view", v); } catch(e){}
+  if (S.open<0 || !inView(STEPS[S.open])) S.open = firstOpen();
+  S.msgs = {}; render();
+}
+function msgEl(key){
+  const m = S.msgs[key]; if (!m) return "";
+  return el("div",{class:"msg "+(m.ok?"ok":"err"), "aria-live":"polite", text:m.text});
+}
+function nextBtn(i){
+  const o = ordered(); let k = o.indexOf(i)+1; while (k < o.length && !inView(STEPS[o[k]])) k++;
+  if (k >= o.length) return null; const j = o[k];
+  return el("button",{class:"btn quiet", onclick:()=>{ S.open=j; S.msgs={}; render(); $("head-"+STEPS[j].key).scrollIntoView({block:"start",behavior:"smooth"}); }, text:"Next: "+STEPS[j].title});
+}
+
+function body(s,i){
+  const box = el("div",{class:"stepbody"});
+  box.append(el("p",{class:"prompt", text:s.prompt}));
+  if (s.key==="pillars") pillarsBody(box,i);
+  else if (s.key==="triggers") triggersBody(box,i);
+  else if (s.key==="mind") mindBody(box,s,i);
+  else writingBody(box,s,i);
+  return box;
+}
+
+function pillarsBody(box,i){
+  const today = (S.day && S.day.pillars) || {}, prev = (S.prev && S.prev.pillars) || {};
+  const list = el("div",{class:"pillars"});
+  for (const [k,label] of PILLARS){
+    const info = PILLAR_INFO[k];
+    const cur = S.pillars[k] != null ? S.pillars[k] : today[k];
+    const y = prev[k];
+    let meta = y != null ? "Yesterday "+y+"/10" : "";
+    let drop = false;
+    if (y != null && cur != null && y - cur >= 3){ meta = "Down "+(y-cur)+" from yesterday. What's going on here?"; drop = true; }
+    const scale = el("div",{class:"scale", role:"group", "aria-label":label+" rating"});
+    for (let n=1;n<=10;n++) scale.append(el("button",{"aria-pressed": cur===n, class: cur!=null && n<cur ? "past" : null, "aria-label":label+" "+n, text:String(n), onclick:()=>{ S.pillars[k]=n; saveDrafts(); render(); }}));
+    const note = el("input",{class:"field", id:"pn-"+k, type:"text", placeholder:info.ph, value:S.pnotes[k]||"", oninput:e=>{ S.pnotes[k]=e.target.value; saveDrafts(); refreshLight(); }, onchange:()=>render()});
+    list.append(el("div",{class:"pillar"},
+      el("div",{class:"ptop"}, el("span",{class:"mark sm soft"}, icon(info.icon)),
+        el("span",{class:"pname"}, el("b",{text:label}), el("span",{text:info.desc})),
+        el("span",{class:"score"+(cur==null?" empty":""), text:(cur==null?"\u2013":cur)+"/10"})),
+      scale, meta ? el("div",{class:"pmeta"+(drop?" drop":""), text:meta}) : null, note));
+  }
+  box.append(list);
+  const save = el("button",{class:"btn", disabled: !hasDraft(STEPS[0]) || S.busy.pillars || !ready, onclick:()=>savePillars(true), text: S.busy.pillars ? "Saving\u2026" : "Save ratings"});
+  box.append(el("div",{class:"row"}, save, nextBtn(i)), msgEl("pillars"));
+}
+
+function triggersBody(box,i){
+  const cats = PILLARS.map(([k])=>k);
+  const byCat = {}; for (const k of cats) byCat[k]=[];
+  for (const t of S.triggers) byCat[trigCat(t)].push(t);
+  const tab = S.trigTab || "all";
+  const tabs = el("div",{class:"tabs", role:"tablist", "aria-label":"Trigger pillars"});
+  const mk = (id,label,list)=>{
+    const done = list.filter(t=>t.status==="achieved").length;
+    return el("button",{class:"tab"+(list.length && done===list.length?" allgood":""), role:"tab", "aria-selected":tab===id, onclick:()=>{ S.trigTab=id; render(); }},
+      label, el("span",{class:"ct", text: list.length ? done+"/"+list.length : "0"}));
+  };
+  tabs.append(mk("all","All",S.triggers));
+  // busiest pillars first, empty ones last
+  const order = cats.map((k,ix)=>[k,ix]).sort((a,b)=> byCat[b[0]].length - byCat[a[0]].length || a[1]-b[1]).map(x=>x[0]);
+  for (const k of order) tabs.append(mk(k,PILLAR_SHORT[k],byCat[k]));
+  box.append(tabs);
+
+  const shown = tab==="all" ? S.triggers : byCat[tab];
+  if (!shown.length){
+    box.append(el("p",{class:"empty", text: tab==="all" ? "No triggers planned for this day yet. Add one below, or plan a whole scenario." : "Nothing planned for "+PILLAR_SHORT[tab].toLowerCase()+" yet. Use Add a trigger below."}));
+  } else {
+    const ul = el("ul",{class:"ticks"});
+    for (const t of shown){
+      const on = t.status==="achieved";
+      ul.append(el("li",null, el("button",{class:"tick","aria-pressed":on, disabled:!!S.busy["t-"+t.id], onclick:()=>toggleTrigger(t)},
+        el("span",{class:"box","aria-hidden":"true", text:on?"\u2713":""}),
+        el("span",{class:"em","aria-hidden":"true", text:t.emoji||"\u2728"}),
+        el("span",{class:"tt", text:t.name}),
+        tab==="all" ? el("span",{class:"when", text:PILLAR_SHORT[trigCat(t)]}) : null)));
+    }
+    box.append(ul);
+  }
+
+  // adding is tucked away until asked for
+  const planned = new Set(S.triggers.map(t=>t.id));
+  if (!S.addOpen){
+    box.append(el("div",{class:"row"},
+      el("button",{class:"btn quiet", onclick:()=>{ S.addOpen=true; render(); }, text:"+ Add a trigger"}), nextBtn(i)), msgEl("triggers"));
+    return;
+  }
+  const lib = (S.library||[]).filter(t=>!planned.has(t.id) && (tab==="all" || trigCat(t)===tab));
+  if (lib.length){
+    const sel = el("select",{class:"field", id:"trig-pick", "aria-label":"Add from your library", style:"flex:1;min-width:0", onchange:e=>{ S.trigPick=e.target.value; }},
+      el("option",{value:"", text: tab==="all" ? "Choose from your library\u2026" : "Choose a "+PILLAR_SHORT[tab].toLowerCase()+" trigger\u2026"}));
+    const groups = tab==="all" ? cats : [tab];
+    for (const k of groups){
+      const items = lib.filter(t=>trigCat(t)===k).sort((a,b)=>a.name.localeCompare(b.name));
+      if (!items.length) continue;
+      const parent = tab==="all" ? el("optgroup",{label:PILLAR_SHORT[k]}) : sel;
+      for (const t of items){ const o = el("option",{value:t.name, text:(t.emoji?t.emoji+"  ":"")+t.name}); if (t.name===S.trigPick) o.selected=true; parent.append(o); }
+      if (parent!==sel) sel.append(parent);
+    }
+    const addSel = el("button",{class:"btn", disabled:!!S.busy.addTrig||!ready, onclick:()=>{ if (!S.trigPick){ S.msgs.triggers={ok:false,text:"Choose a trigger first."}; render(); return; } const n=S.trigPick; S.trigPick=""; addTrigger(n); }, text:S.busy.addTrig?"Adding\u2026":"Add"});
+    box.append(el("div",{class:"row"}, sel, addSel));
+  }
+  const inp = el("input",{class:"field", id:"trig-new", type:"text", style:"flex:1;min-width:0", placeholder:"Or type a new one, e.g. Drink water", value:S.trigNew||"",
+    oninput:e=>{ S.trigNew=e.target.value; }, onkeydown:e=>{ if (e.key==="Enter"){ e.preventDefault(); addTrigger(); } }});
+  box.append(el("div",{class:"row"}, inp, el("button",{class:"btn quiet", disabled:!!S.busy.addTrig||!ready, onclick:()=>addTrigger(), text:"Add"})));
+  if (tab==="all" && (S.scenarios||[]).length){
+    const sc = el("select",{class:"field", id:"scen", "aria-label":"Scenario", style:"flex:1;min-width:0", onchange:e=>{ S.scen=e.target.value; }},
+      el("option",{value:"", text:"Or plan a whole scenario\u2026"}),
+      S.scenarios.map(x=>{ const o=el("option",{value:x.id||x.name, text:(x.emoji?x.emoji+" ":"")+(x.name||x.title||"Scenario")}); if ((x.id||x.name)===S.scen) o.selected=true; return o; }));
+    box.append(el("div",{class:"row"}, sc, el("button",{class:"btn quiet", disabled:!!S.busy.scen||!ready, onclick:planScenario, text:S.busy.scen?"Planning\u2026":"Plan"})));
+  }
+  box.append(el("div",{class:"row"}, el("button",{class:"btn quiet", onclick:()=>{ S.addOpen=false; render(); }, text:"Done adding"}), nextBtn(i)), msgEl("triggers"));
+}
+
+async function addTrigger(fromLib){
+  const typed = typeof fromLib !== "string";
+  const name = (typed ? (S.trigNew||"") : fromLib).trim();
+  if (!name){ S.msgs.triggers={ok:false,text:"Type a trigger name first."}; render(); return; }
+  S.busy.addTrig=true; render();
+  try {
+    const r = await call("add_trigger",{name:name.slice(0,200), date:S.date});
+    if (typed) S.trigNew="";
+    S.msgs.triggers={ok:true,text: r && r.alreadyPlanned ? "That one was already planned." : "Added to this day"+(r && r.createdInLibrary ? ", and saved to your library." : ".")};
+  } catch(e){ S.msgs.triggers={ok:false,text: e && e.code==="tool_error" && /unknown tool|not found/i.test(e.message||"") ? "Adding triggers isn't switched on in your Progress Pad yet." : errText(e)}; }
+  finally { S.busy.addTrig=false; await load(); }
+}
+async function planScenario(){
+  if (!S.scen){ S.msgs.triggers={ok:false,text:"Choose a scenario first."}; render(); return; }
+  S.busy.scen=true; render();
+  try { await call("plan_scenario",{scenario:S.scen, date:S.date}); S.msgs.triggers={ok:true,text:"Scenario planned for this day."}; S.scen=""; }
+  catch(e){ S.msgs.triggers={ok:false,text:errText(e)}; }
+  finally { S.busy.scen=false; await load(); }
+}
+
+function mindBody(box,s,i){
+  box.append(el("p",{class:"hint", text:s.hint}));
+  box.append(textarea(s));
+  const save = el("button",{class:"btn", disabled:!hasDraft(s)||S.busy.mind||!ready, onclick:()=>saveMind(true), text:S.busy.mind?"Saving…":s.save});
+  box.append(el("div",{class:"row"}, save, nextBtn(i)), msgEl("mind"));
+
+  const todayItems = (S.day && S.day.mindSweep) || [];
+  const older = (S.day && S.day.openMindSweepFromEarlierDays) || [];
+  const all = [...todayItems.map(x=>({...x, on_date:S.date})), ...older.map(x=>({...x, status:"todo"}))];
+  if (all.length){
+    const shown = S.showAllOpen ? all : all.slice(0,5);
+    const ul = el("ul",{class:"ticks"});
+    for (const it of shown){
+      const on = it.status==="achieved";
+      ul.append(el("li",null, el("button",{class:"tick","aria-pressed":on, disabled:on||!!S.busy["m-"+it.id], onclick:()=>tickSweep(it)},
+        el("span",{class:"box","aria-hidden":"true", text:on?"✓":""}),
+        el("span",{class:"tt", text: it.title.length>160 ? it.title.slice(0,157)+"…" : it.title}),
+        el("span",{class:"when", text: it.on_date===S.date ? "today" : shortDate(it.on_date)}))));
+    }
+    box.append(el("div",{class:"logged"}, el("span",{class:"lab", text:"Open loops ("+all.filter(x=>x.status!=="achieved").length+"). Tick one when it's done and it goes on your Done list."})), ul);
+    if (all.length>5) box.append(el("div",null, el("button",{class:"linkbtn", onclick:()=>{ S.showAllOpen=!S.showAllOpen; render(); }, text: S.showAllOpen ? "Show fewer" : "Show all "+all.length})));
+  }
+}
+
+function writingBody(box,s,i){
+  box.append(el("p",{class:"hint", text:s.hint}));
+  box.append(textarea(s));
+  const save = el("button",{class:"btn", disabled:!hasDraft(s)||S.busy[s.key]||!ready, onclick:()=>saveWriting(s,true), text:S.busy[s.key]?"Saving\u2026":s.save});
+  box.append(el("div",{class:"row"}, save, nextBtn(i)), msgEl(s.key));
+  const got = written(s.section);
+  if (got.length){
+    const ul = el("ul",{class:"logged"}, el("li",{class:"lab", text:"Already in your pad"}));
+    const all = !!S.showAll[s.key], list = all ? got : got.slice(-2);
+    if (!all && got.length>2) ul.append(el("li",{class:"lab", style:"text-transform:none;letter-spacing:0"}, el("button",{class:"linkbtn", onclick:()=>{ S.showAll[s.key]=true; render(); }, text:"Show all "+got.length})));
+    for (const e of list) ul.append(el("li",{text: entryText(e)}));
+    box.append(ul);
+  }
+}
+
+function textarea(s){
+  return el("textarea",{id:"ta-"+s.key, "aria-label":s.prompt, placeholder: s.ph,
+    oninput:e=>{ S.drafts[s.key]=e.target.value; saveDrafts(); refreshLight(); }}, S.drafts[s.key]||"");
+}
+// update counters without rebuilding the textarea under the cursor
+function refreshLight(){
+  saveBar();
+  const s = STEPS[S.open]; if (!s) return;
+  const btn = document.querySelector(".step.open .stepbody > .row .btn:not(.quiet)");
+  if (btn && !S.busy[s.key]) btn.disabled = !hasDraft(s) || !ready;
+}
+
+/* ---------- saving ---------- */
+function toast(t){ const n=$("toast"); n.textContent=t; n.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>{n.hidden=true},2600); }
+
+async function savePillars(single){
+  const ratings = PILLARS.map(([k])=>k).filter(k=>S.pillars[k]!=null || (S.pnotes[k]||"").trim()).map(k=>{
+    const r = S.pillars[k]!=null ? S.pillars[k] : (S.day && S.day.pillars && S.day.pillars[k]);
+    const o = {pillar:k, rating:r}; if ((S.pnotes[k]||"").trim()) o.notes = S.pnotes[k].trim().slice(0,2000); return o;
+  }).filter(o=>o.rating!=null);
+  if (!ratings.length){ S.msgs.pillars={ok:false,text:"Pick a number for a pillar before adding a note."}; render(); return false; }
+  S.busy.pillars = true; render();
+  try {
+    await call("rate_pillars",{date:S.date, ratings});
+    for (const r of ratings){ delete S.pillars[r.pillar]; delete S.pnotes[r.pillar]; }
+    saveDrafts(); S.msgs.pillars={ok:true,text:"Saved "+ratings.length+" rating"+(ratings.length>1?"s":"")+" to your pad."};
+    if (single) toast("Ratings saved");
+    return true;
+  } catch(e){ S.msgs.pillars={ok:false,text:errText(e)}; return false; }
+  finally { S.busy.pillars=false; if (single) await load(); }
+}
+
+async function saveMind(single){
+  const items = lines(S.drafts.mind).map(t=>({title:t.slice(0,300)}));
+  if (!items.length) return true;
+  S.busy.mind = true; render();
+  try {
+    for (let k=0;k<items.length;k+=50) await call("mind_sweep",{date:S.date, items:items.slice(k,k+50)});
+    S.drafts.mind=""; saveDrafts(); S.msgs.mind={ok:true,text:"Added "+items.length+" to your Mind Sweep."};
+    if (single) toast("Mind Sweep saved");
+    return true;
+  } catch(e){ S.msgs.mind={ok:false,text:errText(e)}; return false; }
+  finally { S.busy.mind=false; if (single) await load(); }
+}
+
+function splitLong(t){
+  if (t.length<=500) return {text:t};
+  let cut = t.lastIndexOf(" ", 480); if (cut<200) cut = 480;
+  return {text:t.slice(0,cut).trim()+"…", notes:t.slice(0,10000)};
+}
+async function saveWriting(s, single){
+  const raw = (S.drafts[s.key]||"").trim(); if (!raw) return true;
+  const entries = s.multi ? lines(raw).map(splitLong) : [splitLong(raw)];
+  S.busy[s.key] = true; render();
+  let done = 0;
+  try {
+    for (const e of entries){ await call("add_entry",{date:S.date, kind:s.kind, ...e}); done++; }
+    S.drafts[s.key]=""; saveDrafts(); S.msgs[s.key]={ok:true,text:"Saved to your pad."};
+    if (single){ toast(s.title+" saved"); if (s.key==="done") celebrate(); }
+    return true;
+  } catch(e){
+    // keep only what didn't save, so pressing Save again won't double up
+    if (s.multi && done){ S.drafts[s.key] = lines(raw).slice(done).join("\n"); saveDrafts(); }
+    S.msgs[s.key]={ok:false,text:(done?done+" saved, the rest didn't. ":"")+errText(e)}; return false;
+  }
+  finally { S.busy[s.key]=false; if (single) await load(); }
+}
+
+async function toggleTrigger(t){
+  const to = t.status==="achieved" ? "todo" : "achieved";
+  S.busy["t-"+t.id]=true; render();
+  try { await call("set_trigger_status",{date:S.date, trigger:t.id, status:to}); t.status=to; delete S.msgs.triggers; if (to==="achieved") { toast(t.name+" ticked"); celebrate(); } }
+  catch(e){ S.msgs.triggers={ok:false,text:errText(e)}; }
+  finally { delete S.busy["t-"+t.id]; render(); }
+}
+
+async function tickSweep(it){
+  S.busy["m-"+it.id]=true; render();
+  try {
+    await call("update_mind_sweep_item",{id:it.id, status:"achieved"});
+    try { await call("add_entry",{date:S.date, kind:"done", text:it.title.slice(0,500)}); toast("Done! Added to your Done list"); celebrate(); }
+    catch(e){ toast("Ticked off. It didn't reach your Done list."); }
+  } catch(e){ S.msgs.mind={ok:false,text:errText(e)}; }
+  finally { delete S.busy["m-"+it.id]; await load(); }
+}
+
+async function saveAll(){
+  S.busy.all = true; render();
+  const results = [];
+  for (const s of STEPS){
+    if (!hasDraft(s)) continue;
+    let ok;
+    if (s.key==="pillars") ok = await savePillars(false);
+    else if (s.key==="mind") ok = await saveMind(false);
+    else ok = await saveWriting(s,false);
+    results.push([s.title, ok]);
+  }
+  S.busy.all = false;
+  const bad = results.filter(r=>!r[1]);
+  toast(bad.length ? "Some parts didn't save: "+bad.map(r=>r[0]).join(", ") : "All saved to your Progress Pad");
+  if (!bad.length) celebrate();
+  await load();
+}
+
+/* ---------- talk it out ---------- */
+let sortCtl = null;
+async function sortDump(){
+  const words = $("dump").value.trim();
+  const st = $("sortstatus");
+  if (!words){ st.textContent = "Say or type something first."; return; }
+  if (!sample){ S.drafts.mind = ((S.drafts.mind||"").trim()+"\n"+lines(words).join("\n")).trim(); saveDrafts(); $("dump").value=""; S.open = STEPS.findIndex(x=>x.key==="mind"); render(); st.textContent = "Added to Mind Sweep below. Press Capture to save."; return; }
+  sortCtl = new AbortController();
+  $("sort").disabled = true; $("stop").hidden = false; st.textContent = "Sweeping…";
+  const prompt = `Someone is doing a "Mind Sweep": unloading every open loop on their mind so they can think clearly. Turn their words below into separate Mind Sweep items.
+
+Rules:
+- One item per task, worry, idea or reminder. Split run-on sentences into separate items.
+- Keep their own words and meaning. Start with a verb where it's natural ("Call", "Reply to", "Decide on").
+- Keep each item short, under 15 words. Drop filler like "um" and "I need to".
+- Never invent anything they didn't say. Ignore anything that is not an open loop.
+
+Reply with only a JSON array of strings, for example ["Call the bank about the card", "Sort the laundry"].
+
+Their words:
+"""
+${words.slice(0,20000)}
+"""`;
+  try {
+    const r = await sample.json(prompt, {signal: sortCtl.signal, cache:false});
+    const items = (Array.isArray(r) ? r : (r && Array.isArray(r.items) ? r.items : [])).map(x=>String(x).trim()).filter(Boolean);
+    if (items.length){
+      const cur = (S.drafts.mind||"").trim();
+      S.drafts.mind = (cur ? cur+"\n" : "") + items.join("\n");
+      saveDrafts();
+      st.textContent = items.length+" item"+(items.length>1?"s":"")+" ready. Check them in Mind Sweep below, then press Capture.";
+      $("dump").value = ""; try{ localStorage.removeItem("ppad-dump"); }catch(_){}
+      S.open = STEPS.findIndex(x=>x.key==="mind");
+      if (S.view==="pm") S.view = "am";
+      render();
+      const h = $("head-mind"); if (h) h.scrollIntoView({block:"start", behavior:"smooth"});
+    } else st.textContent = "Claude couldn't find any open loops in that. Try saying a bit more.";
+  } catch(e){
+    const c = e && e.code;
+    st.textContent = c==="cancelled" ? "Stopped." :
+      c==="not_granted"||c==="sampling_disabled"||c==="not_declared"||c==="capability_disabled"||c==="capability_removed" ? "Sweeping with Claude isn't allowed here. Type your items straight into Mind Sweep below, one per line." :
+      c==="rate_limited" ? "Claude is busy right now. Try again in a minute." :
+      c==="invalid_json" ? "That didn't come back right. Press Sweep my mind again." :
+      "That didn't work this time. Your words are still in the box, so try again.";
+  } finally { $("sort").disabled=false; $("stop").hidden=true; sortCtl=null; }
+}
+
+/* ---------- copy for chat ---------- */
+async function copyAll(){
+  const parts = [];
+  const pr = PILLARS.filter(([k])=>S.pillars[k]!=null).map(([k,l])=>l+" "+S.pillars[k]);
+  if (pr.length) parts.push("Pillars: "+pr.join(", "));
+  for (const s of STEPS) if (TEXT_KEYS.includes(s.key) && (S.drafts[s.key]||"").trim()) parts.push(s.title+":\n"+S.drafts[s.key].trim());
+  if ($("dump").value.trim()) parts.push($("dump").value.trim());
+  const text = parts.length ? "Please add this to my Progress Pad for "+niceDate(S.date)+".\n\n"+parts.join("\n\n") : "";
+  if (!text){ toast("Nothing to copy yet"); return; }
+  try { await navigator.clipboard.writeText(text); toast("Copied. Paste it into the chat."); }
+  catch(e){ const t=$("dump"); t.value=text; t.focus(); t.select(); toast("Selected in the box above. Copy it from there."); }
+}
+
+/* ---------- wiring ---------- */
+function setDate(d){
+  if (S.date===d) return;
+  S.date=d; S.day=S.week[d]||null; S.prev=null; S.triggers=[]; S.msgs={}; S.showAll={}; ready=false; loadDrafts(); render(); load(); loadWeek();
+}
+$("wk-prev").onclick=()=>setDate(shiftDate(S.date,-7));
+$("wk-next").onclick=()=>setDate(shiftDate(S.date,7));
+$("wk-today").onclick=()=>setDate(TODAY());
+$("v-am").onclick=()=>setView("am");
+$("v-pm").onclick=()=>setView("pm");
+$("v-all").onclick=()=>setView("all");
+$("sort").onclick=sortDump;
+const SWEEP_QUOTES = [
+  ["Your mind is for having ideas, not holding them.","David Allen"],
+  ["Almost everything will work again if you unplug it for a few minutes, including you.","Anne Lamott"],
+  ["Nothing is so fatiguing as the eternal hanging on of an uncompleted task.","William James"],
+  ["You can do anything, but not everything.","David Allen"],
+  ["Clutter is nothing more than postponed decisions.","Barbara Hemphill"],
+  ["The key is not to prioritize what's on your schedule, but to schedule your priorities.","Stephen Covey"]
+];
+const AFFIRMATIONS = [
+  "My mind is clear, and I choose what deserves my energy today.",
+  "I let go of what I can't control and act on what I can.",
+  "Every loop I close makes room for my best ideas.",
+  "I am calm, focused and moving forward one step at a time.",
+  "I don't have to carry it all. Writing it down is the first win.",
+  "I am the architect of my day, not just the operator.",
+  "Progress, not perfection. Today I show up."
+];
+function dayIndex(n){ const d = new Date(TODAY()+"T12:00:00Z"); return Math.floor(d.getTime()/864e5) % n; }
+function paintSweepHeader(){
+  const [q,a] = SWEEP_QUOTES[dayIndex(SWEEP_QUOTES.length)];
+  $("mq").replaceChildren("\u201c"+q+"\u201d ", el("b",{text:"\u2014 "+a}));
+  $("ma").textContent = AFFIRMATIONS[(dayIndex(AFFIRMATIONS.length)+3) % AFFIRMATIONS.length];
+}
+const HERO_IMG = {am:"hero.jpg", pm:"evening.jpg", all:"city.jpg"};
+function paintHero(){ const h = document.querySelector(".hero"); if (h) h.style.backgroundImage = 'url("'+(HERO_IMG[S.view]||HERO_IMG.am)+'")'; }
+paintSweepHeader();
+function setTalk(open){ $("talkbody").hidden=!open; $("talktoggle").setAttribute("aria-expanded",open); if (open) $("dump").focus(); }
+$("talktoggle").onclick=()=>setTalk($("talkbody").hidden);
+$("stop").onclick=()=>sortCtl&&sortCtl.abort();
+$("saveall").onclick=saveAll;
+$("copyall").onclick=copyAll;
+try { const d=localStorage.getItem("ppad-dump"); if (d){ $("dump").value=d; $("talkbody").hidden=false; $("talktoggle").setAttribute("aria-expanded","true"); } } catch(e){}
+$("dump").addEventListener("input",e=>{ try{ localStorage.setItem("ppad-dump", e.target.value); }catch(_){} });
+
+S.date = londonDate(0);
+loadDrafts();
+render();
+load(); loadWeek();
+</script>
+</body>
+</html>
