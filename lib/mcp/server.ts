@@ -29,7 +29,7 @@ const SERVER_INSTRUCTIONS = `Progress Pad is a personal journal and habit dashbo
 - Six Life Pillars: daily 1-10 ratings for mentally, emotionally, professionally, physically, socially, romantically. A drop of 3+ points is a "disaster pattern" worth gently asking about.
 - Writing sections per day: gratitude, quotes, journal ("Let's Journal"), reflections, and done (the Done List of wins).
 - Mind Sweep: a brain dump of open loops, each todo or achieved.
-- Triggers: small habit cues planned onto days (directly or through scenarios), each todo or achieved for that day.
+- Triggers: small habit cues kept in a library and planned onto days, one at a time or as scenarios (saved routines). Each is todo or achieved for that day.
 Write what the user said in their own words. Nothing here deletes data; deleting stays in the app.`;
 
 function json(value: unknown) {
@@ -44,6 +44,18 @@ function fail(error: unknown) {
         ? String((error as { message: unknown }).message)
         : "Something went wrong";
   return { content: [{ type: "text" as const, text: message }], isError: true };
+}
+
+/** Matches by id, then exact name, then a single partial name match. */
+function pickByName<T extends { id: string; name: string }>(items: readonly T[], query: string) {
+  const value = query.trim();
+  const needle = value.toLowerCase();
+  const partial = items.filter((item) => item.name.toLowerCase().includes(needle));
+  return (
+    items.find((item) => item.id === value) ??
+    items.find((item) => item.name.toLowerCase() === needle) ??
+    (partial.length === 1 ? partial[0] : undefined)
+  );
 }
 
 function checkRange(from: string, to: string) {
@@ -76,6 +88,63 @@ export function createProgressPadServer(user: McpUser) {
 
     const statuses = Object.fromEntries((states.data ?? []).map((row) => [row.trigger_id, row.status]));
     return flattenDayTriggers(plan.assignments[onDate] ?? [], plan.triggers, plan.scenarios, statuses);
+  }
+
+  async function libraryTriggers() {
+    const { data, error } = await supabase
+      .from("triggers")
+      .select("id, name, emoji")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true });
+    if (error) {
+      throw error;
+    }
+    return data ?? [];
+  }
+
+  async function libraryScenarios() {
+    const { data, error } = await supabase
+      .from("scenarios")
+      .select("id, name, emoji, description")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true });
+    if (error) {
+      throw error;
+    }
+    return data ?? [];
+  }
+
+  /** Appends a trigger or scenario to a day's plan, like dropping it onto a date in the app. */
+  async function planOnDate(kind: "trigger" | "scenario", id: string, onDate: string) {
+    const { data, error } = await supabase
+      .from("date_assignments")
+      .select("kind, trigger_id, scenario_id, position")
+      .eq("on_date", onDate);
+    if (error) {
+      throw error;
+    }
+
+    const rows = data ?? [];
+    const exists = rows.some((row) =>
+      kind === "trigger" ? row.trigger_id === id : row.scenario_id === id,
+    );
+    if (exists) {
+      return false;
+    }
+
+    const position = rows.reduce((max, row) => Math.max(max, row.position + 1), 0);
+    const { error: insertError } = await supabase.from("date_assignments").insert({
+      user_id: userId,
+      on_date: onDate,
+      kind,
+      trigger_id: kind === "trigger" ? id : null,
+      scenario_id: kind === "scenario" ? id : null,
+      position,
+    });
+    if (insertError) {
+      throw insertError;
+    }
+    return true;
   }
 
   server.registerTool(
@@ -587,7 +656,7 @@ export function createProgressPadServer(user: McpUser) {
     {
       title: "List triggers",
       description:
-        "The triggers planned for a day (from single triggers and scenarios) and whether each is achieved. Set include_library to also see every trigger in the library.",
+        "The triggers planned for a day (from single triggers and scenarios) and whether each is achieved. Set include_library to also see every trigger and scenario in the library.",
       inputSchema: { date: dateArg, include_library: z.boolean().optional() },
       annotations: { readOnlyHint: true },
     },
@@ -595,21 +664,12 @@ export function createProgressPadServer(user: McpUser) {
       try {
         const onDate = resolveDate(date);
         const planned = await dayTriggers(onDate);
-        let library: { id: string; name: string; emoji: string | null }[] | undefined;
-
-        if (include_library) {
-          const { data, error } = await supabase
-            .from("triggers")
-            .select("id, name, emoji")
-            .is("deleted_at", null)
-            .order("created_at", { ascending: true });
-          if (error) {
-            throw error;
-          }
-          library = data ?? [];
+        if (!include_library) {
+          return json({ date: onDate, planned });
         }
 
-        return json({ date: onDate, planned, ...(library ? { library } : {}) });
+        const [library, scenarios] = await Promise.all([libraryTriggers(), libraryScenarios()]);
+        return json({ date: onDate, planned, library, scenarios });
       } catch (error) {
         return fail(error);
       }
@@ -633,14 +693,7 @@ export function createProgressPadServer(user: McpUser) {
       try {
         const onDate = resolveDate(date);
         const planned = await dayTriggers(onDate);
-        const needle = trigger.trim().toLowerCase();
-        const match =
-          planned.find((item) => item.id === trigger.trim()) ??
-          planned.find((item) => item.name.toLowerCase() === needle) ??
-          (() => {
-            const partial = planned.filter((item) => item.name.toLowerCase().includes(needle));
-            return partial.length === 1 ? partial[0] : undefined;
-          })();
+        const match = pickByName(planned, trigger);
 
         if (!match) {
           return fail(
@@ -664,6 +717,99 @@ export function createProgressPadServer(user: McpUser) {
         }
 
         return json({ date: onDate, trigger: match.name, status });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "add_trigger",
+    {
+      title: "Add a trigger",
+      description:
+        "Add a trigger to a day's plan. Uses the trigger from the library if one with that name exists, otherwise creates it. Set plan to false to only add it to the library.",
+      inputSchema: {
+        name: z.string().min(1).max(120),
+        emoji: z.string().max(16).optional().describe("One emoji for the trigger. Pick a fitting one if the user gives none."),
+        date: dateArg,
+        plan: z.boolean().optional().describe("Plan it onto the day (default true)"),
+      },
+    },
+    async ({ name, emoji, date, plan }) => {
+      try {
+        const onDate = resolveDate(date);
+        const title = name.trim();
+        if (!title) {
+          throw new Error("Name is required");
+        }
+
+        const library = await libraryTriggers();
+        let trigger = library.find((item) => item.name.trim().toLowerCase() === title.toLowerCase());
+        const created = !trigger;
+
+        if (!trigger) {
+          const { data, error } = await supabase
+            .from("triggers")
+            .insert({ user_id: userId, name: title, emoji: emoji?.trim() || "✨" })
+            .select("id, name, emoji")
+            .single();
+          if (error) {
+            throw error;
+          }
+          trigger = data;
+        }
+
+        if (plan === false) {
+          return json({ trigger, createdInLibrary: created, planned: false });
+        }
+
+        const alreadyPlanned = (await dayTriggers(onDate)).some((item) => item.id === trigger.id);
+        const added = alreadyPlanned ? false : await planOnDate("trigger", trigger.id, onDate);
+
+        return json({
+          trigger,
+          createdInLibrary: created,
+          date: onDate,
+          planned: true,
+          alreadyPlanned: !added,
+        });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "plan_scenario",
+    {
+      title: "Plan a scenario",
+      description:
+        "Add a scenario (a saved routine of triggers) from the library to a day's plan. Pass its id or name; list_triggers with include_library shows them.",
+      inputSchema: {
+        scenario: z.string().min(1).describe("Scenario id or name"),
+        date: dateArg,
+      },
+    },
+    async ({ scenario, date }) => {
+      try {
+        const onDate = resolveDate(date);
+        const scenarios = await libraryScenarios();
+        const match = pickByName(scenarios, scenario);
+
+        if (!match) {
+          return fail(
+            new Error(
+              `No single scenario matching "${scenario}". Scenarios: ${
+                scenarios.map((item) => item.name).join(", ") || "none"
+              }.`,
+            ),
+          );
+        }
+
+        const added = await planOnDate("scenario", match.id, onDate);
+        const planned = await dayTriggers(onDate);
+        return json({ scenario: match.name, date: onDate, alreadyPlanned: !added, planned });
       } catch (error) {
         return fail(error);
       }

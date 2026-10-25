@@ -18,7 +18,7 @@ type OAuthConsentProps = {
 
 const ACCESS = [
   "Read your daily pad, pillar ratings, triggers, mind sweep and journal entries",
-  "Add and edit entries, ratings, mind sweep items and trigger ticks",
+  "Add and edit entries, ratings, mind sweep items and triggers",
   "It cannot delete anything or change your account",
 ];
 
