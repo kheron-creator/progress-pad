@@ -9,6 +9,13 @@ import { addDays, MCP_TIME_ZONE, resolveDate, todayIso } from "@/lib/mcp/dates";
 import { flattenDayTriggers, isMissingTimesDone, loadDatePlan } from "@/lib/triggers/store";
 
 const WRITING_KINDS = ["gratitude", "quotes", "journal", "reflections", "done"] as const;
+const SWEEP_PRIORITIES = ["do", "schedule", "delegate", "drop"] as const;
+
+function isMissingPriority(error: { code?: string; message?: string } | null) {
+  return Boolean(
+    error && (error.code === "42703" || error.code === "PGRST204") && /priority/.test(error.message ?? ""),
+  );
+}
 
 const WRITING_LABELS: Record<WritingKind, string> = {
   gratitude: "Gratitude",
@@ -622,25 +629,31 @@ export function createProgressPadServer(user: McpUser) {
     },
     async ({ status, from, to, limit }) => {
       try {
-        let query = supabase
-          .from("mind_sweep_items")
-          .select("id, on_date, title, notes, status")
-          .order("on_date", { ascending: false })
-          .order("sort_order", { ascending: true })
-          .limit(limit ?? 100);
+        const run = (columns: string) => {
+          let query = supabase
+            .from("mind_sweep_items")
+            .select(columns)
+            .order("on_date", { ascending: false })
+            .order("sort_order", { ascending: true })
+            .limit(limit ?? 100);
 
-        const wanted = status ?? "todo";
-        if (wanted !== "all") {
-          query = query.eq("status", wanted);
-        }
-        if (from) {
-          query = query.gte("on_date", resolveDate(from));
-        }
-        if (to) {
-          query = query.lte("on_date", resolveDate(to));
-        }
+          const wanted = status ?? "todo";
+          if (wanted !== "all") {
+            query = query.eq("status", wanted);
+          }
+          if (from) {
+            query = query.gte("on_date", resolveDate(from));
+          }
+          if (to) {
+            query = query.lte("on_date", resolveDate(to));
+          }
+          return query;
+        };
 
-        const { data, error } = await query;
+        let { data, error } = await run("id, on_date, title, notes, status, priority, sort_order");
+        if (isMissingPriority(error)) {
+          ({ data, error } = await run("id, on_date, title, notes, status, sort_order"));
+        }
         if (error) {
           throw error;
         }
@@ -657,20 +670,28 @@ export function createProgressPadServer(user: McpUser) {
     {
       title: "Update a mind sweep item",
       description:
-        "Mark a Mind Sweep item achieved or back to todo, rename it, change its notes, or move it to another day.",
+        "Mark a Mind Sweep item achieved or back to todo, rename it, change its notes, move it to another day, put it in an Eisenhower box (do, schedule, delegate, drop; null to unsort), or set its rank (1 is the top).",
       inputSchema: {
         id: z.string().uuid(),
         status: z.enum(["todo", "achieved"]).optional(),
         title: z.string().min(1).max(300).optional(),
         notes: z.string().max(5000).nullable().optional(),
         date: z.string().optional().describe("Move the item to this date (YYYY-MM-DD)"),
+        priority: z.enum(SWEEP_PRIORITIES).nullable().optional().describe("Eisenhower box, or null for not sorted"),
+        rank: z.number().int().min(-100000).max(100000).optional().describe("Position in its list, 1 is the top"),
       },
       annotations: { idempotentHint: true },
     },
-    async ({ id, status, title, notes, date }) => {
+    async ({ id, status, title, notes, date, priority, rank }) => {
       try {
-        const patch: { status?: "todo" | "achieved"; title?: string; notes?: string | null; on_date?: string } =
-          {};
+        const patch: {
+          status?: "todo" | "achieved";
+          title?: string;
+          notes?: string | null;
+          on_date?: string;
+          priority?: (typeof SWEEP_PRIORITIES)[number] | null;
+          sort_order?: number;
+        } = {};
         if (status) {
           patch.status = status;
         }
@@ -686,6 +707,12 @@ export function createProgressPadServer(user: McpUser) {
         if (date) {
           patch.on_date = resolveDate(date);
         }
+        if (priority !== undefined) {
+          patch.priority = priority;
+        }
+        if (rank !== undefined) {
+          patch.sort_order = rank;
+        }
         if (Object.keys(patch).length === 0) {
           throw new Error("Nothing to change");
         }
@@ -697,6 +724,9 @@ export function createProgressPadServer(user: McpUser) {
           .select("id, on_date, title, notes, status")
           .maybeSingle();
 
+        if (isMissingPriority(error)) {
+          throw new Error("Sorting into boxes needs a one-time database update first (the priority migration).");
+        }
         if (error) {
           throw error;
         }

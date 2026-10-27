@@ -7,6 +7,7 @@ export type Json =
   | Json[];
 
 type TriggerStatus = "todo" | "achieved";
+type MindSweepPriority = "do" | "schedule" | "delegate" | "drop";
 type DateAssignmentKind = "trigger" | "scenario";
 type WritingKind = "gratitude" | "quotes" | "journal" | "reflections" | "done";
 type NotificationKind = "check_in";
@@ -298,6 +299,7 @@ export type Database = {
           notes: string | null;
           status: TriggerStatus;
           sort_order: number;
+          priority: MindSweepPriority | null;
           created_at: string;
           updated_at: string;
         };
@@ -309,6 +311,7 @@ export type Database = {
           notes?: string | null;
           status?: TriggerStatus;
           sort_order?: number;
+          priority?: MindSweepPriority | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -320,6 +323,7 @@ export type Database = {
           notes?: string | null;
           status?: TriggerStatus;
           sort_order?: number;
+          priority?: MindSweepPriority | null;
           created_at?: string;
           updated_at?: string;
         };
