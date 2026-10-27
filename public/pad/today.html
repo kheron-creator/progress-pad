@@ -188,10 +188,15 @@ svg.i{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:
 .chev{color:var(--muted);font-size:18px;transition:transform .2s}
 .step.open .chev{transform:rotate(180deg)}
 .steprow{display:flex;align-items:stretch}
-.steprow .stephead{flex:1;min-width:0}
+.steprow .stephead{flex:1;min-width:0;padding-right:4px}
 .grip{flex:none;width:34px;display:grid;place-items:center;border:0;background:none;color:var(--muted);cursor:grab;touch-action:none;padding:0 0 0 6px;font-size:18px}
 .grip:hover,.grip:focus-visible{color:var(--ink)}
 .grip:active{cursor:grabbing}
+.pinbtn{flex:none;width:40px;display:grid;place-items:center;border:0;background:none;color:var(--muted);font-size:17px;padding:0 6px 0 0}
+.pinbtn:hover,.pinbtn:focus-visible{color:var(--ink)}
+.pinbtn[aria-pressed="true"]{color:var(--acc)}
+.pinbtn[aria-pressed="true"] svg{fill:currentColor}
+.step.pinned{border-color:color-mix(in srgb,var(--acc) 55%,var(--line));box-shadow:var(--shadow)}
 .step.dragging{box-shadow:0 12px 28px rgba(0,0,0,.18);position:relative;z-index:5;border-color:var(--brand)}
 body.reordering{user-select:none;-webkit-user-select:none}
 .orderbar{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;color:var(--muted);padding:0 4px}
@@ -247,6 +252,24 @@ textarea::placeholder,.field::placeholder{color:var(--muted)}
 .undo{flex:none;width:40px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-md);font-size:20px;line-height:1;color:var(--muted)}
 .undo:hover{border-color:var(--brand);color:var(--ink)}
 .tick-hint{margin:8px 0 0;font-size:13px;color:var(--muted)}
+.active{display:flex;flex-direction:column;gap:10px}
+.active-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.active-h h4{font-family:var(--head);font-size:16px;font-weight:600;margin:0}
+.active-h span{font-size:14px;color:var(--muted)}
+.agroup{display:flex;flex-direction:column;gap:6px}
+.agroup .lab.late{color:var(--warn)}
+.arow{display:flex;gap:6px;align-items:stretch}
+.arow .tick{flex:1;min-width:0}
+.schedbtn{flex:none;width:44px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-md);display:grid;place-items:center;color:var(--ink-2);font-size:18px}
+.schedbtn:hover:not(:disabled),.schedbtn[aria-expanded="true"]{border-color:var(--a-mind);color:var(--a-mind)}
+.sched{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;border-radius:var(--r-md);background:color-mix(in srgb,var(--a-mind) 8%,var(--surface));border:1px dashed color-mix(in srgb,var(--a-mind) 45%,var(--line))}
+.sched b{font-family:var(--head);font-size:12px;font-weight:600;color:var(--ink-2);width:100%}
+.sched button.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-family:var(--head);font-weight:600;font-size:13px;color:var(--ink)}
+.sched button.chip:hover:not(:disabled){border-color:var(--a-mind)}
+.sched input[type=date]{border:1px solid var(--line);border-radius:999px;padding:5px 10px;background:var(--surface);color:var(--ink);font-size:15px;min-width:0}
+.linkbtn{background:none;border:0;padding:0;color:var(--brand-text);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+a{color:var(--brand-text)}
+.active .ticks li{flex-direction:column}
 .linkbtn{background:none;border:0;padding:0;color:var(--brand-text);font-weight:700;text-decoration:underline;text-underline-offset:3px}
 a{color:var(--brand-text)}
 
@@ -307,7 +330,7 @@ a{color:var(--brand-text)}
     <button role="tab" id="v-pm" aria-selected="false">Evening<small id="v-pm-c"></small></button>
     <button role="tab" id="v-all" aria-selected="false">Everything<small id="v-all-c"></small></button>
   </div>
-  <div class="orderbar" id="orderbar" hidden><span>Drag the dots to put sections in your order.</span><button id="orderreset" hidden>Reset order</button></div>
+  <div class="orderbar" id="orderbar" hidden><span>Drag the dots to reorder. Tap the pin to keep a section at the top.</span><button id="orderreset" hidden>Reset order</button></div>
   <div class="steps" id="steps"></div>
 
   <div class="foot">
@@ -334,6 +357,7 @@ const STEPS = [
   {key:"triggers", when:"am", title:"Today's triggers", desc:"Small actions over time create big change", icon:"bolt", acc:"--a-triggers", prompt:"Plan your triggers, then tick them off as you go."},
   {key:"gratitude", when:"am", kind:"gratitude", section:"Gratitude", title:"Daily Gratitude", desc:"Ground your day with conscious appreciation", icon:"sparkle", acc:"--a-grat", prompt:"What are you grateful for today?", hint:"One thing per line.", ph:"Today I am grateful for...", save:"Add entry", multi:true},
   {key:"mind", when:"am", title:"Mind Sweep", desc:"Clear your mental RAM: thoughts, ideas, to-dos", icon:"brain", acc:"--a-mind", prompt:"What's on your mind? Unload every open loop.", hint:"One thing per line. Tick older ones off below when they're done.", ph:"Unload a thought, idea, or mental clutter...", save:"Capture"},
+  {key:"active", when:"both", extra:true, title:"Active Mind Sweep", desc:"Open loops from every day. Tick off or schedule", icon:"cal", acc:"--a-mind", prompt:"What can you clear or schedule today?"},
   {key:"done", when:"pm", kind:"done", section:"Done List", title:"Done List", desc:"Log completed achievements and celebrate momentum", icon:"check", acc:"--a-done", prompt:"What did you get done today, planned or not?", hint:"One win per line. Small ones count.", ph:"What did you get done?", save:"Achieved", multi:true},
   {key:"quotes", when:"pm", kind:"quotes", section:"Quotes", title:"Impactful Quotes", desc:"Quotes to anchor your mindset today", icon:"quote", acc:"--a-quotes", prompt:"Any words that stuck with you today?", hint:"One quote per line.", ph:"Write or paste an inspiring quote...", save:"Save quote", multi:true},
   {key:"journal", when:"pm", kind:"journal", section:"Let's Journal", title:"Let's Journal", desc:"What's on your heart or mind today", icon:"book", acc:"--a-journal", prompt:"What happened today, and how did it feel?", hint:"Write as much as you like. It saves as one entry.", ph:"Reflect on your day: feelings, thoughts, mindset shifts...", save:"Save journal"},
@@ -361,7 +385,9 @@ const ICONS = {
   barbell:'<path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/>',
   users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0M16 5.2a3 3 0 0 1 0 5.6M18 14.3A5.5 5.5 0 0 1 21 19.5"/>',
   heart:'<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z"/>',
-  chev:'<path d="m6 9 6 6 6-6"/>'
+  chev:'<path d="m6 9 6 6 6-6"/>',
+  pin:'<path d="M9 3h6l-1 6 4 4H6l4-4zM12 13v8"/>',
+  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'
 };
 const PILLAR_SHORT = {mentally:"Mental", emotionally:"Emotional", professionally:"Professional", physically:"Physical", socially:"Social", romantically:"Romantic"};
 // Kheron's own trigger library, sorted into the six pillars. New triggers are sorted by keyword.
@@ -402,6 +428,7 @@ function icon(name){ const n=document.createElementNS("http://www.w3.org/2000/sv
 function celebrate(){
   try { if (window.confetti && !matchMedia("(prefers-reduced-motion: reduce)").matches) window.confetti({particleCount:70, spread:70, origin:{y:.8}, colors:["#00E14B","#00872D","#FF8700","#0097AF","#FFFFFF"], disableForReducedMotion:true}); } catch(e){}
 }
+const CORE = STEPS.filter(s=>!s.extra);
 const TEXT_KEYS = ["gratitude","mind","done","quotes","journal","reflections"];
 
 let sample = null, ready = false;
@@ -450,7 +477,7 @@ function errText(e){
 const PAGE_LEVEL = new Set(["unauthorized"]);
 
 async function load(){
-  S.loadErr = null;
+  S.loadErr = null; S.lastLoad = Date.now();
   const d = S.date, p = shiftDate(d,-1);
   try {
     const [day, prev, trig] = await Promise.all([
@@ -458,6 +485,7 @@ async function load(){
       call("get_day",{date:p}).catch(()=>null),
       call("list_triggers",{date:d, include_library:true}).catch(()=>null)
     ]);
+    loadActive();
     if (S.date !== d) return;
     S.day = day; S.prev = prev; S.week[d] = day;
     S.triggers = (trig && trig.planned) || (day && day.triggers) || [];
@@ -473,9 +501,32 @@ async function load(){
 }
 
 /* ---------- state helpers ---------- */
+/* ---------- active mind sweep: open items from every day ---------- */
+S.active = null; S.sched = null;
+async function loadActive(){
+  try { const r = await call("list_mind_sweep",{status:"todo", limit:200}); S.active = (r && r.items) || []; }
+  catch(e){ S.active = null; }
+  render();
+}
+function activeItems(){
+  if (S.active) return S.active;
+  // fallback: what get_day knows (today plus earlier open loops)
+  const t = ((S.day && S.day.mindSweep)||[]).filter(x=>x.status!=="achieved").map(x=>({...x, on_date:S.date}));
+  const o = ((S.day && S.day.openMindSweepFromEarlierDays)||[]);
+  return [...t, ...o];
+}
+function niceShort(iso){ return new Date(iso+"T12:00:00Z").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"}); }
+async function moveSweep(it, date){
+  if (!date) return;
+  S.busy["m-"+it.id]=true; render();
+  try { await call("update_mind_sweep_item",{id:it.id, date}); it.on_date = date; S.sched = null; toast("Moved to "+(date===TODAY() ? "today" : niceShort(date))); }
+  catch(e){ S.msgs.mind={ok:false,text:errText(e)}; }
+  finally { delete S.busy["m-"+it.id]; load(); }
+}
 function written(section){ const w = S.day && S.day.writing; return (w && w[section]) || []; }
 function isDone(s){ return S.day ? doneFor(s, S.day, S.triggers) : false; }
 function doneFor(s, day, triggers){
+  if (s.key==="active") return false;
   if (s.key==="pillars") return PILLARS.some(([k])=>day.pillars && day.pillars[k] != null);
   if (s.key==="triggers"){ triggers = triggers || day.triggers || []; return triggers.length>0 && triggers.every(t=>t.status==="achieved"); }
   if (s.key==="mind") return (day.mindSweep||[]).length>0;
@@ -508,19 +559,19 @@ function renderWeek(){
   let wins=0, filledDays=0, trigDone=0, trigAll=0;
   for (const d of days){
     const day = S.week[d];
-    const n = day ? STEPS.filter(s=>doneFor(s, day, d===S.date ? S.triggers : null)).length : 0;
+    const n = day ? CORE.filter(s=>doneFor(s, day, d===S.date ? S.triggers : null)).length : 0;
     if (day){ wins += ((day.writing && day.writing["Done List"])||[]).length; if (n) filledDays++; const tr = (d===S.date ? S.triggers : day.triggers)||[]; trigAll += tr.length; trigDone += tr.filter(t=>t.status==="achieved").length; }
     const dt = new Date(d+"T12:00:00Z");
-    const C = 2*Math.PI*15.5, frac = n/STEPS.length;
+    const C = 2*Math.PI*15.5, frac = n/CORE.length;
     const ring = document.createElementNS("http://www.w3.org/2000/svg","svg");
     ring.setAttribute("viewBox","0 0 36 36"); ring.setAttribute("aria-hidden","true");
     ring.innerHTML = '<circle class="trk" cx="18" cy="18" r="15.5"/>' + (n ? '<circle class="val" cx="18" cy="18" r="15.5" stroke-dasharray="'+(C*frac).toFixed(1)+' '+C.toFixed(1)+'"/>' : '');
     box.append(el("button",{class:"wd"+(d===today?" today":"")+(d>today?" future":""), "aria-pressed": d===S.date,
-      "aria-label": fmt(dt,{weekday:"long",day:"numeric",month:"long"})+(day ? ", "+n+" of "+STEPS.length+" sections filled" : ""),
+      "aria-label": fmt(dt,{weekday:"long",day:"numeric",month:"long"})+(day ? ", "+n+" of "+CORE.length+" sections filled" : ""),
       onclick:()=>setDate(d)},
       el("span",{class:"dn", text: fmt(dt,{weekday:"short"}).toUpperCase()}),
       el("span",{class:"ring"}, ring, el("span",{class:"num", text:String(dt.getUTCDate())})),
-      el("span",{class:"ct", text: day ? (d>today && !n ? "\u00a0" : n+"/"+STEPS.length) : "\u00a0"})));
+      el("span",{class:"ct", text: day ? (d>today && !n ? "\u00a0" : n+"/"+CORE.length) : "\u00a0"})));
   }
   const sum = $("wk-sum"); sum.replaceChildren();
   if (Object.keys(S.week).length){
@@ -530,6 +581,7 @@ function renderWeek(){
   }
 }
 function hasDraft(s){
+  if (s.key==="active") return false;
   if (s.key==="pillars") return Object.keys(S.pillars).length>0 || Object.keys(S.pnotes).some(k=>S.pnotes[k]);
   if (s.key==="triggers") return false;
   return !!(S.drafts[s.key]||"").trim();
@@ -539,6 +591,7 @@ function stateLabel(s){
   if (s.key==="pillars"){ const n = PILLARS.filter(([k])=>S.day.pillars && S.day.pillars[k]!=null).length; return n ? n+" of 6 rated" : "Not rated"; }
   if (s.key==="triggers"){ if (!S.triggers.length) return "None planned"; const n=S.triggers.filter(t=>t.status==="achieved").length; return n+" of "+S.triggers.length+" done"; }
   if (s.key==="mind"){ const n=(S.day.mindSweep||[]).length; return n ? n+" added" : "Empty"; }
+  if (s.key==="active"){ const it=activeItems(), t=TODAY(), late=it.filter(x=>x.on_date<t).length; return it.length ? it.length+" open"+(late ? " \u00b7 "+late+" late" : "") : "All clear"; }
   const n = written(s.section).length; return n ? n+(n===1?" entry":" entries") : "Empty";
 }
 function lines(t){ return (t||"").split(/\n+/).map(x=>x.replace(/^\s*[-*•]\s*/,"").trim()).filter(Boolean); }
@@ -576,9 +629,9 @@ function render(){
   } else b.hidden = true;
 
   // progress
-  const doneN = ready ? STEPS.filter(isDone).length : 0;
-  $("progtext").textContent = ready ? doneN+" of "+STEPS.length+" sections filled" : "";
-  $("progbar").style.width = (ready ? Math.round(doneN/STEPS.length*100) : 0)+"%";
+  const doneN = ready ? CORE.filter(isDone).length : 0;
+  $("progtext").textContent = ready ? doneN+" of "+CORE.length+" sections filled" : "";
+  $("progbar").style.width = (ready ? Math.round(doneN/CORE.length*100) : 0)+"%";
 
   // steps
   const wrap = $("steps"); const focusId = document.activeElement && document.activeElement.id;
@@ -588,7 +641,7 @@ function render(){
   paintHero();
   for (const v of ["am","pm","all"]){
     const b2 = $("v-"+v); b2.setAttribute("aria-selected", S.view===v);
-    const list = STEPS.filter(s=> v==="all" || s.when===v);
+    const list = CORE.filter(s=> v==="all" || s.when===v);
     $("v-"+v+"-c").textContent = ready ? list.filter(isDone).length+" of "+list.length+" done" : (v==="am"?"Start the day":v==="pm"?"Close the day":"All 8");
   }
   const canDrag = S.view==="all";
@@ -597,21 +650,23 @@ function render(){
   ordered().forEach(i=>{
     const s = STEPS[i];
     if (!inView(s)) return;
-    const open = S.open===i;
-    const card = el("section",{class:"step"+(open?" open":""), style:"--acc:var("+s.acc+")", "data-key":s.key});
+    const pinned = isPinned(s.key);
+    const open = pinned ? !S.pinShut[s.key] : S.open===i;
+    const card = el("section",{class:"step"+(open?" open":"")+(pinned?" pinned":""), style:"--acc:var("+s.acc+")", "data-key":s.key});
     const draft = hasDraft(s), done = isDone(s);
-    const head = el("button",{class:"stephead","aria-expanded":open, id:"head-"+s.key, onclick:()=>{ S.open = open ? -1 : i; render(); }},
+    const head = el("button",{class:"stephead","aria-expanded":open, id:"head-"+s.key, onclick:()=>{ if (pinned) S.pinShut[s.key] = open; else S.open = open ? -1 : i; render(); }},
       el("span",{class:"mark"}, icon(s.icon)),
       el("span",{class:"htext"}, el("h3",{text:s.title}), el("span",{text:s.desc})),
       el("span",{class:"pill"+(draft?" draft":done?" done":""), text: draft ? "Not saved" : (done && s.key!=="triggers" ? "\u2713 " : "")+stateLabel(s)}),
       el("span",{class:"chev"}, icon("chev")));
-    if (canDrag){
+    const pin = el("button",{class:"pinbtn", id:"pin-"+s.key, "aria-pressed":pinned, "aria-label":(pinned?"Unpin ":"Pin ")+s.title, title: pinned ? "Unpin" : "Pin to the top", onclick:()=>togglePin(s.key)}, icon("pin"));
+    if (canDrag && !pinned){
       const grip = el("button",{class:"grip", "aria-label":"Move "+s.title+". Use the arrow keys, or drag.", title:"Drag to reorder"}, "\u283F");
       grip.addEventListener("pointerdown", e=>startDrag(e, card));
       grip.addEventListener("keydown", e=>{ if (e.key==="ArrowUp"||e.key==="ArrowDown"){ e.preventDefault(); moveKey(s.key, e.key==="ArrowUp"?-1:1); } });
       grip.id = "grip-"+s.key;
-      card.append(el("div",{class:"steprow"}, grip, head));
-    } else card.append(head);
+      card.append(el("div",{class:"steprow"}, grip, head, pin));
+    } else card.append(el("div",{class:"steprow"}, head, pin));
     if (open) card.append(body(s,i));
     wrap.append(card);
   });
@@ -647,9 +702,9 @@ function startDrag(e, card){
     removeEventListener("pointermove", onMove); removeEventListener("pointerup", onUp); removeEventListener("pointercancel", onUp);
     card.classList.remove("dragging"); card.style.transform = ""; document.body.classList.remove("reordering");
     if (!moved) return;
-    const shown = [...wrap.children].map(c=>c.dataset.key);
-    const rest = S.order.filter(k=>!shown.includes(k));
-    S.order = shown.concat(rest); saveOrder(); render();
+    const moved2 = [...wrap.children].map(c=>c.dataset.key).filter(k=>!isPinned(k));
+    const q = moved2.slice();
+    S.order = S.order.map(k=> moved2.includes(k) ? q.shift() : k); saveOrder(); render();
   };
   addEventListener("pointermove", onMove); addEventListener("pointerup", onUp); addEventListener("pointercancel", onUp);
 }
@@ -667,19 +722,29 @@ function defaultView(){
   const h = Number(new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",hour:"numeric",hourCycle:"h23"}).format(new Date()));
   return S.date===TODAY() && h < 14 ? "am" : "pm";
 }
-const DEFAULT_ORDER = ["triggers","mind","done","gratitude","quotes","journal","reflections","pillars"];
+const DEFAULT_ORDER = ["triggers","mind","active","done","gratitude","quotes","journal","reflections","pillars"];
 function loadOrder(){
   let o = null; try { o = JSON.parse(localStorage.getItem("ppad-order")||"null"); } catch(e){}
   const keys = STEPS.map(x=>x.key);
   o = Array.isArray(o) ? o.filter(k=>keys.includes(k)) : DEFAULT_ORDER.slice();
+  if (!o.includes("active")){ const m = o.indexOf("mind"); o.splice(m<0 ? o.length : m+1, 0, "active"); }
   for (const k of keys) if (!o.includes(k)) o.push(k);
   return o;
 }
 S.order = loadOrder();
+function loadPins(){ try { const v = JSON.parse(localStorage.getItem("ppad-pins")||"[]"); return Array.isArray(v) ? v.filter(k=>STEPS.some(x=>x.key===k)) : []; } catch(e){ return []; } }
+S.pins = loadPins(); S.pinShut = {};
+function isPinned(k){ return S.pins.includes(k); }
+function togglePin(k){
+  if (isPinned(k)) S.pins = S.pins.filter(x=>x!==k); else { S.pins.push(k); delete S.pinShut[k]; }
+  try { localStorage.setItem("ppad-pins", JSON.stringify(S.pins)); } catch(e){}
+  toast(isPinned(k) ? "Pinned to the top" : "Unpinned"); render();
+  const b = $("pin-"+k); if (b) b.focus({preventScroll:true});
+}
 function saveOrder(){ try { localStorage.setItem("ppad-order", JSON.stringify(S.order)); } catch(e){} }
-function ordered(){ return S.order.map(k=>STEPS.findIndex(x=>x.key===k)); }
-function firstOpen(){ const o = ordered(); const i = o.find(j=>inView(STEPS[j]) && !isDone(STEPS[j])); return i!=null ? i : o.find(j=>inView(STEPS[j])); }
-function inView(s){ return S.view==="all" || s.when===S.view; }
+function ordered(){ return S.pins.concat(S.order.filter(k=>!S.pins.includes(k))).map(k=>STEPS.findIndex(x=>x.key===k)); }
+function firstOpen(){ const o = ordered().filter(j=>!isPinned(STEPS[j].key)); const i = o.find(j=>inView(STEPS[j]) && !STEPS[j].extra && !isDone(STEPS[j])); return i!=null ? i : o.find(j=>inView(STEPS[j])); }
+function inView(s){ return S.view==="all" || s.when==="both" || s.when===S.view || isPinned(s.key); }
 function setView(v){
   S.view = v; try { localStorage.setItem("ppad-view", v); } catch(e){}
   if (S.open<0 || !inView(STEPS[S.open])) S.open = firstOpen();
@@ -690,7 +755,7 @@ function msgEl(key){
   return el("div",{class:"msg "+(m.ok?"ok":"err"), "aria-live":"polite", text:m.text});
 }
 function nextBtn(i){
-  const o = ordered(); let k = o.indexOf(i)+1; while (k < o.length && !inView(STEPS[o[k]])) k++;
+  const o = ordered(); let k = o.indexOf(i)+1; while (k < o.length && (!inView(STEPS[o[k]]) || STEPS[o[k]].extra || isPinned(STEPS[o[k]].key))) k++;
   if (k >= o.length) return null; const j = o[k];
   return el("button",{class:"btn quiet", onclick:()=>{ S.open=j; S.msgs={}; render(); $("head-"+STEPS[j].key).scrollIntoView({block:"start",behavior:"smooth"}); }, text:"Next: "+STEPS[j].title});
 }
@@ -701,6 +766,7 @@ function body(s,i){
   if (s.key==="pillars") pillarsBody(box,i);
   else if (s.key==="triggers") triggersBody(box,i);
   else if (s.key==="mind") mindBody(box,s,i);
+  else if (s.key==="active"){ activeBody(box); box.append(el("div",{class:"row"}, nextBtn(i)), msgEl("mind")); }
   else writingBody(box,s,i);
   return box;
 }
@@ -825,22 +891,53 @@ function mindBody(box,s,i){
   const save = el("button",{class:"btn", disabled:!hasDraft(s)||S.busy.mind||!ready, onclick:()=>saveMind(true), text:S.busy.mind?"Saving…":s.save});
   box.append(el("div",{class:"row"}, save, nextBtn(i)), msgEl("mind"));
 
-  const todayItems = (S.day && S.day.mindSweep) || [];
-  const older = (S.day && S.day.openMindSweepFromEarlierDays) || [];
-  const all = [...todayItems.map(x=>({...x, on_date:S.date})), ...older.map(x=>({...x, status:"todo"}))];
-  if (all.length){
-    const shown = S.showAllOpen ? all : all.slice(0,5);
+  const o = activeItems().length;
+  if (o) box.append(el("div",null, el("button",{class:"linkbtn", onclick:()=>{ S.open = STEPS.findIndex(x=>x.key==="active"); render(); $("head-active").scrollIntoView({block:"start",behavior:"smooth"}); }, text:"See all "+o+" open items in Active Mind Sweep"})));
+}
+function activeBody(box){
+  const items = activeItems().filter(x=>x.status!=="achieved");
+  const today = TODAY();
+  const groups = [
+    ["late","Carried over from earlier days", items.filter(x=>x.on_date<today).sort((a,b)=>b.on_date.localeCompare(a.on_date))],
+    ["now","Today", items.filter(x=>x.on_date===today)],
+    ["soon","Scheduled for later", items.filter(x=>x.on_date>today).sort((a,b)=>a.on_date.localeCompare(b.on_date))]
+  ];
+  const wrap = el("div",{class:"active"});
+  if (!items.length) wrap.append(el("p",{class:"empty", text:"Nothing open. Clear mind!"}));
+  if (items.length) wrap.append(el("p",{class:"hint", style:"margin:0", text:"Tick an item when it's done and it goes on your Done list. Tap the calendar to move it to another day."}));
+  for (const [k,label,list] of groups){
+    if (!list.length) continue;
+    const g = el("div",{class:"agroup"}, el("span",{class:"lab"+(k==="late"?" late":""), text:label+" ("+list.length+")"}));
+    const full = !!S.showAll["act-"+k], shown = full ? list : list.slice(0,6);
     const ul = el("ul",{class:"ticks"});
     for (const it of shown){
-      const on = it.status==="achieved";
-      ul.append(el("li",null, el("button",{class:"tick","aria-pressed":on, disabled:on||!!S.busy["m-"+it.id], onclick:()=>tickSweep(it)},
-        el("span",{class:"box","aria-hidden":"true", text:on?"✓":""}),
-        el("span",{class:"tt", text: it.title.length>160 ? it.title.slice(0,157)+"…" : it.title}),
-        el("span",{class:"when", text: it.on_date===S.date ? "today" : shortDate(it.on_date)}))));
+      const busy = !!S.busy["m-"+it.id], open = S.sched===it.id;
+      const li = el("li",null);
+      li.append(el("div",{class:"arow"},
+        el("button",{class:"tick","aria-pressed":false, disabled:busy, onclick:()=>tickSweep(it)},
+          el("span",{class:"box","aria-hidden":"true"}),
+          el("span",{class:"tt", text: it.title.length>160 ? it.title.slice(0,157)+"\u2026" : it.title}),
+          el("span",{class:"when", text: it.on_date===today ? "today" : niceShort(it.on_date)})),
+        el("button",{class:"schedbtn", id:"sch-"+it.id, "aria-expanded":open, "aria-label":"Schedule "+it.title.slice(0,60), title:"Move to another day", disabled:busy, onclick:()=>{ S.sched = open ? null : it.id; render(); }}, icon("cal"))));
+      if (open){
+        const tmr = shiftDate(today,1), wd = (new Date(today+"T12:00:00Z").getUTCDay()+6)%7, mon = shiftDate(today,7-wd);
+        const din = el("input",{type:"date", min:today, value: it.on_date>today ? it.on_date : tmr, "aria-label":"Pick a day"});
+        const chips = [];
+        if (it.on_date!==today) chips.push(["Today",today]);
+        chips.push(["Tomorrow",tmr]);
+        if (mon!==tmr) chips.push(["Next Monday",mon]);
+        chips.push(["In a week",shiftDate(today,7)]);
+        li.append(el("div",{class:"sched"}, el("b",{text:"Move to"}),
+          ...chips.map(([l,d])=>el("button",{class:"chip", disabled:busy, onclick:()=>moveSweep(it,d), text:l})),
+          din, el("button",{class:"btn", disabled:busy, onclick:()=>moveSweep(it, din.value), text:"Move"})));
+      }
+      ul.append(li);
     }
-    box.append(el("div",{class:"logged"}, el("span",{class:"lab", text:"Open loops ("+all.filter(x=>x.status!=="achieved").length+"). Tick one when it's done and it goes on your Done list."})), ul);
-    if (all.length>5) box.append(el("div",null, el("button",{class:"linkbtn", onclick:()=>{ S.showAllOpen=!S.showAllOpen; render(); }, text: S.showAllOpen ? "Show fewer" : "Show all "+all.length})));
+    g.append(ul);
+    if (list.length>6) g.append(el("div",null, el("button",{class:"linkbtn", onclick:()=>{ S.showAll["act-"+k]=!full; render(); }, text: full ? "Show fewer" : "Show all "+list.length})));
+    wrap.append(g);
   }
+  box.append(wrap);
 }
 
 function writingBody(box,s,i){
@@ -865,9 +962,11 @@ function textarea(s){
 // update counters without rebuilding the textarea under the cursor
 function refreshLight(){
   saveBar();
-  const s = STEPS[S.open]; if (!s) return;
-  const btn = document.querySelector(".step.open .stepbody > .row .btn:not(.quiet)");
-  if (btn && !S.busy[s.key]) btn.disabled = !hasDraft(s) || !ready;
+  document.querySelectorAll(".step.open").forEach(card=>{
+    const s = STEPS.find(x=>x.key===card.dataset.key); if (!s) return;
+    const btn = card.querySelector(".stepbody > .row .btn:not(.quiet)");
+    if (btn && !S.busy[s.key]) btn.disabled = !hasDraft(s) || !ready;
+  });
 }
 
 /* ---------- saving ---------- */
@@ -1090,6 +1189,15 @@ $("saveall").onclick=saveAll;
 $("copyall").onclick=copyAll;
 try { const d=localStorage.getItem("ppad-dump"); if (d){ $("dump").value=d; $("talkbody").hidden=false; $("talktoggle").setAttribute("aria-expanded","true"); } } catch(e){}
 $("dump").addEventListener("input",e=>{ try{ localStorage.setItem("ppad-dump", e.target.value); }catch(_){} });
+
+/* pick up anything added elsewhere (Claude, another device) when you come back to this page */
+S.lastLoad = 0;
+function refreshIfStale(){
+  if (document.visibilityState!=="visible" || Date.now()-S.lastLoad < 30000) return;
+  S.week = {}; S.weekOf = ""; load(); loadWeek(true);
+}
+document.addEventListener("visibilitychange", refreshIfStale);
+window.addEventListener("focus", refreshIfStale);
 
 S.date = londonDate(0);
 loadDrafts();
