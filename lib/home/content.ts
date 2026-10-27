@@ -173,6 +173,22 @@ export const ARCHIVE = {
   searchEmptyDescription: "Try a different search.",
 } as const;
 
+export const ARCHIVE_AREAS = {
+  viewLabel: "Organise by",
+  byDate: "By date",
+  byArea: "By POWERFUL area",
+  tabsLabel: "POWERFUL area",
+  openTitle: "Open tasks",
+  openEmpty: "No open tasks in this area.",
+  winsTitle: "Wins",
+  winsEmpty: "No wins logged here yet.",
+  thoughtsTitle: "Thoughts and notes",
+  thoughtsEmpty: "No journal notes here yet.",
+  emptyTitle: "Nothing in this area yet",
+  emptyDescription: (tag: string) =>
+    `Add a line to an entry's or mind sweep item's notes that says "POWERFUL: ${tag}", or ask your PT in Claude to sort it for you.`,
+} as const;
+
 export const ACTIVE_MIND_SWEEP = {
   title: "Active Mind Sweep",
   kicker: "Global mental RAM",

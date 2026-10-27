@@ -6,6 +6,13 @@ import { z } from "zod";
 import { PILLAR_IDS, type PillarId, type WritingKind } from "@/lib/home/store";
 import type { McpUser } from "@/lib/mcp/auth";
 import { addDays, MCP_TIME_ZONE, resolveDate, todayIso } from "@/lib/mcp/dates";
+import {
+  parseAreaNotes,
+  POWERFUL_AREA_IDS,
+  POWERFUL_AREAS,
+  powerfulArea,
+  withAreaNotes,
+} from "@/lib/powerful/areas";
 import { flattenDayTriggers, loadDatePlan } from "@/lib/triggers/store";
 
 const WRITING_KINDS = ["gratitude", "quotes", "journal", "reflections", "done"] as const;
@@ -25,11 +32,19 @@ const dateArg = z
   .optional()
   .describe('Calendar date as YYYY-MM-DD, or "today" / "yesterday". Defaults to today.');
 
+const areaArg = z
+  .enum(POWERFUL_AREA_IDS)
+  .optional()
+  .describe(
+    `POWERFUL area this belongs to: ${POWERFUL_AREAS.map((area) => `${area.id} (${area.letter}, ${area.description.replace(/\.$/, "")})`).join("; ")}.`,
+  );
+
 const SERVER_INSTRUCTIONS = `Progress Pad is a personal journal and habit dashboard. Dates are calendar days in ${MCP_TIME_ZONE}.
 - Six Life Pillars: daily 1-10 ratings for mentally, emotionally, professionally, physically, socially, romantically. A drop of 3+ points is a "disaster pattern" worth gently asking about.
 - Writing sections per day: gratitude, quotes, journal ("Let's Journal"), reflections, and done (the Done List of wins).
 - Mind Sweep: a brain dump of open loops, each todo or achieved.
 - Triggers: small habit cues kept in a library and planned onto days, one at a time or as scenarios (saved routines). Each is todo or achieved for that day.
+- POWERFUL areas sort work into Pipeline, Organising, client Work, Editing, Refocus, Freelancers & finance, Upskilling and Lifestyle. Pass \`area\` when adding entries or mind sweep items, use set_area to label existing ones, and area_overview to see where an area is up to. The label lives in the notes as a "POWERFUL: <Area>" line.
 Write what the user said in their own words. Nothing here deletes data; deleting stays in the app.`;
 
 function json(value: unknown) {
@@ -344,9 +359,10 @@ export function createProgressPadServer(user: McpUser) {
         text: z.string().min(1).max(500),
         notes: z.string().max(10000).optional(),
         date: dateArg,
+        area: areaArg,
       },
     },
-    async ({ kind, text, notes, date }) => {
+    async ({ kind, text, notes, date, area }) => {
       try {
         const title = text.trim();
         if (!title) {
@@ -360,7 +376,7 @@ export function createProgressPadServer(user: McpUser) {
             on_date: resolveDate(date),
             kind,
             title,
-            notes: notes?.trim() || null,
+            notes: area ? withAreaNotes(notes, [area]) : notes?.trim() || null,
           })
           .select("id, on_date, kind, title, notes")
           .single();
@@ -494,7 +510,13 @@ export function createProgressPadServer(user: McpUser) {
         "Brain-dump one or more open loops into the Mind Sweep for a day. Each item is a short title with optional notes. New items go to the top, like in the app.",
       inputSchema: {
         items: z
-          .array(z.object({ title: z.string().min(1).max(300), notes: z.string().max(5000).optional() }))
+          .array(
+            z.object({
+              title: z.string().min(1).max(300),
+              notes: z.string().max(5000).optional(),
+              area: areaArg,
+            }),
+          )
           .min(1)
           .max(50),
         date: dateArg,
@@ -517,7 +539,10 @@ export function createProgressPadServer(user: McpUser) {
 
         const top = first == null ? 1 : first.sort_order - 1;
         const cleaned = items
-          .map((item) => ({ title: item.title.trim(), notes: item.notes?.trim() || null }))
+          .map((item) => ({
+            title: item.title.trim(),
+            notes: item.area ? withAreaNotes(item.notes, [item.area]) : item.notes?.trim() || null,
+          }))
           .filter((item) => item.title);
 
         // First item in the list ends up on top.
@@ -645,6 +670,123 @@ export function createProgressPadServer(user: McpUser) {
         }
 
         return json({ updated: data });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "set_area",
+    {
+      title: "Label with a POWERFUL area",
+      description:
+        "Set which POWERFUL areas a writing entry or mind sweep item belongs to. Replaces its current areas; pass an empty list to clear them. The rest of the notes are kept.",
+      inputSchema: {
+        type: z.enum(["entry", "mind_sweep"]),
+        id: z.string().uuid(),
+        areas: z.array(z.enum(POWERFUL_AREA_IDS)).max(POWERFUL_AREA_IDS.length),
+      },
+      annotations: { idempotentHint: true },
+    },
+    async ({ type, id, areas }) => {
+      try {
+        const table = type === "entry" ? "writing_entries" : "mind_sweep_items";
+        const { data: current, error: readError } = await supabase
+          .from(table)
+          .select("notes")
+          .eq("id", id)
+          .maybeSingle();
+        if (readError) {
+          throw readError;
+        }
+        if (!current) {
+          throw new Error(`No ${type === "entry" ? "entry" : "mind sweep item"} with that id`);
+        }
+
+        const { data, error } = await supabase
+          .from(table)
+          .update({ notes: withAreaNotes(current.notes, areas) })
+          .eq("id", id)
+          .select("id, on_date, title, notes")
+          .single();
+        if (error) {
+          throw error;
+        }
+
+        return json({ updated: { ...data, areas: parseAreaNotes(data.notes).areas } });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "area_overview",
+    {
+      title: "Where an area is up to",
+      description:
+        "Everything labelled with one POWERFUL area: open mind sweep tasks (oldest first), wins (done list and achieved mind sweep) and thoughts (journal, reflections, gratitude, quotes).",
+      inputSchema: { area: z.enum(POWERFUL_AREA_IDS) },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ area }) => {
+      try {
+        const [sweep, writing] = await Promise.all([
+          supabase
+            .from("mind_sweep_items")
+            .select("id, on_date, title, notes, status, created_at")
+            .ilike("notes", "%powerful%")
+            .order("on_date", { ascending: true }),
+          supabase
+            .from("writing_entries")
+            .select("id, on_date, kind, title, notes, created_at")
+            .ilike("notes", "%powerful%")
+            .order("on_date", { ascending: false }),
+        ]);
+        if (sweep.error) {
+          throw sweep.error;
+        }
+        if (writing.error) {
+          throw writing.error;
+        }
+
+        const open: unknown[] = [];
+        const wins: unknown[] = [];
+        const thoughts: unknown[] = [];
+
+        for (const row of sweep.data ?? []) {
+          const parsed = parseAreaNotes(row.notes);
+          if (!parsed.areas.includes(area)) {
+            continue;
+          }
+          const item = {
+            id: row.id,
+            date: String(row.on_date).slice(0, 10),
+            source: "Mind Sweep",
+            text: row.title,
+            notes: parsed.notes || null,
+          };
+          (row.status === "achieved" ? wins : open).push(item);
+        }
+
+        for (const row of writing.data ?? []) {
+          const parsed = parseAreaNotes(row.notes);
+          if (!parsed.areas.includes(area)) {
+            continue;
+          }
+          const item = {
+            id: row.id,
+            date: String(row.on_date).slice(0, 10),
+            source: WRITING_LABELS[row.kind],
+            text: row.title,
+            notes: parsed.notes || null,
+          };
+          (row.kind === "done" ? wins : thoughts).push(item);
+        }
+
+        const { label, description } = powerfulArea(area);
+        return json({ area: { id: area, label, description }, open, wins, thoughts });
       } catch (error) {
         return fail(error);
       }
