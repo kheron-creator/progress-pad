@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
+import { ArchiveAreas } from "@/components/app/archive-areas";
 import { useSessionStore } from "@/components/app/session-store-provider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -45,10 +46,18 @@ import {
   type ArchiveGrain,
   type ArchiveTimelineEntry,
 } from "@/lib/home/archive";
-import { ARCHIVE, HOME_PILLARS } from "@/lib/home/content";
+import { ARCHIVE, ARCHIVE_AREAS, HOME_PILLARS } from "@/lib/home/content";
 import { DEFAULT_PILLAR_RATING } from "@/lib/home/store";
+import { powerfulArea } from "@/lib/powerful/areas";
 import { flattenDayTriggers } from "@/lib/triggers/store";
 import { cn } from "@/lib/utils/cn";
+
+type ArchiveView = "date" | "area";
+
+const VIEW_TABS: { value: ArchiveView; label: string }[] = [
+  { value: "date", label: ARCHIVE_AREAS.byDate },
+  { value: "area", label: ARCHIVE_AREAS.byArea },
+];
 
 const GRAIN_TABS: { value: ArchiveGrain; label: string }[] = [
   { value: "today", label: "Today" },
@@ -199,6 +208,14 @@ function ArchiveEntryRow({ item }: { item: ArchiveTimelineEntry }) {
           </Text>
         ) : null}
       </span>
+      {item.areas?.map((id) => {
+        const area = powerfulArea(id);
+        return (
+          <Tag key={id} size="xs" variant="secondary" look="outline" className="shrink-0" title={area.label}>
+            {area.letter}
+          </Tag>
+        );
+      })}
       {item.achieved ? (
         <Tag
           size="xs"
@@ -271,6 +288,7 @@ export function ArchivePage() {
   const planScenarios = useSessionStore((state) => state.planScenarios);
   const triggerStates = useSessionStore((state) => state.states);
 
+  const [view, setView] = useState<ArchiveView>("date");
   const [grain, setGrain] = useState<ArchiveGrain>("today");
   const [filter, setFilter] = useState<ArchiveFilter>("all");
   const [range, setRange] = useState(defaultArchiveRange);
@@ -377,8 +395,22 @@ export function ArchivePage() {
             </Text>
           </div>
         </div>
+        <Tabs
+          label={ARCHIVE_AREAS.viewLabel}
+          tone="primary"
+          size="lg"
+          fullWidth
+          className="sm:w-auto sm:inline-flex sm:self-start"
+          value={view}
+          onChange={(next) => setView(next as ArchiveView)}
+          options={VIEW_TABS}
+        />
       </Card>
 
+      {view === "area" ? (
+        <ArchiveAreas writingByDate={writingByDate} mindSweepByDate={mindSweepByDate} />
+      ) : (
+      <>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 overflow-x-auto overscroll-x-contain scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <Tabs
@@ -424,11 +456,6 @@ export function ArchivePage() {
           leftIcon={<SearchIcon size={16} />}
         />
       </div>
-
-
-
-
-
 
 
       {selectedPeriod ? (
@@ -529,6 +556,8 @@ export function ArchivePage() {
             </Button>
           }
         />
+      )}
+      </>
       )}
     </div>
   );

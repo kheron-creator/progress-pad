@@ -8,6 +8,7 @@ import {
   type StoredWritingEntry,
   type WritingByDate,
 } from "@/lib/home/store";
+import { parseAreaNotes, type PowerfulAreaId } from "@/lib/powerful/areas";
 import type { FlattenedDayTrigger } from "@/lib/triggers/store";
 
 export const ARCHIVE_CATEGORIES = [
@@ -451,6 +452,7 @@ export type ArchiveTimelineEntry = {
   achieved: boolean;
   value?: string;
   emoji?: string;
+  areas?: PowerfulAreaId[];
 };
 
 function toTimelineEntry(
@@ -459,7 +461,7 @@ function toTimelineEntry(
   achieved = false,
 ): ArchiveTimelineEntry {
   const title = item.title.trim();
-  const notes = item.notes?.trim() ?? "";
+  const { areas, notes } = parseAreaNotes(item.notes);
   return {
     id: item.id,
     category,
@@ -468,6 +470,7 @@ function toTimelineEntry(
     createdAt: item.created_at,
     hasNotes: Boolean(title && notes),
     achieved,
+    areas,
   };
 }
 

@@ -30,4 +30,6 @@ One-time setup in the Supabase dashboard, under **Authentication → OAuth Serve
 
 Then in Claude, open Settings → Connectors → Add custom connector and use `https://<your-site>/mcp`. Claude sends you to `/oauth/consent` to approve access.
 
-Tools: `get_day`, `rate_pillars`, `pillar_trends`, `add_entry`, `update_entry`, `list_entries`, `mind_sweep`, `list_mind_sweep`, `update_mind_sweep_item`, `list_triggers`, `add_trigger`, `plan_scenario`, `set_trigger_status`. Prompts: `morning_reset`, `evening_upcycle`, `pillar_check`.
+Tools: `get_day`, `rate_pillars`, `pillar_trends`, `add_entry`, `update_entry`, `list_entries`, `mind_sweep`, `list_mind_sweep`, `update_mind_sweep_item`, `list_triggers`, `add_trigger`, `plan_scenario`, `set_trigger_status`, `set_area`, `area_overview`. Prompts: `morning_reset`, `evening_upcycle`, `pillar_check`.
+
+POWERFUL areas (Pipeline, Organising, client Work, Editing, Refocus, Freelancers & finance, Upskilling, Lifestyle) are stored as a `POWERFUL: <Area>` line in an entry's or mind sweep item's notes. `add_entry` and `mind_sweep` take an optional `area`, `set_area` labels existing items, and Archive → "By POWERFUL area" groups everything by area.
