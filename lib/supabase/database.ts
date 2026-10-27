@@ -203,6 +203,7 @@ export type Database = {
           on_date: string;
           trigger_id: string;
           status: TriggerStatus;
+          times_done: number;
           updated_at: string;
         };
         Insert: {
@@ -210,6 +211,7 @@ export type Database = {
           on_date: string;
           trigger_id: string;
           status?: TriggerStatus;
+          times_done?: number;
           updated_at?: string;
         };
         Update: {
@@ -217,6 +219,7 @@ export type Database = {
           on_date?: string;
           trigger_id?: string;
           status?: TriggerStatus;
+          times_done?: number;
           updated_at?: string;
         };
         Relationships: [

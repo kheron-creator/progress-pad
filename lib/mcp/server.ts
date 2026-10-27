@@ -6,7 +6,7 @@ import { z } from "zod";
 import { PILLAR_IDS, type PillarId, type WritingKind } from "@/lib/home/store";
 import type { McpUser } from "@/lib/mcp/auth";
 import { addDays, MCP_TIME_ZONE, resolveDate, todayIso } from "@/lib/mcp/dates";
-import { flattenDayTriggers, loadDatePlan } from "@/lib/triggers/store";
+import { flattenDayTriggers, isMissingTimesDone, loadDatePlan } from "@/lib/triggers/store";
 
 const WRITING_KINDS = ["gratitude", "quotes", "journal", "reflections", "done"] as const;
 
@@ -29,7 +29,7 @@ const SERVER_INSTRUCTIONS = `Progress Pad is a personal journal and habit dashbo
 - Six Life Pillars: daily 1-10 ratings for mentally, emotionally, professionally, physically, socially, romantically. A drop of 3+ points is a "disaster pattern" worth gently asking about.
 - Writing sections per day: gratitude, quotes, journal ("Let's Journal"), reflections, and done (the Done List of wins).
 - Mind Sweep: a brain dump of open loops, each todo or achieved.
-- Triggers: small habit cues kept in a library and planned onto days, one at a time or as scenarios (saved routines). Each is todo or achieved for that day.
+- Triggers: small habit cues kept in a library and planned onto days, one at a time or as scenarios (saved routines). Each is todo or achieved for that day, and can be achieved more than once (times_done, e.g. 4 sets of press-ups).
 Write what the user said in their own words. Nothing here deletes data; deleting stays in the app.`;
 
 function json(value: unknown) {
@@ -76,18 +76,78 @@ export function createProgressPadServer(user: McpUser) {
     { instructions: SERVER_INSTRUCTIONS },
   );
 
+  async function dayStates(onDate: string) {
+    const states = await supabase
+      .from("date_trigger_states")
+      .select("trigger_id, status, times_done")
+      .eq("on_date", onDate);
+
+    if (!isMissingTimesDone(states.error)) {
+      return states;
+    }
+
+    const plain = await supabase.from("date_trigger_states").select("trigger_id, status").eq("on_date", onDate);
+    return { ...plain, data: plain.data?.map((row) => ({ ...row, times_done: 1 })) ?? null };
+  }
+
   async function dayTriggers(onDate: string) {
-    const [plan, states] = await Promise.all([
-      loadDatePlan(supabase),
-      supabase.from("date_trigger_states").select("trigger_id, status").eq("on_date", onDate),
-    ]);
+    const [plan, states] = await Promise.all([loadDatePlan(supabase), dayStates(onDate)]);
 
     if (states.error) {
       throw states.error;
     }
 
-    const statuses = Object.fromEntries((states.data ?? []).map((row) => [row.trigger_id, row.status]));
-    return flattenDayTriggers(plan.assignments[onDate] ?? [], plan.triggers, plan.scenarios, statuses);
+    const rows = states.data ?? [];
+    const statuses = Object.fromEntries(rows.map((row) => [row.trigger_id, row.status]));
+    const timesDone = Object.fromEntries(rows.map((row) => [row.trigger_id, row.times_done]));
+    return flattenDayTriggers(plan.assignments[onDate] ?? [], plan.triggers, plan.scenarios, statuses, timesDone);
+  }
+
+  async function plannedMatch(onDate: string, trigger: string) {
+    const planned = await dayTriggers(onDate);
+    const match = pickByName(planned, trigger);
+
+    if (!match) {
+      throw new Error(
+        `No single trigger matching "${trigger}" is planned for ${onDate}. Planned: ${
+          planned.map((item) => item.name).join(", ") || "none"
+        }.`,
+      );
+    }
+
+    return match;
+  }
+
+  async function saveTriggerState(
+    onDate: string,
+    triggerId: string,
+    status: "achieved" | "todo",
+    timesDone: number,
+  ) {
+    const row = { user_id: userId, on_date: onDate, trigger_id: triggerId, status };
+    const { error } = await supabase
+      .from("date_trigger_states")
+      .upsert({ ...row, times_done: Math.max(1, timesDone) }, { onConflict: "user_id,on_date,trigger_id" });
+
+    if (!isMissingTimesDone(error)) {
+      if (error) {
+        throw error;
+      }
+      return;
+    }
+
+    if (status === "achieved" && timesDone > 1) {
+      throw new Error(
+        "Counting a trigger more than once needs a one-time database update first (the times_done migration).",
+      );
+    }
+
+    const retry = await supabase
+      .from("date_trigger_states")
+      .upsert(row, { onConflict: "user_id,on_date,trigger_id" });
+    if (retry.error) {
+      throw retry.error;
+    }
   }
 
   async function libraryTriggers() {
@@ -681,42 +741,55 @@ export function createProgressPadServer(user: McpUser) {
     {
       title: "Tick a trigger",
       description:
-        "Mark a trigger planned for a day as achieved, or back to todo. Pass the trigger's id, or its name as it appears in list_triggers.",
+        "Mark a trigger planned for a day as achieved, or back to todo. Pass the trigger's id, or its name as it appears in list_triggers. Pass times to say how many times it was done (e.g. 4 sets); a plain tick counts once. To add or take away one more time, use count_trigger.",
       inputSchema: {
         trigger: z.string().min(1).describe("Trigger id or name"),
         status: z.enum(["achieved", "todo"]),
+        times: z.number().int().min(1).max(999).optional().describe("How many times it was done that day (achieved only)"),
         date: dateArg,
       },
       annotations: { idempotentHint: true },
     },
-    async ({ trigger, status, date }) => {
+    async ({ trigger, status, times, date }) => {
       try {
         const onDate = resolveDate(date);
-        const planned = await dayTriggers(onDate);
-        const match = pickByName(planned, trigger);
+        const match = await plannedMatch(onDate, trigger);
+        const timesDone = status === "achieved" ? (times ?? 1) : 0;
+        await saveTriggerState(onDate, match.id, status, timesDone);
+        return json({ date: onDate, trigger: match.name, status, times_done: timesDone });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
 
-        if (!match) {
-          return fail(
-            new Error(
-              `No single trigger matching "${trigger}" is planned for ${onDate}. Planned: ${
-                planned.map((item) => item.name).join(", ") || "none"
-              }.`,
-            ),
-          );
-        }
-
-        const { error } = await supabase
-          .from("date_trigger_states")
-          .upsert(
-            { user_id: userId, on_date: onDate, trigger_id: match.id, status },
-            { onConflict: "user_id,on_date,trigger_id" },
-          );
-
-        if (error) {
-          throw error;
-        }
-
-        return json({ date: onDate, trigger: match.name, status });
+  server.registerTool(
+    "count_trigger",
+    {
+      title: "Do a trigger again",
+      description:
+        "Add one more time to a trigger planned for a day (it becomes achieved if it wasn't), or take one away with change -1. Reaching zero puts it back to todo. Use this when the user did something again, like another set of press-ups or another impulse controlled.",
+      inputSchema: {
+        trigger: z.string().min(1).describe("Trigger id or name"),
+        change: z
+          .number()
+          .int()
+          .min(-999)
+          .max(999)
+          .refine((value) => value !== 0, "change can't be 0")
+          .optional()
+          .describe("How many times to add (default 1), or a negative number to take away"),
+        date: dateArg,
+      },
+    },
+    async ({ trigger, change, date }) => {
+      try {
+        const onDate = resolveDate(date);
+        const match = await plannedMatch(onDate, trigger);
+        const timesDone = Math.min(999, Math.max(0, match.timesDone + (change ?? 1)));
+        const status = timesDone > 0 ? "achieved" : "todo";
+        await saveTriggerState(onDate, match.id, status, timesDone);
+        return json({ date: onDate, trigger: match.name, status, times_done: timesDone });
       } catch (error) {
         return fail(error);
       }

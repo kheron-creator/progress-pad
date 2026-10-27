@@ -240,6 +240,13 @@ textarea::placeholder,.field::placeholder{color:var(--muted)}
 .tick .tt{flex:1;min-width:0;overflow-wrap:anywhere}
 .tick .when{font-family:var(--head);font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;text-transform:uppercase;letter-spacing:.06em}
 .tick:disabled{opacity:.6}
+.ticks li{display:flex;gap:6px;align-items:stretch}
+.ticks li .tick{flex-wrap:wrap;row-gap:4px}
+.ticks li .tick .tt{flex:1 1 9em}
+.tick .times{font-family:var(--head);font-size:13px;font-weight:700;color:var(--on-brand);background:var(--brand);border-radius:999px;padding:2px 9px;white-space:nowrap;flex:none}
+.undo{flex:none;width:40px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-md);font-size:20px;line-height:1;color:var(--muted)}
+.undo:hover{border-color:var(--brand);color:var(--ink)}
+.tick-hint{margin:8px 0 0;font-size:13px;color:var(--muted)}
 .linkbtn{background:none;border:0;padding:0;color:var(--brand-text);font-weight:700;text-decoration:underline;text-underline-offset:3px}
 a{color:var(--brand-text)}
 
@@ -745,14 +752,17 @@ function triggersBody(box,i){
   } else {
     const ul = el("ul",{class:"ticks"});
     for (const t of shown){
-      const on = t.status==="achieved";
-      ul.append(el("li",null, el("button",{class:"tick","aria-pressed":on, disabled:!!S.busy["t-"+t.id], onclick:()=>toggleTrigger(t)},
+      const on = t.status==="achieved", n = timesOf(t);
+      ul.append(el("li",null, el("button",{class:"tick","aria-pressed":on, "aria-label": t.name+(n ? ", done "+n+(n===1?" time":" times")+". Tap to add one more." : ". Tap to tick."), onclick:()=>bumpTrigger(t,1)},
         el("span",{class:"box","aria-hidden":"true", text:on?"\u2713":""}),
         el("span",{class:"em","aria-hidden":"true", text:t.emoji||"\u2728"}),
         el("span",{class:"tt", text:t.name}),
-        tab==="all" ? el("span",{class:"when", text:PILLAR_SHORT[trigCat(t)]}) : null)));
+        n>1 ? el("span",{class:"times","aria-hidden":"true", text:"\u00d7"+n}) : null,
+        tab==="all" ? el("span",{class:"when", text:PILLAR_SHORT[trigCat(t)]}) : null),
+        on ? el("button",{class:"undo", "aria-label":"Take one away from "+t.name, title:"Take one away", onclick:()=>bumpTrigger(t,-1), text:"\u2212"}) : null));
     }
     box.append(ul);
+    if (S.triggers.some(t=>t.status==="achieved")) box.append(el("p",{class:"tick-hint", text:"Did it again? Tap it again to add one more. Use \u2212 to take one away."}));
   }
 
   // adding is tucked away until asked for
@@ -916,12 +926,35 @@ async function saveWriting(s, single){
   finally { S.busy[s.key]=false; if (single) await load(); }
 }
 
-async function toggleTrigger(t){
-  const to = t.status==="achieved" ? "todo" : "achieved";
-  S.busy["t-"+t.id]=true; render();
-  try { await call("set_trigger_status",{date:S.date, trigger:t.id, status:to}); t.status=to; delete S.msgs.triggers; if (to==="achieved") { toast(t.name+" ticked"); celebrate(); } }
-  catch(e){ S.msgs.triggers={ok:false,text:errText(e)}; }
-  finally { delete S.busy["t-"+t.id]; render(); }
+// Taps count up straight away; quick taps are gathered and saved together.
+function timesOf(t){ return t.status==="achieved" ? Math.max(1, t.timesDone||1) : 0; }
+const trigPending = {};
+function bumpTrigger(t, d){
+  const before = timesOf(t), n = Math.max(0, Math.min(999, before+d));
+  if (n===before) return;
+  t.timesDone = n; t.status = n ? "achieved" : "todo";
+  const key = S.date+"|"+t.id;
+  const p = trigPending[key] || (trigPending[key] = {date:S.date, delta:0, chain:Promise.resolve()});
+  p.delta += n-before;
+  clearTimeout(p.timer); p.timer = setTimeout(()=>flushTrigger(t, p), 450);
+  delete S.msgs.triggers;
+  if (d>0){ toast(n===1 ? t.name+" ticked" : t.name+" \u00d7"+n); if (n===1) celebrate(); }
+  render();
+}
+function flushTrigger(t, p){
+  const date = p.date;
+  if (!p.delta) return;
+  const change = p.delta; p.delta = 0;
+  p.chain = p.chain.then(async()=>{
+    try {
+      const r = await call("count_trigger",{date, trigger:t.id, change});
+      if (r && date===S.date && !p.delta){ t.timesDone = r.times_done; t.status = r.status; }
+    } catch(e){
+      if (date===S.date){ const n = Math.max(0, timesOf(t)-change); t.timesDone = n; t.status = n ? "achieved" : "todo"; }
+      S.msgs.triggers={ok:false,text:errText(e)};
+    }
+    render();
+  });
 }
 
 async function tickSweep(it){
