@@ -17,6 +17,7 @@ const TOOLS = new Set([
   "add_trigger",
   "plan_scenario",
   "set_trigger_status",
+  "count_trigger",
 ]);
 
 /** The dashboard page's data door: one Progress Pad tool call per request, as the signed-in user. */

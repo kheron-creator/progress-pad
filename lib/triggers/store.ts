@@ -38,7 +38,16 @@ export type FlattenedDayTrigger = {
   name: string;
   emoji: string | null;
   status: DateTriggerStatus;
+  /** How many times it was done that day; 0 while todo. */
+  timesDone: number;
 };
+
+/** True when the database hasn't had the times_done migration yet. */
+export function isMissingTimesDone(error: { code?: string; message?: string } | null) {
+  return Boolean(
+    error && (error.code === "42703" || error.code === "PGRST204") && /times_done/.test(error.message ?? ""),
+  );
+}
 
 const TRIGGER_CATALOG = new Map<string, (typeof triggerOptions)[number]>(
   triggerOptions.map((item) => [item.id, item]),
@@ -512,15 +521,17 @@ export async function setDateTriggerStatus(
   status: DateTriggerStatus,
 ) {
   const userId = await requireUserId(supabase);
-  const { error } = await supabase.from("date_trigger_states").upsert(
-    {
-      user_id: userId,
-      on_date: onDate,
-      trigger_id: triggerId,
-      status,
-    },
-    { onConflict: "user_id,on_date,trigger_id" },
-  );
+  const row = { user_id: userId, on_date: onDate, trigger_id: triggerId, status };
+  // A fresh tick always starts the day's count again at one.
+  let { error } = await supabase
+    .from("date_trigger_states")
+    .upsert({ ...row, times_done: 1 }, { onConflict: "user_id,on_date,trigger_id" });
+
+  if (isMissingTimesDone(error)) {
+    ({ error } = await supabase
+      .from("date_trigger_states")
+      .upsert(row, { onConflict: "user_id,on_date,trigger_id" }));
+  }
 
   if (error) {
     throw error;
@@ -532,6 +543,7 @@ export function flattenDayTriggers(
   triggers: StoredTrigger[],
   scenarios: StoredScenario[],
   statuses: Record<string, DateTriggerStatus> = {},
+  timesDone: Record<string, number> = {},
 ): FlattenedDayTrigger[] {
   const triggerById = new Map(triggers.map((trigger) => [trigger.id, trigger]));
   const scenarioById = new Map(scenarios.map((scenario) => [scenario.id, scenario]));
@@ -549,11 +561,13 @@ export function flattenDayTriggers(
     }
 
     seen.add(id);
+    const achieved = statuses[id] === "achieved";
     result.push({
       id,
       name: trigger.name,
       emoji: trigger.emoji,
-      status: statuses[id] === "achieved" ? "achieved" : "todo",
+      status: achieved ? "achieved" : "todo",
+      timesDone: achieved ? Math.max(1, timesDone[id] ?? 1) : 0,
     });
   }
 
