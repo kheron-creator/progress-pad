@@ -270,6 +270,25 @@ textarea::placeholder,.field::placeholder{color:var(--muted)}
 .linkbtn{background:none;border:0;padding:0;color:var(--brand-text);font-weight:700;text-decoration:underline;text-underline-offset:3px}
 a{color:var(--brand-text)}
 .active .ticks li{flex-direction:column}
+.seg.sm{box-shadow:none;align-self:flex-start}
+.seg.sm button{padding:5px 14px;font-size:14px}
+.bx{display:flex;flex-direction:column;gap:6px;padding-left:10px;border-left:3px solid var(--bx)}
+.bx .lab{color:var(--bx)}
+.bx .sub{margin:-4px 0 0;font-size:13px;color:var(--muted)}
+.bx .none{margin:0;font-size:14px;color:var(--muted)}
+.tick .rk{font-family:var(--head);font-weight:700;color:var(--muted)}
+.bx .tick{gap:10px;padding:10px}
+.bx .tick .tt{flex-basis:5em}
+.bx .schedbtn{width:40px}
+.updown{flex:none;width:36px;display:flex;flex-direction:column;gap:2px}
+.updown button{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:8px;display:grid;place-items:center;color:var(--ink-2);font-size:14px;min-height:21px;padding:0}
+.updown button:hover:not(:disabled){border-color:var(--a-mind);color:var(--a-mind)}
+.updown button:disabled{opacity:.35}
+.boxpick{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.boxpick b{font-family:var(--head);font-size:12px;font-weight:600;color:var(--ink-2)}
+.boxpick button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;font-family:var(--head);font-weight:600;font-size:13px;color:var(--ink)}
+.boxpick button:hover:not(:disabled){border-color:var(--bx)}
+.boxpick button[aria-pressed="true"]{background:var(--bx);border-color:var(--bx);color:#fff}
 .linkbtn{background:none;border:0;padding:0;color:var(--brand-text);font-weight:700;text-decoration:underline;text-underline-offset:3px}
 a{color:var(--brand-text)}
 
@@ -387,6 +406,9 @@ const ICONS = {
   heart:'<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z"/>',
   chev:'<path d="m6 9 6 6 6-6"/>',
   pin:'<path d="M9 3h6l-1 6 4 4H6l4-4zM12 13v8"/>',
+  up:'<path d="m6 15 6-6 6 6"/>',
+  down:'<path d="m6 9 6 6 6-6"/>',
+  grid:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
   cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'
 };
 const PILLAR_SHORT = {mentally:"Mental", emotionally:"Emotional", professionally:"Professional", physically:"Physical", socially:"Social", romantically:"Romantic"};
@@ -894,50 +916,124 @@ function mindBody(box,s,i){
   const o = activeItems().length;
   if (o) box.append(el("div",null, el("button",{class:"linkbtn", onclick:()=>{ S.open = STEPS.findIndex(x=>x.key==="active"); render(); $("head-active").scrollIntoView({block:"start",behavior:"smooth"}); }, text:"See all "+o+" open items in Active Mind Sweep"})));
 }
+// Eisenhower boxes for ranking open Mind Sweep items
+const BOXES = [
+  ["do","Do now","Urgent and important. Do these first.","var(--err)"],
+  ["schedule","Schedule","Important but not urgent. Give each one a day.","var(--a-refl)"],
+  ["delegate","Delegate","Urgent but not important. Who could do it for you?","var(--a-quotes)"],
+  ["drop","Drop","Not urgent or important. Let these go when you can.","var(--muted)"]
+];
+S.sweepView = (()=>{ try { return localStorage.getItem("ppad-sweepview")==="day" ? "day" : "rank"; } catch(e){ return "rank"; } })();
+function setSweepView(v){ S.sweepView = v; try { localStorage.setItem("ppad-sweepview", v); } catch(e){} render(); }
+function boxOf(it){ return BOXES.some(b=>b[0]===it.priority) ? it.priority : null; }
+function byRank(a,b){ return (a.sort_order||0)-(b.sort_order||0) || a.on_date.localeCompare(b.on_date) || a.title.localeCompare(b.title); }
+
+async function setBox(it, p){
+  const o = {id:it.id, priority:p};
+  if (p){ const same = activeItems().filter(x=>x.id!==it.id && x.status!=="achieved" && boxOf(x)===p); o.rank = same.reduce((m,x)=>Math.max(m, x.sort_order||0), 0) + 1; }
+  S.busy["m-"+it.id]=true; S.boxp = null; render();
+  try { await call("update_mind_sweep_item", o); it.priority = p; if (o.rank!=null) it.sort_order = o.rank; toast(p ? "Moved to "+BOXES.find(b=>b[0]===p)[1] : "Taken out of its box"); }
+  catch(e){ S.msgs.active={ok:false,text:errText(e)}; }
+  finally { delete S.busy["m-"+it.id]; render(); }
+}
+async function moveRank(list, i, dir){
+  const j = i+dir; if (j<0 || j>=list.length) return;
+  const next = list.slice(); [next[i],next[j]] = [next[j],next[i]];
+  const changed = next.map((it,k)=>[it,k+1]).filter(([it,r])=>it.sort_order!==r);
+  for (const [it,r] of changed){ it.sort_order = r; S.busy["m-"+it.id]=true; }
+  S.focusRank = next[j].id+(dir<0?"-up":"-down"); render();
+  try { await Promise.all(changed.map(([it,r])=>call("update_mind_sweep_item",{id:it.id, rank:r}))); }
+  catch(e){ S.msgs.active={ok:false,text:errText(e)}; await loadActive(); }
+  finally { for (const [it] of changed) delete S.busy["m-"+it.id]; render(); }
+}
+
+function schedPanel(it, li, busy, today){
+  const tmr = shiftDate(today,1), wd = (new Date(today+"T12:00:00Z").getUTCDay()+6)%7, mon = shiftDate(today,7-wd);
+  const din = el("input",{type:"date", min:today, value: it.on_date>today ? it.on_date : tmr, "aria-label":"Pick a day"});
+  const chips = [];
+  if (it.on_date!==today) chips.push(["Today",today]);
+  chips.push(["Tomorrow",tmr]);
+  if (mon!==tmr) chips.push(["Next Monday",mon]);
+  chips.push(["In a week",shiftDate(today,7)]);
+  li.append(el("div",{class:"sched"}, el("b",{text:"Move to"}),
+    ...chips.map(([l,d])=>el("button",{class:"chip", disabled:busy, onclick:()=>moveSweep(it,d), text:l})),
+    din, el("button",{class:"btn", disabled:busy, onclick:()=>moveSweep(it, din.value), text:"Move"})));
+}
+function boxPicker(it, busy, label){
+  const cur = boxOf(it);
+  const opts = BOXES.map(([k,l,,c])=>el("button",{style:"--bx:"+c, "aria-pressed":cur===k, disabled:busy, onclick:()=>setBox(it, cur===k ? null : k), text:l}));
+  return el("div",{class:"boxpick"}, label ? el("b",{text:label}) : null, ...opts);
+}
+// one open item: tick, optional rank arrows, box button, calendar
+function sweepRow(it, today, rank){
+  const busy = !!S.busy["m-"+it.id], open = S.sched===it.id, boxOpen = S.boxp===it.id;
+  const li = el("li",null);
+  const short = it.title.length>160 ? it.title.slice(0,157)+"…" : it.title;
+  const row = el("div",{class:"arow"},
+    el("button",{class:"tick","aria-pressed":false, disabled:busy, onclick:()=>tickSweep(it)},
+      el("span",{class:"box","aria-hidden":"true"}),
+      el("span",{class:"tt"}, rank ? el("b",{class:"rk", text:rank.n+". "}) : null, short),
+      el("span",{class:"when", text: it.on_date===today ? "today" : niceShort(it.on_date)})));
+  if (rank) row.append(el("div",{class:"updown"},
+    el("button",{id:"rk-"+it.id+"-up", "aria-label":"Move "+it.title.slice(0,60)+" up", title:"Move up", disabled:busy||rank.n===1, onclick:()=>moveRank(rank.list, rank.n-1, -1)}, icon("up")),
+    el("button",{id:"rk-"+it.id+"-down", "aria-label":"Move "+it.title.slice(0,60)+" down", title:"Move down", disabled:busy||rank.n===rank.list.length, onclick:()=>moveRank(rank.list, rank.n-1, 1)}, icon("down"))));
+  if (rank) row.append(el("button",{class:"schedbtn", "aria-expanded":boxOpen, "aria-label":"Change box for "+it.title.slice(0,60), title:"Change box", disabled:busy, onclick:()=>{ S.boxp = boxOpen ? null : it.id; S.sched = null; render(); }}, icon("grid")));
+  row.append(el("button",{class:"schedbtn", id:"sch-"+it.id, "aria-expanded":open, "aria-label":"Schedule "+it.title.slice(0,60), title:"Move to another day", disabled:busy, onclick:()=>{ S.sched = open ? null : it.id; S.boxp = null; render(); }}, icon("cal")));
+  li.append(row);
+  if (S.sweepView==="rank" && !rank) li.append(boxPicker(it, busy, "Put in"));
+  if (boxOpen) li.append(boxPicker(it, busy, "Move to box"));
+  if (open) schedPanel(it, li, busy, today);
+  return li;
+}
+
 function activeBody(box){
   const items = activeItems().filter(x=>x.status!=="achieved");
   const today = TODAY();
-  const groups = [
-    ["late","Carried over from earlier days", items.filter(x=>x.on_date<today).sort((a,b)=>b.on_date.localeCompare(a.on_date))],
-    ["now","Today", items.filter(x=>x.on_date===today)],
-    ["soon","Scheduled for later", items.filter(x=>x.on_date>today).sort((a,b)=>a.on_date.localeCompare(b.on_date))]
-  ];
   const wrap = el("div",{class:"active"});
+  const seg = el("div",{class:"seg sm", role:"group", "aria-label":"Show tasks"},
+    el("button",{"aria-pressed":S.sweepView==="rank", onclick:()=>setSweepView("rank"), text:"By priority"}),
+    el("button",{"aria-pressed":S.sweepView==="day", onclick:()=>setSweepView("day"), text:"By day"}));
+  wrap.append(seg);
   if (!items.length) wrap.append(el("p",{class:"empty", text:"Nothing open. Clear mind!"}));
-  if (items.length) wrap.append(el("p",{class:"hint", style:"margin:0", text:"Tick an item when it's done and it goes on your Done list. Tap the calendar to move it to another day."}));
-  for (const [k,label,list] of groups){
-    if (!list.length) continue;
-    const g = el("div",{class:"agroup"}, el("span",{class:"lab"+(k==="late"?" late":""), text:label+" ("+list.length+")"}));
-    const full = !!S.showAll["act-"+k], shown = full ? list : list.slice(0,6);
-    const ul = el("ul",{class:"ticks"});
-    for (const it of shown){
-      const busy = !!S.busy["m-"+it.id], open = S.sched===it.id;
-      const li = el("li",null);
-      li.append(el("div",{class:"arow"},
-        el("button",{class:"tick","aria-pressed":false, disabled:busy, onclick:()=>tickSweep(it)},
-          el("span",{class:"box","aria-hidden":"true"}),
-          el("span",{class:"tt", text: it.title.length>160 ? it.title.slice(0,157)+"\u2026" : it.title}),
-          el("span",{class:"when", text: it.on_date===today ? "today" : niceShort(it.on_date)})),
-        el("button",{class:"schedbtn", id:"sch-"+it.id, "aria-expanded":open, "aria-label":"Schedule "+it.title.slice(0,60), title:"Move to another day", disabled:busy, onclick:()=>{ S.sched = open ? null : it.id; render(); }}, icon("cal"))));
-      if (open){
-        const tmr = shiftDate(today,1), wd = (new Date(today+"T12:00:00Z").getUTCDay()+6)%7, mon = shiftDate(today,7-wd);
-        const din = el("input",{type:"date", min:today, value: it.on_date>today ? it.on_date : tmr, "aria-label":"Pick a day"});
-        const chips = [];
-        if (it.on_date!==today) chips.push(["Today",today]);
-        chips.push(["Tomorrow",tmr]);
-        if (mon!==tmr) chips.push(["Next Monday",mon]);
-        chips.push(["In a week",shiftDate(today,7)]);
-        li.append(el("div",{class:"sched"}, el("b",{text:"Move to"}),
-          ...chips.map(([l,d])=>el("button",{class:"chip", disabled:busy, onclick:()=>moveSweep(it,d), text:l})),
-          din, el("button",{class:"btn", disabled:busy, onclick:()=>moveSweep(it, din.value), text:"Move"})));
+  if (items.length && S.sweepView==="rank"){
+    wrap.append(el("p",{class:"hint", style:"margin:0", text:"Put each task in a box, then use the arrows to put the most important at the top. Tick a task when it's done."}));
+    const unsorted = items.filter(x=>!boxOf(x)).sort((a,b)=>a.on_date.localeCompare(b.on_date));
+    const order = [...BOXES.slice(0,3), "unsorted", BOXES[3]];
+    for (const b of order){
+      if (b==="unsorted"){
+        if (!unsorted.length) continue;
+        const g = el("div",{class:"agroup"}, el("span",{class:"lab", text:"Not sorted yet ("+unsorted.length+")"}));
+        const full = !!S.showAll["act-unsorted"], shown = full ? unsorted : unsorted.slice(0,6);
+        const ul = el("ul",{class:"ticks"}); for (const it of shown) ul.append(sweepRow(it, today, null)); g.append(ul);
+        if (unsorted.length>6) g.append(el("div",null, el("button",{class:"linkbtn", onclick:()=>{ S.showAll["act-unsorted"]=!full; render(); }, text: full ? "Show fewer" : "Show all "+unsorted.length})));
+        wrap.append(g); continue;
       }
-      ul.append(li);
+      const [k,label,sub,c] = b;
+      const list = items.filter(x=>boxOf(x)===k).sort(byRank);
+      const g = el("div",{class:"bx", style:"--bx:"+c}, el("span",{class:"lab", text:label+(list.length ? " ("+list.length+")" : "")}), el("p",{class:"sub", text:sub}));
+      if (!list.length) g.append(el("p",{class:"none", text:"Nothing here yet."}));
+      else { const ul = el("ul",{class:"ticks"}); list.forEach((it,n)=>ul.append(sweepRow(it, today, {n:n+1, list}))); g.append(ul); }
+      wrap.append(g);
     }
-    g.append(ul);
-    if (list.length>6) g.append(el("div",null, el("button",{class:"linkbtn", onclick:()=>{ S.showAll["act-"+k]=!full; render(); }, text: full ? "Show fewer" : "Show all "+list.length})));
-    wrap.append(g);
   }
-  box.append(wrap);
+  if (items.length && S.sweepView==="day"){
+    wrap.append(el("p",{class:"hint", style:"margin:0", text:"Tick an item when it's done and it goes on your Done list. Tap the calendar to move it to another day."}));
+    const groups = [
+      ["late","Carried over from earlier days", items.filter(x=>x.on_date<today).sort((a,b)=>b.on_date.localeCompare(a.on_date))],
+      ["now","Today", items.filter(x=>x.on_date===today)],
+      ["soon","Scheduled for later", items.filter(x=>x.on_date>today).sort((a,b)=>a.on_date.localeCompare(b.on_date))]
+    ];
+    for (const [k,label,list] of groups){
+      if (!list.length) continue;
+      const g = el("div",{class:"agroup"}, el("span",{class:"lab"+(k==="late"?" late":""), text:label+" ("+list.length+")"}));
+      const full = !!S.showAll["act-"+k], shown = full ? list : list.slice(0,6);
+      const ul = el("ul",{class:"ticks"}); for (const it of shown) ul.append(sweepRow(it, today, null)); g.append(ul);
+      if (list.length>6) g.append(el("div",null, el("button",{class:"linkbtn", onclick:()=>{ S.showAll["act-"+k]=!full; render(); }, text: full ? "Show fewer" : "Show all "+list.length})));
+      wrap.append(g);
+    }
+  }
+  box.append(wrap, msgEl("active"));
+  if (S.focusRank){ const f = document.getElementById("rk-"+S.focusRank); S.focusRank = null; if (f) setTimeout(()=>{ if (!f.disabled) f.focus(); },0); }
 }
 
 function writingBody(box,s,i){
