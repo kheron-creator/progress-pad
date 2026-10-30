@@ -36,6 +36,7 @@ import {
   MoonIcon as PhosphorMoonIcon,
   NoteIcon as PhosphorNoteIcon,
   PencilSimpleIcon,
+  MinusIcon as PhosphorMinusIcon,
   PlusIcon as PhosphorPlusIcon,
   QuotesIcon as PhosphorQuotesIcon,
   SmileyIcon as PhosphorSmileyIcon,
@@ -145,6 +146,7 @@ export const SearchIcon = withIcon(PhosphorMagnifyingGlassIcon);
 export const MicrophoneIcon = withIcon(PhosphorMicrophoneIcon);
 export const StopIcon = withIcon(PhosphorStopIcon);
 export const PlusIcon = withIcon(PhosphorPlusIcon);
+export const MinusIcon = withIcon(PhosphorMinusIcon);
 export const QuotesIcon = withIcon(PhosphorQuotesIcon);
 export const PencilIcon = withIcon(PencilSimpleIcon);
 export const DragHandleIcon = withIcon(DotsSixVerticalIcon);

@@ -12,6 +12,7 @@ import type { Database } from "@/lib/supabase/database";
 import {
   loadDatePlan,
   loadDateTriggerStates,
+  loadDateTriggerTimes,
   loadLibraryScenarios,
   loadLibraryTriggers,
   pruneStatesToAssignments,
@@ -30,6 +31,8 @@ export type AppSession = {
   libraryTriggers: StoredTrigger[];
   libraryScenarios: StoredScenario[];
   states: Record<string, Record<string, DateTriggerStatus>>;
+  /** How many times each trigger was done, by date. */
+  times: Record<string, Record<string, number>>;
   writingByDate: WritingByDate;
   mindSweepByDate: MindSweepByDate;
   pillarsByDate: PillarsByDate;
@@ -47,10 +50,11 @@ function mergeById<T extends { id: string }>(...lists: T[][]) {
 }
 
 export async function loadAppSession(supabase: Client): Promise<AppSession> {
-  const [plan, states, writing, pillars, libraryTriggers, libraryScenarios, notifications] =
+  const [plan, states, times, writing, pillars, libraryTriggers, libraryScenarios, notifications] =
     await Promise.all([
       loadDatePlan(supabase),
       loadDateTriggerStates(supabase),
+      loadDateTriggerTimes(supabase),
       loadHomeWriting(supabase),
       loadHomePillars(supabase),
       loadLibraryTriggers(supabase),
@@ -74,6 +78,7 @@ export async function loadAppSession(supabase: Client): Promise<AppSession> {
       plan.assignments,
       (scenarioId) => scenarioTriggerIds.get(scenarioId),
     ),
+    times,
     writingByDate: writing.writingByDate,
     mindSweepByDate: writing.mindSweepByDate,
     pillarsByDate: pillars,

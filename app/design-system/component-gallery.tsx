@@ -38,6 +38,7 @@ import {
   LightningIcon,
   MoonIcon,
   NoteIcon,
+  MinusIcon,
   PlusIcon,
   QuotesIcon,
   SparkleIcon,
@@ -769,6 +770,20 @@ export function ComponentGallery() {
                 title="1 min of gratitude"
                 leftEmoji={false}
                 showDescription={false}
+                onDelete={() => undefined}
+              />
+              <TriggerCard
+                kind="item"
+                state="achieved"
+                title="10 push-ups"
+                count={3}
+                leftEmoji={false}
+                showDescription={false}
+                secondaryAction={
+                  <IconButton label="Take one away" variant="secondary" look="clear" size="md">
+                    <MinusIcon size={18} />
+                  </IconButton>
+                }
                 onDelete={() => undefined}
               />
               <TriggerCard kind="item" state="select" title="Trigger Name" description="description" />

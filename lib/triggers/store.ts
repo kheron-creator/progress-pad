@@ -514,6 +514,56 @@ export async function loadDateTriggerStates(supabase: Client) {
   return byDate;
 }
 
+/** How many times each trigger was done, by date. Empty when the times_done column is missing. */
+export async function loadDateTriggerTimes(supabase: Client) {
+  const { data, error } = await supabase
+    .from("date_trigger_states")
+    .select("on_date, trigger_id, times_done");
+
+  if (isMissingTimesDone(error)) {
+    return {};
+  }
+
+  if (error) {
+    throw error;
+  }
+
+  const byDate: Record<string, Record<string, number>> = {};
+  for (const row of data ?? []) {
+    const onDate = String(row.on_date).slice(0, 10);
+    const day = byDate[onDate] ?? {};
+    day[row.trigger_id] = row.times_done ?? 1;
+    byDate[onDate] = day;
+  }
+
+  return byDate;
+}
+
+/** Save how many times a trigger was done that day. Zero puts it back to todo. */
+export async function setDateTriggerCount(
+  supabase: Client,
+  onDate: string,
+  triggerId: string,
+  timesDone: number,
+) {
+  const userId = await requireUserId(supabase);
+  const status: DateTriggerStatus = timesDone > 0 ? "achieved" : "todo";
+  const row = { user_id: userId, on_date: onDate, trigger_id: triggerId, status };
+  let { error } = await supabase
+    .from("date_trigger_states")
+    .upsert({ ...row, times_done: Math.max(0, timesDone) }, { onConflict: "user_id,on_date,trigger_id" });
+
+  if (isMissingTimesDone(error)) {
+    ({ error } = await supabase
+      .from("date_trigger_states")
+      .upsert(row, { onConflict: "user_id,on_date,trigger_id" }));
+  }
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function setDateTriggerStatus(
   supabase: Client,
   onDate: string,

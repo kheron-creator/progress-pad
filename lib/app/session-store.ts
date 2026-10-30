@@ -61,6 +61,7 @@ export type SessionState = AppSession & {
   savedPillarsByDate: PillarsByDate;
   setAssignments: (assignments: Updater<Record<string, DateAssignmentItem[]>>) => void;
   setStates: (states: Updater<Record<string, Record<string, DateTriggerStatus>>>) => void;
+  setTimes: (times: Updater<Record<string, Record<string, number>>>) => void;
   setWritingByDate: (writingByDate: Updater<WritingByDate>) => void;
   setMindSweepByDate: (mindSweepByDate: Updater<MindSweepByDate>) => void;
   setPillarsByDate: (pillarsByDate: Updater<PillarsByDate>) => void;
@@ -83,6 +84,7 @@ export function createSessionStore(initial: AppSession) {
     setAssignments: (assignments) =>
       set((current) => ({ assignments: apply(current.assignments, assignments) })),
     setStates: (states) => set((current) => ({ states: apply(current.states, states) })),
+    setTimes: (times) => set((current) => ({ times: apply(current.times, times) })),
     setWritingByDate: (writingByDate) =>
       set((current) => ({ writingByDate: apply(current.writingByDate, writingByDate) })),
     setMindSweepByDate: (mindSweepByDate) =>
