@@ -39,6 +39,7 @@ import {
   HeartIcon,
   LightbulbIcon,
   LightningIcon,
+  MinusIcon,
   PlusIcon,
   QuotesIcon,
   SearchIcon,
@@ -110,9 +111,8 @@ import {
   flattenDayTriggers,
   removeTriggerFromDayAssignments,
   saveDateAssignments,
-  setDateTriggerStatus,
+  setDateTriggerCount,
   uniqueAssignedTriggerIds,
-  type DateTriggerStatus,
 } from "@/lib/triggers/store";
 import { burstConfetti } from "@/lib/ui/burst-confetti";
 import { SORTABLE_HANDLE_CLASS, useSortableSensors } from "@/lib/ui/dnd-sensors";
@@ -376,6 +376,8 @@ export function HomePage() {
   const planScenarios = useSessionStore((state) => state.planScenarios);
   const states = useSessionStore((state) => state.states);
   const setStates = useSessionStore((state) => state.setStates);
+  const times = useSessionStore((state) => state.times);
+  const setTimes = useSessionStore((state) => state.setTimes);
   const writingByDate = useSessionStore((state) => state.writingByDate);
   const setWritingByDate = useSessionStore((state) => state.setWritingByDate);
   const mindSweepByDate = useSessionStore((state) => state.mindSweepByDate);
@@ -493,8 +495,9 @@ export function HomePage() {
         plan.triggers,
         plan.scenarios,
         states[onDate],
+        times[onDate],
       ),
-    [onDate, plan, states],
+    [onDate, plan, states, times],
   );
   const dayAssignedTriggerIds = useMemo(
     () =>
@@ -541,31 +544,43 @@ export function HomePage() {
     celebrateTimer.current = window.setTimeout(() => setCelebrateName(null), 2800);
   }
 
-  async function toggleTrigger(id: string) {
-    const current = states[onDate]?.[id] === "achieved" ? "achieved" : "todo";
-    const next: DateTriggerStatus = current === "achieved" ? "todo" : "achieved";
-    const previousDay = states[onDate] ?? {};
+  // Tapping a trigger ticks it; tapping again counts another go (×2, ×3…). Minus takes one away.
+  const triggerSaves = useRef<Record<string, Promise<void>>>({});
 
-    setStates((currentStates) => ({
-      ...currentStates,
-      [onDate]: { ...previousDay, [id]: next },
+  function countTrigger(id: string, change: 1 | -1) {
+    const trigger = triggers.find((item) => item.id === id);
+    const before = trigger?.timesDone ?? 0;
+    const after = Math.min(999, Math.max(0, before + change));
+    if (after === before) {
+      return;
+    }
+
+    const day = onDate;
+    const previousStatus = states[day] ?? {};
+    const previousTimes = times[day] ?? {};
+    setStates((current) => ({
+      ...current,
+      [day]: { ...(current[day] ?? {}), [id]: after > 0 ? "achieved" : "todo" },
     }));
+    setTimes((current) => ({ ...current, [day]: { ...(current[day] ?? {}), [id]: after } }));
 
-    if (next === "achieved") {
-      const name = triggers.find((trigger) => trigger.id === id)?.name ?? "trigger";
-      celebrateTrigger(name);
+    if (before === 0 && after === 1) {
+      celebrateTrigger(trigger?.name ?? "trigger");
     }
 
-    try {
-      await setDateTriggerStatus(createClient(), onDate, id, next);
-    } catch {
-      setStates((currentStates) => ({
-        ...currentStates,
-        [onDate]: previousDay,
-      }));
-      setCelebrateName(null);
-      showToast("Couldn't update that trigger. Please try again.", "error");
-    }
+    // Save one after another so quick taps land in order.
+    const key = `${day}|${id}`;
+    const previousSave = triggerSaves.current[key] ?? Promise.resolve();
+    triggerSaves.current[key] = previousSave.then(async () => {
+      try {
+        await setDateTriggerCount(createClient(), day, id, after);
+      } catch {
+        setStates((current) => ({ ...current, [day]: previousStatus }));
+        setTimes((current) => ({ ...current, [day]: previousTimes }));
+        setCelebrateName(null);
+        showToast("Couldn't update that trigger. Please try again.", "error");
+      }
+    });
   }
 
   async function removeTriggerFromDay(id: string) {
@@ -1677,7 +1692,29 @@ export function HomePage() {
                                       "cursor-pointer",
                                       hiddenOnMobile && "hidden md:flex",
                                     )}
-                                    onClick={() => void toggleTrigger(trigger.id)}
+                                    count={trigger.timesDone}
+                                    aria-label={
+                                      trigger.status === "achieved"
+                                        ? `${trigger.name}, done ${trigger.timesDone} ${trigger.timesDone === 1 ? "time" : "times"}. Tap to add one more.`
+                                        : `${trigger.name}. Tap to tick.`
+                                    }
+                                    secondaryAction={
+                                      trigger.status === "achieved" ? (
+                                        <IconButton
+                                          label={`Take one away from ${trigger.name}`}
+                                          variant="secondary"
+                                          look="clear"
+                                          size="md"
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+                                            countTrigger(trigger.id, -1);
+                                          }}
+                                        >
+                                          <MinusIcon size={18} />
+                                        </IconButton>
+                                      ) : undefined
+                                    }
+                                    onClick={() => countTrigger(trigger.id, 1)}
                                     onDelete={() => void removeTriggerFromDay(trigger.id)}
                                   />
                                 );

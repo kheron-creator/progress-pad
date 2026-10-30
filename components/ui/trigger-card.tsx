@@ -26,6 +26,8 @@ type TriggerCardProps = HTMLAttributes<HTMLElement> & {
   action?: ReactNode;
   secondaryAction?: ReactNode;
   dragHandle?: ReactNode;
+  /** Times done today; above 1 the achieved tag shows it, e.g. ×2. */
+  count?: number;
   onDelete?: () => void;
 };
 
@@ -53,7 +55,7 @@ function DefaultLeftEmoji() {
   );
 }
 
-function DefaultStatus({ state }: { state: TriggerCardState }) {
+function DefaultStatus({ state, count = 1 }: { state: TriggerCardState; count?: number }) {
   if (state === "select") {
     return (
       <span className="text-foreground-muted" aria-hidden>
@@ -69,7 +71,7 @@ function DefaultStatus({ state }: { state: TriggerCardState }) {
         className="border-transparent! bg-(--pp-spring-green-600)! text-white!"
         leftIcon={<CheckIcon size={8} weight="bold" />}
       >
-        ACHIEVED
+        {count > 1 ? `ACHIEVED \u00d7${count}` : "ACHIEVED"}
       </Tag>
     );
   }
@@ -100,6 +102,7 @@ export function TriggerCard({
   action,
   secondaryAction,
   dragHandle,
+  count,
   onDelete,
   className,
   ...props
@@ -116,7 +119,7 @@ export function TriggerCard({
         ? <DefaultLeftIcon state={state} />
         : leftIcon;
   const emoji = isItem ? resolveSlot(leftEmoji, <DefaultLeftEmoji />) : leftEmoji && leftEmoji !== true ? leftEmoji : null;
-  const statusSlot = isItem && status ? <DefaultStatus state={state} /> : tag;
+  const statusSlot = isItem && status ? <DefaultStatus state={state} count={count} /> : tag;
   const deleteButton =
     isItem && state !== "select" && onDelete ? (
       <IconButton
