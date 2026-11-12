@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Micro sprints · Progress Pad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Dosis:wght@500;600;700&display=swap">
+<style>
+  /* Progress Pad brand tokens (design/progress-pad-tokens.css) */
+  :root{--bg:#F5F6F6;--surface:#FFFFFF;--ink:#121414;--muted:#4A5352;--line:#CED1D1;--accent:#00872D;--spring:#00E14B;--sel:#E4FEEE;--warn:#C30000;--on-accent:#FFFFFF;
+    --head:"Poppins","Segoe UI",system-ui,sans-serif;--body:"Dosis","Avenir Next Condensed","Segoe UI",system-ui,sans-serif}
+  @media all{:root[data-theme=dark]{--bg:#121414;--surface:#252929;--ink:#EEEFEF;--muted:#BEC2C2;--line:#4A5352;--accent:#44EF97;--sel:#002D0F;--warn:#FF8A7E;--on-accent:#121414}}
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html{touch-action:manipulation}
+  body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.45 var(--body);-webkit-font-smoothing:antialiased}
+  main{max-width:1100px;margin:0 auto;padding:28px 20px 110px}
+  .top{display:flex;justify-content:space-between;align-items:flex-end}
+  h1{font-family:var(--head);font-size:22px;letter-spacing:.16em;font-weight:700;margin:0;line-height:1.1}
+  h1 span{color:var(--accent)}
+  .date{font-size:14px;color:var(--muted)}
+  button{border:0;background:none;color:inherit;font:inherit;cursor:pointer;padding:0;text-align:left}
+  input{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 8px;font:inherit;font-size:14px;width:100%}
+  .small{font-size:14px;color:var(--muted)} .small:hover{color:var(--ink)}
+  .new{margin-top:6px;display:flex;gap:8px}.new input{flex:1}
+  .t{display:block;width:100%;padding:12px 0 0;cursor:pointer}
+  .stem{width:2px;height:20px;background:var(--ink);margin-left:56px}
+  .bar{height:2px;background:var(--ink);transition:height .15s}
+  .t.drop .bar{height:5px;background:var(--accent)}
+  .cols{display:flex;overflow-x:auto;margin-top:-2px;padding-bottom:8px}
+  .col{flex:1 1 0;min-width:112px;max-width:210px;padding-left:12px;display:flex;flex-direction:column;align-items:flex-start;min-width:0}
+  .col.dropl{box-shadow:inset 3px 0 0 var(--accent)}
+  .steps{border-left:2px solid var(--line);display:flex;flex-direction:column;gap:12px;padding:18px 0;min-height:70px;width:100%}
+  .col.done .steps{border-color:var(--accent)}
+  .col.mini .steps{min-height:34px;padding:0}
+  .steps.drope{box-shadow:inset 0 -3px 0 -1px var(--accent)}
+  .srow{display:flex;align-items:flex-start;gap:2px;margin-left:-12px;padding:2px 6px 2px 0;border-radius:8px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none;cursor:grab}
+  .srow.dropb{box-shadow:0 -3px 0 -1px var(--accent)}
+  .srow.sel{background:var(--sel)}
+  .srow.ghosted{opacity:.25}
+  .tick{width:22px;height:22px;flex:none;display:grid;place-items:center}
+  .dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--ink);background:var(--bg)}
+  .srow.done .dot{border-color:var(--accent);background:var(--accent)}
+  .txt{flex:1;font-size:15px;line-height:1.3;padding-top:3px;overflow-wrap:anywhere;cursor:text}
+  .srow.done .txt{color:var(--muted);text-decoration:line-through}
+  .srow.next .txt{font-weight:600}
+  .srow.next .dot{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+  .srow.cp{align-items:center}
+  .cp .bar2{width:14px;height:3px;background:var(--ink);border-radius:2px}
+  .cp .txt{font-family:var(--head);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;padding-top:0}
+  .cp.hit .txt{color:var(--accent)}.cp.hit .bar2{background:var(--accent)}
+  .later{opacity:.45}
+  .srow input{font-size:15px;padding:3px 6px;margin-top:-1px}
+  .x{color:var(--muted);font-size:16px;line-height:1;padding:2px 4px}
+  .plus{margin-left:-7px;font-size:14px;color:var(--muted);display:flex;gap:6px;align-items:center}
+  .plus b{width:12px;height:12px;display:grid;place-items:center;font-weight:400;background:var(--bg)}
+  .plusrow{display:flex;flex-direction:column;gap:8px}
+  .addstep{margin-left:8px;padding-right:6px}
+  .addcp{margin-left:4px;font-size:13px;color:var(--muted);margin-top:-6px;margin-bottom:-4px}
+  .circle{width:24px;height:24px;border-radius:50%;border:2px solid var(--ink);background:var(--bg);margin-left:-11px;display:grid;place-items:center;flex:none}
+  .col.done .circle{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+  .circle svg{display:none}.col.done .circle svg{display:block}
+  .name{display:block;font-family:var(--head);font-size:13px;font-weight:600;margin:8px 0 0 -11px;line-height:1.3;padding-right:8px;overflow-wrap:anywhere;touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab}
+  .col.mini .name{font-weight:500;color:var(--muted)}
+  .meta{font-size:13px;color:var(--muted);margin-left:-11px}
+  .menu{margin:4px 0 0 -11px;font-size:14px;display:flex;gap:10px;flex-wrap:wrap}
+  .menu button{text-decoration:underline;text-underline-offset:3px}
+  .rename{margin:8px 0 0 -11px;width:calc(100% + 11px)}
+  .stepify{margin:8px 0 0 -11px;font-size:14px;display:flex;flex-direction:column;gap:6px;padding-right:8px}
+  .stepify label,.stepify .or{color:var(--muted)}
+  .goal{display:flex;flex-direction:column;gap:6px}
+  .where{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .where button{font-size:14px;border:1px solid var(--line);border-radius:10px;padding:5px 10px}
+  .earlier{flex:none;align-self:flex-start;margin:18px 0 0 12px;font-size:14px;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg)}
+  .nudge{font-size:14px;color:var(--accent);min-height:22px;margin:14px 0 0;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+  .nudge button{color:var(--ink);text-decoration:underline;text-underline-offset:3px;font-size:14px}
+  .donecol .srow{cursor:default;touch-action:auto}
+  .donecol .txt{text-align:left;text-decoration:none!important;color:var(--muted)}
+  .dwhen{display:block;font-size:12px;color:var(--muted);opacity:.8}
+  .dsub{margin:-6px 0 0 14px;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:3px;padding-right:6px}
+  .dsub button{color:var(--accent);text-decoration:underline;text-underline-offset:3px;font-size:13px;margin-top:2px}
+  .donecol .name{cursor:default}
+  .pager{display:flex;justify-content:center;gap:8px;margin-top:4px}
+  .viewbar{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;font-size:14px;color:var(--muted);margin-top:8px}
+  .viewbar button{color:var(--accent);text-decoration:underline;text-underline-offset:3px;font-size:14px}
+  .col.mark{flex:0 0 58px;max-width:58px;opacity:.55}
+  body.zoomed .col.mark{flex:0 0 58px;zoom:1}
+  .mark .stub{width:2px;height:28px;background:var(--line)}
+  .mark .stubdot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--line);margin:2px 0 0 -3.5px}
+  .mark .mname{font-size:11px;line-height:1.25;color:var(--muted);margin:6px 0 0 -11px;padding-right:4px;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .cols.one .col:not(.mark){flex:1 1 auto;max-width:none}
+  .cols.one .txt,.cols.one .srow input{font-size:18px}
+  .cols.one .steps{gap:16px}
+  .name.picked{color:var(--accent)}
+  .name.picked::before{content:"\2713  "}
+  .minimap{position:relative;height:16px;margin-top:6px;border:1px solid var(--line);border-radius:8px;touch-action:none;cursor:pointer}
+  .minimap i{position:absolute;top:4px;width:1.5px;height:6px;background:var(--muted);opacity:.6}
+  .minimap b{position:absolute;top:-2px;bottom:-2px;border:2px solid var(--accent);border-radius:6px;background:color-mix(in srgb,var(--accent) 12%,transparent)}
+  .pager button{width:8px;height:8px;border-radius:50%;background:var(--line);padding:0}
+  .pager button.on{background:var(--accent);width:18px;border-radius:4px}
+  @media (max-width:640px){
+    .cols{scroll-snap-type:x mandatory;scroll-behavior:smooth;overscroll-behavior-x:contain;scrollbar-width:none}
+    .cols::-webkit-scrollbar{display:none}
+    .col{flex:0 0 33.3333%;max-width:none;min-width:0}
+    .col:nth-child(3n+1){scroll-snap-align:start}
+    .srow{touch-action:pan-x}
+  }
+  .zoombar{display:flex;gap:4px;align-items:center;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+  .zoombar button{min-width:28px;height:28px;border:1px solid var(--line);border-radius:8px;display:grid;place-items:center;font-size:15px;line-height:1;color:var(--muted);text-align:center;padding:0 6px}
+  .zoombar button:hover{color:var(--ink)}
+  .zoombar .zl{border-color:transparent;font-size:13px;min-width:46px}
+  .zoombar .zfit{font-size:13px}
+  #cols{touch-action:pan-x pan-y}
+  body.zoomed .col{zoom:var(--z,1);flex:0 0 150px;max-width:none;min-width:0}
+  body.zoomed .cols{scroll-snap-type:none}
+  .srow.tint{background:color-mix(in srgb,var(--c) 24%,transparent)}
+  .srow.tint .dot{border-color:var(--c)}
+  .srow.tint.done .dot{background:var(--c)}
+  .col.tint .steps{border-left-color:var(--c);border-left-width:3px}
+  .col.tint .name{width:fit-content;box-shadow:inset 0 -.5em 0 color-mix(in srgb,var(--c) 45%,transparent);border-radius:2px}
+  .swatches{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .sw{width:22px;height:22px;border-radius:50%;background:var(--c);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--line);flex:none}
+  .sw.on{box-shadow:0 0 0 2px var(--ink)}
+  .sw.none{background:linear-gradient(135deg,transparent 45%,var(--muted) 45%,var(--muted) 55%,transparent 55%)}
+  .selbar .sw{border-color:var(--ink)}
+  .dayh{display:block;height:20px;margin:6px 0 2px -11px;font-family:var(--head);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  .dayh.today{color:var(--accent)}
+  .dayh.late{color:var(--muted);font-style:italic}
+  .col.istoday .steps{border-left-color:var(--accent)}
+  .col.tint.istoday .steps{border-left-color:var(--c)}
+  .daymenu input[type=date],.selbar input[type=date],.pinf input[type=date]{width:auto;font-size:14px;padding:4px 6px}
+  .tags{display:inline-flex;gap:4px;margin-left:6px;vertical-align:1px}
+  .tg{font-size:11px;font-weight:600;padding:1px 6px;border-radius:8px;background:var(--sel);color:var(--accent);white-space:nowrap}
+  .tg.mins{background:none;border:1px solid var(--line);color:var(--muted)}
+  .srow.due:not(.done){background:color-mix(in srgb,var(--accent) 12%,transparent)}
+  .srow.draft{opacity:.55}
+  .srow.draft .dot{border-style:dashed}
+  .plan{margin:8px 0 0 -11px;font-size:14px;display:flex;flex-direction:column;gap:6px;padding-right:8px}
+  .plan textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:var(--bg);color:var(--ink);resize:vertical;min-height:64px}
+  .plan .say{color:var(--muted);line-height:1.35}
+  .plan .you{font-size:13px;color:var(--muted);font-style:italic}
+  .planb{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .planb button:not(.small){text-decoration:underline;text-underline-offset:3px}
+  .drafts{margin-left:4px;font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+  .drafts button{color:var(--accent);font-weight:600}
+  .dkeep{font-size:12px;color:var(--accent);font-weight:600;padding:2px 4px}
+  .col.pin{flex:0 0 96px;max-width:96px;padding-top:26px}
+  body.zoomed .col.pin{flex:0 0 96px;zoom:1}
+  .pinb{display:block;font-size:12px;line-height:1.3;text-align:left;overflow-wrap:anywhere;padding:6px 8px;border-radius:8px;margin-left:-6px}
+  .pin.flag .pinb{border-left:3px solid var(--warn);color:var(--ink);font-family:var(--head);font-weight:600}
+  .pin.note .pinb{background:#FFF3B0;color:#121414;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+  .pinday{display:block;font-size:11px;color:var(--muted);margin:4px 0 0 -4px}
+  .pinf{display:flex;flex-direction:column;gap:6px;margin-left:-6px;font-size:13px}
+  .pinf button{font-size:13px;text-decoration:underline;text-underline-offset:3px}
+  .zoombar .cf{width:16px;height:16px;min-width:16px;padding:0;border-radius:50%;background:var(--c);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--line)}
+  .zoombar .cf.on{box-shadow:0 0 0 2px var(--ink)}
+  .zoombar .zsp{flex:1}
+  .zoombar .ztxt{font-size:13px}
+  .zoombar .ztxt.on{color:var(--accent);border-color:var(--accent)}
+  body.replay .srow{opacity:.25}
+  body.replay .srow.rhit{opacity:1;background:color-mix(in srgb,var(--spring) 18%,transparent)}
+  .folded{font-size:12px;color:var(--muted);margin-left:8px;text-decoration:underline;text-underline-offset:3px}
+  .sum{font-size:14px;color:var(--muted);margin:6px 0 0}
+  .empty{color:var(--muted);font-size:14px;padding:18px 0}
+  .srow.star .txt{color:var(--ink);text-shadow:0 0 10px color-mix(in srgb,var(--spring) 70%,transparent),0 0 2px color-mix(in srgb,var(--spring) 60%,transparent)}
+  .srow.star .dot{box-shadow:0 0 0 3px color-mix(in srgb,var(--spring) 45%,transparent),0 0 12px var(--spring)}
+  .srow.star{background:color-mix(in srgb,var(--spring) 10%,transparent)}
+  .starb{color:var(--accent);font-size:13px;padding:2px 2px 0 4px;line-height:1.2}
+  .thread{display:block;margin:-6px 0 0 8px;font-family:var(--head);font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--accent);text-decoration:none;overflow-wrap:anywhere;padding-right:6px}
+  .threadf{margin:-6px 0 0 8px;display:flex;flex-direction:column;gap:6px;padding-right:6px}
+  .threadb{display:flex;gap:10px;flex-wrap:wrap}
+  body.focus .srow:not(.next):not(.star),body.focus .plusrow,body.focus .meta,body.focus .col.mini{opacity:.18}
+  .sweep{margin-top:12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px 0 10px}
+  .sweep h2{font-size:13px;letter-spacing:.08em;color:var(--muted);font-weight:600;margin:6px 0;display:flex;justify-content:space-between;gap:10px}
+  .sitem{padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+  .sitem:first-of-type{border-top:0}
+  .shead{display:flex;gap:6px;align-items:flex-start}
+  .shead .tick{margin-top:0}
+  .sitem [data-sid]{flex:1;padding-top:1px;touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab}
+  .sweep .scroll{max-height:260px;overflow-y:auto}
+  .ghost{position:fixed;z-index:50;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.15);max-width:220px;transform:translate(-20%,-60%) rotate(-1.5deg)}
+  .ghost.del{border-color:var(--warn);color:var(--warn)}
+  .selbar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:40;background:var(--ink);color:var(--bg);border-radius:14px;padding:10px 14px;display:flex;gap:14px;align-items:center;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);flex-wrap:wrap;max-width:calc(100% - 24px)}
+  .selbar button{color:var(--bg);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+  .hint{font-size:13px;color:var(--muted);margin-top:18px;line-height:1.6}
+  .hint summary{cursor:pointer}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <h1>MICRO<br>SPRINTS<span>.</span></h1>
+    <div style="text-align:right"><div class="date" id="date"></div><button class="small" id="newBtn">+ Micro sprint</button><br><button class="small" id="sweepBtn">Pull from Mind Sweep</button></div>
+  </div>
+  <form class="new" id="newSprint" hidden><input name="name" placeholder="What's the micro sprint?" required><button class="small" type="submit">Add</button></form>
+  <div class="sweep" id="sweep" hidden><h2><span>MIND SWEEP · TICK IF DONE, OR DRAG ONTO A LINE</span><button class="small" id="sweepClose">Close</button></h2><div class="scroll" id="sweepList"></div></div>
+  <div class="zoombar" id="zoombar"><span id="cfilter" style="display:flex;gap:6px;align-items:center"></span><span class="zsp"></span><button class="ztxt" id="zLanes" title="Group lines by colour">Lanes</button><button class="ztxt" id="zReplay" title="See what you ticked on a past day">Replay</button><button class="ztxt" id="zToday">Today</button><button id="zOut" aria-label="Zoom out">−</button><button class="zl" id="zl" aria-label="Reset zoom">100%</button><button id="zIn" aria-label="Zoom in">+</button><button class="zfit" id="zFit">Fit</button></div>
+  <button class="t" id="theT" aria-label="The T. Tap for focus mode"><div class="stem"></div><div class="bar"></div></button>
+  <div class="cols" id="cols"></div>
+  <div class="minimap" id="minimap" hidden aria-label="Mini map: drag to travel along the T"></div>
+  <div class="pager" id="pager" aria-hidden="true"></div>
+  <div class="viewbar" id="viewbar" hidden></div>
+  <div class="nudge" id="nudge"></div>
+  <p class="sum" id="sum"></p>
+  <details class="hint"><summary>How to use the T</summary>
+    Tap a dot to tick. Tap the words to edit. Double-tap a line to add a step there.<br>
+    Drag a step up, down or onto another line. Swipe it left to remove.<br>
+    Hold a step to select it (or Ctrl/⌘-click), then copy or move to the next line.<br>
+    Drag a line's name sideways to reorder lines. Tap the name for more.<br>
+    Hold a step and tap "★ Star" to make it glow. Tap the ★ to unstar.<br>
+    Tap a line's name, then "Name a thread" to label the line and link its thread.<br>
+    Finished sprints move to the Done line on the left. Tap one to see its steps or reopen it.<br>
+    Tap the T to focus on next steps and starred steps only.<br>
+    Zoom in and out with − and +, a pinch, or Ctrl/⌘ + scroll. "Fit" shows every line.<br>
+    Tap a line's name, then "Solo" to see only that line, "Just these" to pick a few, or "Hide" to put one away. Hidden lines stay as small marks: tap one to bring it back.<br>
+    Drag along the mini map under the T to travel.<br>
+    Each line hangs from its day. Tap the day above a line (or the name, then "Change day") to move it. Drag a line's name next to another line to join that line's day. Missed days show as "Catch up".<br>
+    Hold a step to give it a Date or Minutes, or make it a Trigger. Steps due today glow.<br>
+    Tap a day, then "+ Marker" or "+ Note" to pin a flag or a sticky note on the T.<br>
+    Keys: ← → move along the T, T today, F fit, S solo the last line you touched, Esc show all.<br>
+    Lanes groups lines by colour. Replay shows what you ticked on a past day.<br>
+    Hold a step and tap "Colour" to highlight it. Tap a line's name, then "Colour", to colour the whole line.
+  </details>
+</main>
+<div class="selbar" id="selbar" hidden></div>
+<script>
+/* Progress Pad website: the page's storage and Mind Sweep calls go to this site's own API,
+   signed in as you. Same shape as the Claude artifact runtime, so the page code is unchanged. */
+(function(){
+  // Follow the website's light/dark theme.
+  function syncTheme(){ try{ var t=window.parent.document.documentElement.dataset.theme; document.documentElement.dataset.theme=t==="dark"?"dark":"light"; }catch(e){} }
+  syncTheme();
+  try{ new MutationObserver(syncTheme).observe(window.parent.document.documentElement,{attributes:true,attributeFilter:["data-theme"]}); }catch(e){}
+
+  var pending=0, writes=0, listeners=[];
+  async function api(method,url,body){
+    var r=await fetch(url,{method:method,credentials:"same-origin",headers:body?{"Content-Type":"application/json"}:undefined,body:body?JSON.stringify(body):undefined});
+    if(r.status===401){ var e=new Error("signed out"); e.status=401; throw e; }
+    var j=await r.json().catch(function(){return {}});
+    if(!r.ok) throw new Error(j.error||"Request failed");
+    return j;
+  }
+  async function load(){
+    var w=writes, j=await api("GET","/api/micro-sprints");
+    if(w!==writes||pending) return; // a change was saved meanwhile; keep what's on screen
+    var snap={metadata:{fromCache:false},docs:(j.docs||[]).map(function(d){return {id:d.id,data:function(){return d.data}}})};
+    listeners.forEach(function(l){ l.ok(snap); });
+  }
+  function refresh(){ if(!pending&&listeners.length) load().catch(function(){}); }
+  document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible") refresh(); });
+  setInterval(function(){ if(document.visibilityState==="visible") refresh(); },60000);
+
+  function idOf(path){ var p=String(path).split("/"); return p[p.length-1]; }
+  async function track(p){ pending++; writes++; try{ return await p; } finally{ pending--; } }
+  var db={
+    doc:function(path){ var id=idOf(path); return {
+      set:function(data){ return track(api("PUT","/api/micro-sprints",{id:id,data:data})); },
+      delete:function(){ return track(api("DELETE","/api/micro-sprints?id="+encodeURIComponent(id))); }
+    }; },
+    collection:function(){ return { onSnapshot:function(ok,err){
+      var l={ok:ok,err:err}; listeners.push(l);
+      load().catch(function(e){ if(e.status===401){ window.top.location.href="/login"; } else if(err) err(e); });
+      return function(){ listeners=listeners.filter(function(x){return x!==l}); };
+    } }; }
+  };
+  var mcp={ callTool:async function(_server,tool,input){ var j=await api("POST","/api/micro-sprints/pad",{tool:tool,input:input}); return {payload:j.payload}; } };
+  window.claude={ use:async function(name){ return name==="db"?db:name==="mcp"?mcp:null; } };
+})();
+</script>
+<script>
+const $=s=>document.querySelector(s);
+const today=()=>new Date().toLocaleDateString("en-CA",{timeZone:"Europe/London"});
+const nice=d=>d?new Date(d+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}):"";
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const clone=o=>JSON.parse(JSON.stringify(o));
+const TICK='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const SERVER="Progress Pad - EFG";
+let db=null, mcp=null, sample=null, sprints=[], pins=[], sweepItems=[], sweepOpen=null;
+const COLOURS={green:"#00E14B",yellow:"#FFD43B",orange:"#FF9F43",pink:"#FF6FAE",purple:"#A77BFF",blue:"#4DA3FF"};
+const cvar=c=>COLOURS[c]?` style="--c:${COLOURS[c]}"`:"";
+const swatches=(attr,curc)=>`<div class="swatches">${Object.keys(COLOURS).map(k=>`<button class="sw${curc===k?" on":""}" ${attr}="${k}" style="--c:${COLOURS[k]}" aria-label="${k}"></button>`).join("")}<button class="sw none${curc?"":" on"}" ${attr}="" aria-label="No colour"></button></div>`;
+let hiddenInit=[]; try{hiddenInit=JSON.parse(localStorage.getItem("pt-hidden")||"[]")}catch(e){}
+let lanesInit=false; try{lanesInit=localStorage.getItem("pt-lanes")==="1"}catch(e){}
+const ui={hidden:new Set(hiddenInit), pick:null, lanes:lanesInit, replay:null, cfilter:null, focusId:null, pinEdit:null, adding:null, edit:null, menu:null, confirmDel:null, showEarlier:false, open:new Set(), sel:null, pending:false, chat:{}, thinking:null};
+$("#date").textContent=nice(today());
+
+/* ---------- helpers ---------- */
+const cur=id=>sprints.find(s=>s.id===id);
+const stepsOf=t=>t.filter(x=>!x.cp&&!x.draft);
+const addDays=(d,n)=>{const x=new Date(d+"T12:00:00");x.setDate(x.getDate()+n);return x.toLocaleDateString("en-CA")};
+const dayOf=p=>p.day||p.start||today();
+const short=d=>d?new Date(d+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric"}):"";
+const curAny=id=>cur(id)||pins.find(x=>x.id===id);
+const reachedAt=(t,i)=>t.slice(0,i).filter(x=>!x.cp&&!x.draft).every(x=>x.done);
+const dataOf=p=>{const {id,...d}=p;return clone(d)};
+function fixStatus(d){
+  const st=stepsOf(d.tasks||[]);
+  if(st.length&&st.every(x=>x.done)){ if(d.status!=="done"){d.status="done";d.doneAt=today();} }
+  else if(st.some(x=>!x.done)&&d.status==="done"){d.status="active";d.doneAt=null;}
+  return d;
+}
+async function pad(tool,input){ if(!mcp) throw new Error("no connector"); const r=await mcp.callTool(SERVER,tool,input,{cache:false}); return r&&r.payload!==undefined?r.payload:r; }
+function sweepStatus(id,status){ if(mcp&&id) pad("update_mind_sweep_item",{id,status}).catch(()=>{}); }
+function logWin(text,sweepId){ if(!mcp) return; sweepStatus(sweepId,"achieved"); pad("add_entry",{kind:"done",text,notes:"From the Progress T"}).catch(()=>{}); }
+let nt;
+function say(t,undo){
+  const n=$("#nudge"); n.replaceChildren(document.createTextNode(t));
+  if(undo){const b=document.createElement("button");b.textContent="Undo";b.onclick=()=>{undo();n.replaceChildren()};n.append(b)}
+  clearTimeout(nt); nt=setTimeout(()=>n.replaceChildren(),undo?10000:8000);
+}
+
+/* ---------- writes with undo ---------- */
+// changes: [{id, data}] (whole new doc) or [{id, del:true}]
+function commit(changes,msg){
+  const before=changes.map(c=>{const p=curAny(c.id);return {id:c.id,data:p?dataOf(p):null}});
+  apply(changes);
+  if(msg) say(msg,()=>{apply(before.map(b=>b.data?{id:b.id,data:b.data}:{id:b.id,del:true}));});
+}
+async function apply(changes){
+  for(const c of changes){
+    const arr=(c.data&&c.data.kind==="pin")||pins.some(x=>x.id===c.id)?pins:sprints;
+    const i=arr.findIndex(s=>s.id===c.id);
+    if(c.del){ if(i>=0) arr.splice(i,1); }
+    else { const p={id:c.id,...clone(c.data)}; if(i>=0) arr[i]=p; else arr.push(p); }
+  }
+  render();
+  for(const c of changes){
+    try{ if(c.del) await db.doc("projects/"+c.id).delete(); else await db.doc("projects/"+c.id).set(clone(c.data)); }
+    catch(e){ say("Couldn't save just now. Try again."); }
+  }
+}
+const upd=(id,fn)=>{const d=dataOf(cur(id)); fn(d); return {id,data:d}};
+
+/* ---------- actions ---------- */
+function toggleStep(id,i){
+  const was=cur(id).tasks||[]; let hits=[];
+  const ch=upd(id,d=>{
+    const t=d.tasks, on=!t[i].done;
+    t[i].done=on; t[i].doneAt=on?today():null;
+    if(on){ d.activity=[...(d.activity||[]),{text:t[i].text,date:today()}];
+      if(!t[i].logged){t[i].logged=true; logWin(t[i].text,t[i].sweepId);} else sweepStatus(t[i].sweepId,"achieved"); }
+    else sweepStatus(t[i].sweepId,"todo");
+    t.forEach((x,k)=>{ if(x.cp&&on&&reachedAt(t,k)&&!reachedAt(was,k)){ hits.push(x.text); if(!x.logged){x.logged=true; logWin("Checkpoint: "+x.text);} } });
+    const wasDone=d.status==="done"; fixStatus(d);
+    if(d.status==="done"&&!wasDone){ sweepStatus(d.sweepId,"achieved"); if(!d.logged){ d.logged=true; logWin("Sprint complete: "+d.name); } }
+    if(d.status!=="done"&&wasDone) sweepStatus(d.sweepId,"todo");
+  });
+  const d=ch.data, on=d.tasks[i].done, nx=d.tasks.find(x=>!x.cp&&!x.done&&!x.draft);
+  const others=sprints.filter(s=>s.id!==id&&s.status!=="done").length;
+  let msg="Unticked.";
+  if(on){
+    if(d.status==="done") msg=`${d.name} complete and moved to Done. Back to the T${others?`: ${others} other line${others>1?"s":""} waiting`:""}.`;
+    else if(hits.length) msg=`Checkpoint reached: ${hits[hits.length-1]}. Next: ${nx.text}.`;
+    else msg=`Nice. Next on this line: ${nx.text}${others?". Or back to the T":""}.`;
+  }
+  commit([ch],msg);
+}
+function toggleSprint(id){
+  const p=cur(id);
+  if(p.status==="done"){ ui.open.has(id)?ui.open.delete(id):ui.open.add(id); render(); return; }
+  commit([upd(id,d=>{d.status="done";d.doneAt=today(); if(!d.logged){d.logged=true; logWin("Sprint complete: "+d.name,d.sweepId);} else sweepStatus(d.sweepId,"achieved");})], `${p.name} complete and moved to Done. Back to the T.`);
+}
+function insertItems(id,at,items,msg){
+  commit([upd(id,d=>{d.tasks=d.tasks||[]; d.tasks.splice(at==null?d.tasks.length:at,0,...items); fixStatus(d);})],msg);
+}
+function removeItems(id,ks){
+  const p=cur(id); const first=p.tasks[ks[0]].text; ui.sel=null;
+  commit([upd(id,d=>{d.tasks=d.tasks.filter((x,k)=>!ks.includes(k)); fixStatus(d);})], ks.length>1?`Removed ${ks.length} steps.`:`Removed "${first}".`);
+}
+function moveItems(src,ks,dst,at){
+  const p=cur(src), items=ks.map(k=>clone(p.tasks[k])); ui.sel=null;
+  if(src===dst){
+    commit([upd(src,d=>{const rest=d.tasks.filter((x,k)=>!ks.includes(k)); const before=ks.filter(k=>k<at).length; rest.splice(at-before,0,...items); d.tasks=rest;})],"Moved.");
+  } else {
+    const a=upd(src,d=>{d.tasks=d.tasks.filter((x,k)=>!ks.includes(k)); fixStatus(d);});
+    const b=upd(dst,d=>{d.tasks=d.tasks||[]; d.tasks.splice(at==null?d.tasks.length:at,0,...items); fixStatus(d);});
+    commit([a,b],`Moved to ${cur(dst).name}.`);
+  }
+}
+function newLine(name,tasks,extra){
+  const id="s"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  const maxO=Math.max(0,...sprints.map(s=>s.order||0));
+  return {id,data:fixStatus({name,start:today(),day:today(),order:maxO+1,status:"active",tasks:tasks||[],activity:[],links:[],...(extra||{})})};
+}
+function copyMoveNext(mode){
+  const {id,ks}=ui.sel, list=visibleLines(), i=list.findIndex(s=>s.id===id);
+  const p=cur(id), items=ks.map(k=>{const x=clone(p.tasks[k]); if(mode==="copy"){x.done=false;delete x.doneAt;delete x.logged;delete x.sweepId;} return x;});
+  const changes=[]; const target=list.slice(i+1).find(s=>s.status!=="done"); let label;
+  if(target){ changes.push(upd(target.id,d=>{d.tasks=[...(d.tasks||[]),...items];fixStatus(d)})); label=target.name; }
+  else { const n=newLine("New line",items); changes.push(n); label="a new line"; ui.menu={id:n.id,mode:"rename"}; }
+  if(mode==="move") changes.push(upd(id,d=>{d.tasks=d.tasks.filter((x,k)=>!ks.includes(k)); fixStatus(d)}));
+  ui.sel=null;
+  commit(changes,`${mode==="copy"?"Copied":"Moved"} ${items.length} step${items.length>1?"s":""} to ${label}.`);
+}
+function reorderLines(id,toIdx){
+  const list=visibleLines().filter(s=>s.id!==id), nb=list[toIdx-1]||list[toIdx];
+  const p=cur(id), nd=nb?(dayOf(nb)<today()?today():dayOf(nb)):dayOf(p);
+  list.splice(toIdx,0,p);
+  const changes=[]; list.forEach((s,k)=>{ const move=s.id===id&&nd!==dayOf(p); if((s.order??-1)!==k+1||move) changes.push(upd(s.id,d=>{d.order=k+1; if(move) d.day=nd;})) });
+  if(changes.length) commit(changes,nd!==dayOf(p)?`${p.name} moved to ${short(nd)}.`:"Line moved."); else render();
+}
+function setDay(id,d){ const p=cur(id); ui.menu=null; if(!d||d===dayOf(p)){render();return}
+  commit([upd(id,x=>{x.day=d})],`${p.name} is on ${d===today()?"today":nice(d)}.`); }
+function calLink(p){
+  const d=dayOf(p)<today()?today():dayOf(p), st=stepsOf(p.tasks||[]).filter(x=>!x.done);
+  const mins=st.reduce((n,x)=>n+(+x.mins||0),0)||30, start=new Date(d+"T15:00:00"), end=new Date(start.getTime()+mins*60000);
+  const f=x=>x.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent("Micro sprint: "+p.name)+"&dates="+f(start)+"/"+f(end)+"&details="+encodeURIComponent(st.map(x=>"• "+x.text).join("\n"));
+}
+const draftsOf=p=>(p.tasks||[]).filter(x=>x.draft).length;
+function planOpen(id){ ui.menu={id,mode:"plan"}; ui.chat[id]=ui.chat[id]||{msgs:[],reply:"",undo:null,last:""}; render(); }
+async function planSend(id,idea){
+  if(ui.thinking) return;
+  const p=cur(id); if(!p) return; const ch=ui.chat[id]=ui.chat[id]||{msgs:[],reply:"",undo:null,last:""};
+  idea=(idea||"").trim();
+  if(!sample){
+    ch.undo=dataOf(p); ch.last=idea;
+    ch.reply="Saved for PT. Next time you chat with PT, they'll turn this into draft steps for you to keep or drop.";
+    commit([upd(id,d=>{d.askPT=true; if(idea) d.askPTNote=idea; else delete d.askPTNote;})],"Asked PT for steps."); return;
+  }
+  const real=(p.tasks||[]).filter(x=>!x.draft&&!x.cp).map(x=>(x.done?"[done] ":"")+x.text);
+  const drafts=(p.tasks||[]).filter(x=>x.draft).map(x=>x.text);
+  const ask=ch.msgs.length
+    ? `${idea||"Try again with a different set of steps."}\n\n(Current draft steps: ${drafts.join("; ")||"none"}. Reply in the same JSON shape with the FULL new list of draft steps.)`
+    : `You are PT, a calm, encouraging coach helping someone with ADHD plan a micro sprint (a 5 to 90 minute focus burst). Goal: "${p.name}". Steps they already have: ${real.join("; ")||"none yet"}. ${idea?`Their own idea for the next steps, in their words: "${idea}". Flesh that out: keep their intent and their words where you can, make each step small, concrete and doable, and fill obvious gaps.`:"They have no idea yet: suggest the next steps."} Give 3 to 6 steps in the order to do them, each 5 to 90 minutes, not repeating existing steps. Reply as JSON only: {"reply":"one or two short, warm sentences in plain words","steps":[{"text":"short step in plain words","mins":number}]}`;
+  const msgs=[...ch.msgs,{role:"user",content:ask}];
+  ui.thinking=id; ch.last=idea; render();
+  try{
+    const r=await sample.json(msgs,{modelTier:"quick",cache:false});
+    const steps=(r&&Array.isArray(r.steps)?r.steps:[]).filter(x=>x&&x.text).slice(0,6).map(x=>({text:String(x.text).slice(0,140),done:false,draft:true,...(+x.mins?{mins:Math.min(90,Math.max(5,Math.round(+x.mins)))}:{})}));
+    if(!steps.length){ ch.reply="PT couldn't come up with steps just now. Try saying it another way."; return; }
+    ch.msgs=[...msgs,{role:"assistant",content:JSON.stringify({reply:r.reply||"",steps})}].slice(-12);
+    ch.reply=String(r.reply||"Here are some steps. Keep the ones you want.").slice(0,400);
+    ch.undo=dataOf(cur(id));
+    commit([upd(id,d=>{d.tasks=[...(d.tasks||[]).filter(x=>!x.draft),...steps]; delete d.askPT;})],`PT drafted ${steps.length} steps. Keep the ones you want.`);
+  }catch(e){ ch.reply=e&&e.code==="not_granted"?"Allow PT to help, then try again.":e&&e.code==="rate_limited"?"PT needs a short breather. Try again in a minute.":"PT couldn't reply just now. Try again."; }
+  finally{ ui.thinking=null; render(); }
+}
+function keepDrafts(id){ commit([upd(id,d=>{(d.tasks||[]).forEach(x=>delete x.draft); delete d.askPT; fixStatus(d)})],"Kept all PT's steps."); }
+function clearDrafts(id){ commit([upd(id,d=>{d.tasks=(d.tasks||[]).filter(x=>!x.draft)})],"Draft steps cleared."); }
+function planUndo(id){ const ch=ui.chat[id]; if(!ch||!ch.undo) return; const before=ch.undo; ch.undo=null; ch.reply="Undone. The line is back to how it was.";
+  if(ch.msgs.length>=2) ch.msgs=ch.msgs.slice(0,-2); apply([{id,data:before}]); }
+function splitAt(id,k){ const p=cur(id), t=p.tasks||[], cpText=t[k].text;
+  const n=newLine(cpText,clone(t.slice(k+1)),{day:dayOf(p),...(p.color?{color:p.color}:{}),...(p.thread?{thread:clone(p.thread)}:{})});
+  ui.menu=null; commit([upd(id,d=>{d.tasks=d.tasks.slice(0,k);fixStatus(d)}),n],`Split: ${cpText} is its own line now.`); }
+function joinNext(id){ const list=visibleLines(), i=list.findIndex(x=>x.id===id), nx=list[i+1]; ui.menu=null;
+  if(!nx){say("There's no line after this one to join.");render();return}
+  commit([upd(id,d=>{d.tasks=[...(d.tasks||[]),{text:nx.name,cp:true},...clone(nx.tasks||[])];fixStatus(d)}),{id:nx.id,del:true}],`Joined ${nx.name} onto ${cur(id).name}.`); }
+function newPin(type,day){ const id="p"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  ui.menu=null; ui.pinEdit=id; commit([{id,data:{kind:"pin",type,text:type==="note"?"Note":"Marker",day}}],type==="note"?"Note pinned. Type your note.":"Marker added. Name it."); }
+function pinCol(pn){
+  const c=document.createElement("div"); c.className="col pin "+(pn.type==="note"?"note":"flag"); c.dataset.id=pn.id;
+  if(ui.pinEdit===pn.id){
+    c.innerHTML=`<form class="pinf"><input name="text" value="${esc(pn.text)}" required data-autofocus><input type="date" name="day" value="${esc(pn.day)}"><button type="submit">Save</button><button type="button" data-rm>Remove</button></form>`;
+    const f=c.querySelector("form");
+    f.onsubmit=e=>{e.preventDefault();const v=f.text.value.trim();ui.pinEdit=null;document.activeElement?.blur();if(!v){render();return}
+      commit([{id:pn.id,data:{...dataOf(pn),text:v,day:f.day.value||pn.day}}],"Saved.")};
+    c.querySelector("[data-rm]").onclick=()=>{ui.pinEdit=null;commit([{id:pn.id,del:true}],"Removed.")};
+  } else {
+    c.innerHTML=`<button class="pinb">${pn.type==="note"?"":"⚑ "}${esc(pn.text)}</button><span class="pinday">${esc(short(pn.day))}</span>`;
+    c.querySelector(".pinb").onclick=()=>{if(blocked())return;ui.pinEdit=pn.id;render()};
+  }
+  return c;
+}
+
+/* ---------- render ---------- */
+const isEarlier=p=>p.status==="done"&&(p.doneAt||"")<today();
+function saveHidden(){ try{localStorage.setItem("pt-hidden",JSON.stringify([...ui.hidden]))}catch(e){} }
+function setHidden(ids,msg){ ui.hidden=new Set(ids); ui.pick=null; ui.menu=null; saveHidden(); render(); if(msg) say(msg); }
+function markCol(p){
+  const c=document.createElement("div"); c.className="col mark"; c.dataset.id=p.id;
+  c.innerHTML=`<div class="stub"></div><div class="stubdot"></div><button class="mname" data-show="${esc(p.id)}" title="Show ${esc(p.name)}">${esc(p.name)}</button>`;
+  c.querySelector("[data-show]").onclick=()=>{ if(blocked())return; ui.hidden.delete(p.id); saveHidden(); render(); };
+  return c;
+}
+function renderView(){
+  const v=$("#viewbar"), lines=visibleLines().filter(p=>cur(p.id));
+  [...ui.hidden].forEach(id=>{ if(!lines.some(p=>p.id===id)) ui.hidden.delete(id); });
+  if(ui.pick){ v.hidden=false; const n=ui.pick.size;
+    v.innerHTML=`<span>Tap line names to pick them</span>${n?`<button data-v="show">Show ${n===1?"this line":"these "+n}</button>`:""}<button data-v="cancel">Cancel</button>`;
+  } else if(ui.hidden.size){ v.hidden=false; const shown=lines.length-ui.hidden.size;
+    v.innerHTML=`<span>Showing ${shown} of ${lines.length} lines</span><button data-v="all">Show all</button>`;
+  } else { v.hidden=true; v.replaceChildren(); return; }
+  v.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{ const k=b.dataset.v;
+    if(k==="all"){ ui.cfilter=null; setHidden([],"Showing every line."); }
+    else if(k==="cancel"){ ui.pick=null; render(); }
+    else if(k==="show"){ const keep=ui.pick; setHidden(lines.filter(p=>!keep.has(p.id)).map(p=>p.id),"Just these. Tap Show all to see everything."); } });
+}
+function updateMini(){
+  const el=$("#cols"), m=$("#minimap"), sw=el.scrollWidth, cw=el.clientWidth;
+  if(!sw||sw<=cw+4){ m.hidden=true; return; } m.hidden=false;
+  const base=el.getBoundingClientRect().left-el.scrollLeft;
+  const ticks=[...el.querySelectorAll(".col")].map(c=>{ const i=document.createElement("i"); i.style.left=((c.getBoundingClientRect().left-base+12)/sw*100)+"%"; return i; });
+  const w=document.createElement("b"); w.style.left=(el.scrollLeft/sw*100)+"%"; w.style.width=(cw/sw*100)+"%";
+  m.replaceChildren(...ticks,w);
+}
+function visibleLines(){
+  const ck=p=>{const k=Object.keys(COLOURS).indexOf(p.color);return k<0?99:k};
+  const dk=p=>dayOf(p)<today()?"0000-00-00":dayOf(p); /* missed days gather in Catch up, just left of today */
+  const by=(a,b)=>(ui.lanes?ck(a)-ck(b):0)||(dk(a)<dk(b)?-1:dk(a)>dk(b)?1:0)||((a.order??1e9)-(b.order??1e9))||((a.start||"")<(b.start||"")?-1:1);
+  return sprints.filter(p=>p.status!=="done").sort(by);
+}
+function typing(){const a=document.activeElement;return a&&a.tagName==="INPUT"&&$("#cols").contains(a)}
+function render(){
+  if(typing()||drag?.on||pinch){ui.pending=true;return} ui.pending=false;
+  const el=$("#cols");
+  const open=sprints.filter(p=>p.status!=="done"), left=open.reduce((n,p)=>n+stepsOf(p.tasks||[]).filter(t=>!t.done).length,0);
+  $("#sum").textContent=!sprints.length?"":open.length?`${open.length} line${open.length>1?"s":""} open · ${left} step${left===1?"":"s"} to go`:"Everything on the T is done.";
+  renderSel();
+  if(!$("#sweep").hidden) renderSweep();
+  if(!sprints.length){el.innerHTML='<div class="empty">No micro sprints yet. Tap "+ Micro sprint", "Pull from Mind Sweep", or tell PT "make a micro sprint".</div>';return}
+  renderView();
+  const lines=visibleLines(), cols=[], ps=[...pins].sort((a,b)=>a.day<b.day?-1:a.day>b.day?1:0); let lastHd=null;
+  lines.forEach(p=>{
+    if(!ui.lanes) while(ps.length&&ps[0].day<=dayOf(p)&&!(dayOf(p)<today()&&ps[0].day>=today())) cols.push(pinCol(ps.shift()));
+    const dk=dayOf(p)<today()?"late":dayOf(p), hd=dk!==lastHd?dk:null; lastHd=dk;
+    cols.push(ui.hidden.has(p.id)?markCol(p):col(p,hd));
+  });
+  ps.forEach(x=>cols.push(pinCol(x)));
+  const dc=ui.hidden.size?null:doneCol(); if(dc) cols.unshift(dc);
+  renderFilter();
+  el.classList.toggle("one",lines.filter(p=>!ui.hidden.has(p.id)).length===1&&lines.length>1);
+  const keep=el.scrollLeft; el.replaceChildren(...cols); el.scrollLeft=keep; updatePager(); updateMini();
+  const f=el.querySelector("input[data-autofocus]"); if(f){f.focus(); if(f.closest("[data-form=edit],[data-form=rename]")) f.select();}
+}
+function doneCol(){
+  const fin=sprints.filter(p=>p.status==="done").sort((a,b)=>(b.doneAt||"")<(a.doneAt||"")?-1:(b.doneAt||"")>(a.doneAt||"")?1:0);
+  if(!fin.length) return null;
+  const shown=ui.showEarlier?fin:fin.slice(0,10);
+  let rows="";
+  shown.forEach(p=>{
+    const open=ui.open.has(p.id), st=stepsOf(p.tasks||[]);
+    rows+=`<div class="srow done drow"><span class="tick"><span class="dot"></span></span><button class="txt" data-dopen="${esc(p.id)}">${esc(p.name)}<span class="dwhen">${esc(nice(p.doneAt))}</span></button></div>`;
+    if(open) rows+=`<div class="dsub">${st.map(x=>`<div>${esc(x.text)}</div>`).join("")}<button data-reopen="${esc(p.id)}">Reopen</button></div>`;
+  });
+  if(fin.length>10) rows+=`<button class="plus" data-more><b>+</b>${ui.showEarlier?"show fewer":(fin.length-10)+" more"}</button>`;
+  const c=document.createElement("div"); c.className="col done donecol"; c.dataset.id="__done";
+  c.innerHTML=`<div class="steps">${rows}</div><div class="circle" aria-hidden="true">${TICK}</div><div class="name">Done</div><div class="meta">${fin.length} complete</div>`;
+  c.querySelectorAll("[data-dopen]").forEach(b=>b.onclick=()=>{const id=b.dataset.dopen;ui.open.has(id)?ui.open.delete(id):ui.open.add(id);render()});
+  c.querySelectorAll("[data-reopen]").forEach(b=>b.onclick=()=>{const id=b.dataset.reopen,p=cur(id);ui.open.delete(id);sweepStatus(p.sweepId,"todo");
+    commit([upd(id,d=>{d.status="active";d.doneAt=null;const st=stepsOf(d.tasks||[]);if(st.length&&st.every(x=>x.done)){const last=[...d.tasks].reverse().find(x=>!x.cp);if(last)last.done=false;}})],`${p.name} is back on the T.`)});
+  c.querySelector("[data-more]")?.addEventListener("click",()=>{ui.showEarlier=!ui.showEarlier;render()});
+  return c;
+}
+function col(p,hd){
+  const t=p.tasks||[], st=stepsOf(t), d=st.filter(x=>x.done).length, done=p.status==="done";
+  const mini=done&&!ui.open.has(p.id)&&!(ui.adding&&ui.adding.id===p.id)&&!(ui.menu&&ui.menu.id===p.id);
+  const menu=ui.menu&&ui.menu.id===p.id?ui.menu.mode:null, ed=!!menu&&menu!=="plan"&&menu!=="day"&&menu!=="colour";
+  const nx=done?-1:t.findIndex(x=>!x.cp&&!x.done&&!x.draft);
+  const gate=t.findIndex((x,i)=>x.cp&&!reachedAt(t,i));
+  const add=ui.adding&&ui.adding.id===p.id?ui.adding:null;
+  const form=a=>`<form class="addstep" data-form="add"><input name="text" placeholder="${a.cp?"Checkpoint name":"New step"}" required enterkeyhint="done" data-autofocus></form>`;
+  const sel=ui.sel&&ui.sel.id===p.id?ui.sel.ks:[];
+  let rows="";
+  const dkey=dayOf(p), isT=dkey===today(), late=dkey<today();
+  const dayBtn=hd?`<button class="dayh${isT?" today":""}${late?" late":""}" data-dayh>${late?"Catch up":isT?"Today":esc(short(dkey))}</button>`:`<span class="dayh"></span>`;
+  const th=p.thread;
+  const sameThread=th&&th.title?sprints.filter(o=>o.id!==p.id&&o.status!=="done"&&o.thread&&o.thread.title===th.title):[];
+  if(th&&th.title&&menu!=="thread") rows+=th.url?`<a class="thread" href="${esc(th.url)}" target="_blank" rel="noopener">${esc(th.title)} <span aria-hidden="true">↗</span>${sameThread.length?` · also ${esc(sameThread.map(o=>short(dayOf(o))).join(", "))}`:""}</a>`:`<button class="thread" data-m="thread">${esc(th.title)}${sameThread.length?` · also ${esc(sameThread.map(o=>short(dayOf(o))).join(", "))}`:""}</button>`;
+  if(menu==="thread") rows+=`<form class="threadf" data-form="thread"><input name="title" placeholder="Thread name" value="${esc(th?.title||"")}" required data-autofocus><input name="url" placeholder="Link (optional)" value="${esc(th?.url||"")}"><div class="threadb"><button class="small" type="submit">Save</button>${th?`<button class="small" type="button" data-unlink>Remove</button>`:""}<button class="small" type="button" data-m="close">Cancel</button></div></form>`;
+  if(!mini){
+    if(add&&add.at===0&&t.length) rows+=form(add);
+    const fold=p.trim&&!ed, nDone=t.filter(x=>!x.cp&&x.done).length;
+    if(fold&&nDone) rows+=`<button class="folded" data-unfold>${nDone} done step${nDone>1?"s":""} folded · show</button>`;
+    t.forEach((s,i)=>{
+      if(fold&&s.done&&!s.cp) return;
+      const cls=["srow",s.draft?"draft":"",s.day===today()?"due":"",ui.replay&&s.doneAt===ui.replay?"rhit":"",s.cp?"cp":"",s.cp&&reachedAt(t,i)?"hit":"",s.done?"done":"",i===nx?"next":"",gate>=0&&i>gate?"later":"",sel.includes(i)?"sel":"",s.star?"star":"",COLOURS[s.color]?"tint":""].filter(Boolean).join(" ");
+      const editing=ui.edit&&ui.edit.id===p.id&&ui.edit.k===i;
+      const lead=s.cp?`<span class="tick"><span class="bar2"></span></span>`:`<button class="tick" data-tick="${i}" aria-label="${s.done?"Untick":"Tick"} ${esc(s.text)}"><span class="dot"></span></button>`;
+      const body=editing?`<form data-form="edit" style="flex:1"><input name="text" value="${esc(s.text)}" required enterkeyhint="done" data-autofocus></form>`:`<span class="txt" data-txt="${i}">${esc(s.text)}${s.day||s.mins?`<span class="tags">${s.day?`<span class="tg">${esc(s.day===today()?"Today":short(s.day))}</span>`:""}${s.mins?`<span class="tg mins">${+s.mins}m</span>`:""}</span>`:""}</span>`;
+      rows+=`<div class="${cls}" data-k="${i}"${cvar(s.color)}>${lead}${body}${s.draft&&!editing?`<button class="dkeep" data-keep="${i}">Keep</button><button class="x" data-del="${i}" aria-label="Remove">×</button>`:""}${s.star&&!editing?`<button class="starb" data-star="${i}" aria-label="Unstar">★</button>`:""}${ed?`<button class="x" data-del="${i}" aria-label="Remove">×</button>`:""}</div>`;
+      if(add&&add.at===i+1&&i<t.length-1) rows+=form(add);
+      else if(ed&&i<t.length-1) rows+=`<button class="addcp" data-at="${i+1}">+ checkpoint here</button>`;
+    });
+    const nd=t.filter(x=>x.draft).length;
+    if(nd&&menu!=="plan") rows+=`<div class="drafts"><span>${nd} PT draft${nd>1?"s":""}</span><button data-dk>Keep all</button><button data-dc>Clear</button><button data-dp>Chat</button></div>`;
+    if(add&&(add.at==null||add.at>=t.length||!t.length)) rows+=form(add);
+    else if(!add) rows+=`<div class="plusrow"><button class="plus" data-add><b>+</b>step</button>${!done&&st.length>=2?`<button class="plus" data-addcp><b>+</b>checkpoint</button>`:""}</div>`;
+  }
+  const others=menu==="step"?sprints.filter(o=>o.id!==p.id&&o.status!=="done"):[];
+  const c=document.createElement("div"); c.className="col"+(done?" done":"")+(mini?" mini":"")+(COLOURS[p.color]?" tint":"")+(isT?" istoday":""); c.dataset.id=p.id; if(COLOURS[p.color]) c.style.setProperty("--c",COLOURS[p.color]);
+  const cps=(p.tasks||[]).map((x,k)=>x.cp?k:-1).filter(k=>k>0&&k<(p.tasks||[]).length-1);
+  c.innerHTML=`${dayBtn}<div class="steps" data-steps="${p.id}">${rows}</div>
+    <button class="circle" data-circle aria-label="${done?(mini?"Show steps":"Hide steps"):"Mark complete"}">${TICK}</button>
+    ${menu==="rename"?`<form class="rename" data-form="rename"><input name="name" value="${esc(p.name)}" required data-autofocus></form>`:`<button class="name${ui.pick&&ui.pick.has(p.id)?" picked":""}" data-name>${esc(p.name)}</button>`}
+    ${mini?"":`<div class="meta">${d} of ${st.length}${done?" · complete":""}${(()=>{const m=st.filter(x=>!x.done).reduce((n,x)=>n+(+x.mins||0),0);return m?` · ${m} min left`:""})()}${p.askPT?" · asked PT":""}</div>`}
+    ${menu==="step"?`<div class="stepify"><form class="goal" data-form="goal"><label>Make "${esc(p.name)}" the first step towards:</label><input name="goal" placeholder="End goal" required data-autofocus><button class="small" type="submit">Save</button></form>
+        ${others.length?`<div class="or">or add it as a step on</div><div class="where">${others.map(o=>`<button data-into="${esc(o.id)}">${esc(o.name)}</button>`).join("")}</div>`:""}
+        <button class="small" data-m="close">Cancel</button></div>`:""}
+    ${menu==="colour"?`<div class="menu">${swatches("data-lc",p.color)}<button data-m="close">Done</button></div>`:""}
+    ${menu==="day"?`<div class="menu daymenu"><input type="date" data-dayin value="${esc(dkey)}"><button data-dq="0">Today</button><button data-dq="1">Tomorrow</button><button data-dq="7">Next week</button><button data-pin="flag">+ Marker</button><button data-pin="note">+ Note</button><button data-m="close">Done</button></div>`:""}
+    ${menu==="plan"?(()=>{const ch=ui.chat[p.id]||{}, nd=draftsOf(p), busy=ui.thinking===p.id;
+      return `<div class="plan">${ch.last?`<div class="you">You: ${esc(ch.last)}</div>`:""}${busy?`<div class="say">PT is thinking…</div>`:ch.reply?`<div class="say">${esc(ch.reply)}</div>`:`<div class="say">What do you think the next steps are? Rough is fine. PT will flesh them out.</div>`}
+      <form data-plan><textarea name="idea" rows="3" placeholder="${ch.msgs&&ch.msgs.length?"Tell PT what to change":"e.g. call them, send the deck, ask for a date"}" ${busy?"disabled":""} data-autofocus></textarea>
+      <div class="planb"><button class="small" type="submit" ${busy?"disabled":""}>Send</button>${!(ch.msgs&&ch.msgs.length)?`<button type="button" data-pj ${busy?"disabled":""}>Just suggest</button>`:""}${nd?`<button type="button" data-dk>Keep all</button><button type="button" data-dc>Clear drafts</button>`:""}${ch.undo&&!busy?`<button type="button" data-pu>Undo</button>`:""}<button type="button" data-m="close">Close</button></div></form></div>`})():""}
+    ${menu==="menu"?(ui.confirmDel===p.id?`<div class="menu">Remove line? <button data-yes>Yes</button><button data-no>No</button></div>`
+      :`<div class="menu">${done?"":`<button data-m="solo">Solo</button><button data-m="pick">Just these…</button><button data-m="hide">Hide</button>`}<button data-m="rename">Change end goal</button><button data-m="step">Make it a step</button><button data-m="thread">${p.thread?"Edit thread":"Name a thread"}</button><button data-m="colour">Colour</button>${done?"":`<button data-m="day">Change day</button><button data-m="suggest">Plan steps with PT</button><a href="${esc(calLink(p))}" target="_blank" rel="noopener">Put in calendar</a><button data-m="trim">${p.trim?"Unfold done steps":"Fold done steps"}</button>${cps.length?`<button data-m="split">Split at ${esc(p.tasks[cps[0]].text)}</button>`:""}<button data-m="join">Join with next line</button>`}${done?`<button data-m="reopen">Reopen</button>`:""}<button data-m="remove">Remove</button><button data-m="close">Done</button></div>`):""}`;
+  wire(c,p);
+  return c;
+}
+const cps0=p=>(p.tasks||[]).findIndex((x,k)=>x.cp&&k>0&&k<(p.tasks||[]).length-1);
+function wire(c,p){
+  const id=p.id;
+  c.addEventListener("pointerdown",()=>{ui.focusId=id},true);
+  c.querySelectorAll("[data-tick]").forEach(b=>b.onclick=e=>{if(blocked())return;toggleStep(id,+b.dataset.tick)});
+  c.querySelectorAll("[data-txt]").forEach(s=>s.onclick=e=>{if(blocked())return;
+    if(e.metaKey||e.ctrlKey||e.shiftKey){toggleSel(id,+s.dataset.txt);return}
+    if(ui.sel){toggleSel(id,+s.dataset.txt);return}
+    ui.edit={id,k:+s.dataset.txt};render()});
+  c.querySelectorAll("[data-star]").forEach(b=>b.onclick=()=>{if(blocked())return;const k=+b.dataset.star;commit([upd(id,d=>{d.tasks[k].star=false})],"Star removed.")});
+  c.querySelectorAll("[data-lc]").forEach(b=>b.onclick=()=>{const v=b.dataset.lc; ui.menu=null; commit([upd(id,d=>{if(v)d.color=v;else delete d.color})],v?`${p.name} is ${v} now.`:"Colour removed.")});
+  c.querySelector("[data-unlink]")?.addEventListener("click",()=>{ui.menu=null;commit([upd(id,d=>{delete d.thread})],"Thread removed.")});
+  c.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>removeItems(id,[+b.dataset.del]));
+  c.querySelector("[data-add]")?.addEventListener("click",()=>{ui.adding={id,at:null,cp:false};render()});
+  c.querySelector("[data-addcp]")?.addEventListener("click",()=>{ui.adding={id,at:null,cp:true};render()});
+  c.querySelectorAll("[data-at]").forEach(b=>b.onclick=()=>{ui.adding={id,at:+b.dataset.at,cp:true};render()});
+  c.querySelector("[data-circle]").onclick=()=>{if(blocked())return;toggleSprint(id)};
+  c.querySelector("[data-dayh]")?.addEventListener("click",()=>{if(blocked())return;ui.focusId=id;ui.menu=ui.menu?.id===id&&ui.menu.mode==="day"?null:{id,mode:"day"};render()});
+  c.querySelector("[data-dayin]")?.addEventListener("change",e=>setDay(id,e.target.value));
+  c.querySelectorAll("[data-dq]").forEach(b=>b.onclick=()=>setDay(id,addDays(today(),+b.dataset.dq)));
+  c.querySelectorAll("[data-pin]").forEach(b=>b.onclick=()=>newPin(b.dataset.pin,dayOf(p)<today()?today():dayOf(p)));
+  c.querySelectorAll("[data-keep]").forEach(b=>b.onclick=()=>{const k=+b.dataset.keep;commit([upd(id,d=>{delete d.tasks[k].draft;delete d.askPT;fixStatus(d)})],"Kept.")});
+  c.querySelectorAll("[data-dk]").forEach(b=>b.onclick=()=>keepDrafts(id));
+  c.querySelectorAll("[data-dc]").forEach(b=>b.onclick=()=>clearDrafts(id));
+  c.querySelector("[data-dp]")?.addEventListener("click",()=>planOpen(id));
+  c.querySelector("[data-pu]")?.addEventListener("click",()=>planUndo(id));
+  c.querySelector("[data-pj]")?.addEventListener("click",()=>planSend(id,""));
+  const pf=c.querySelector("form[data-plan]");
+  if(pf){ const ta=pf.idea; pf.onsubmit=e=>{e.preventDefault(); const v=ta.value.trim(); ta.blur(); planSend(id,v);};
+    ta.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();pf.requestSubmit();} if(e.key==="Escape"){ui.menu=null;ta.blur();render();} }); }
+  c.querySelector("[data-unfold]")?.addEventListener("click",()=>commit([upd(id,d=>{delete d.trim})],"Unfolded."));
+  c.querySelector("[data-name]")?.addEventListener("click",()=>{if(blocked())return;
+    if(ui.pick){ ui.pick.has(id)?ui.pick.delete(id):ui.pick.add(id); render(); return; }
+    ui.menu=ui.menu?.id===id?null:{id,mode:"menu"};ui.confirmDel=null;ui.adding=null;render()});
+  c.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{const m=b.dataset.m;
+    if(m==="solo"){ setHidden(visibleLines().filter(o=>o.id!==id).map(o=>o.id),`Solo: ${p.name}. Tap Show all to see everything.`); return; }
+    if(m==="hide"){ ui.hidden.add(id); saveHidden(); ui.menu=null; render(); say(`${p.name} is hidden. Tap its mark to bring it back.`); return; }
+    if(m==="pick"){ ui.menu=null; ui.pick=new Set([id]); render(); return; }
+    if(m==="suggest"){ planOpen(id); return; }
+    if(m==="trim"){ ui.menu=null; commit([upd(id,d=>{if(d.trim)delete d.trim;else d.trim=true})],p.trim?"Unfolded.":"Done steps folded away."); return; }
+    if(m==="split"){ splitAt(id,cps0(p)); return; }
+    if(m==="join"){ joinNext(id); return; }
+    if(m==="close") ui.menu=null; else if(m==="remove") ui.confirmDel=id;
+    else if(m==="reopen"){ui.menu=null;sweepStatus(p.sweepId,"todo");commit([upd(id,d=>{d.status="active";d.doneAt=null})],"Reopened.");return}
+    else ui.menu={id,mode:m};
+    render()});
+  c.querySelector("[data-yes]")?.addEventListener("click",()=>{ui.menu=null;ui.confirmDel=null;commit([{id,del:true}],`Removed ${p.name}.`)});
+  c.querySelector("[data-no]")?.addEventListener("click",()=>{ui.confirmDel=null;render()});
+  c.querySelectorAll("[data-into]").forEach(b=>b.onclick=()=>{const o=cur(b.dataset.into);ui.menu=null;
+    const moved=[{text:p.name,done:false,...(p.sweepId?{sweepId:p.sweepId}:{})},...(p.tasks||[])];
+    commit([upd(o.id,d=>{d.tasks=[...(d.tasks||[]),...moved];fixStatus(d)}),{id,del:true}],`Moved onto ${o.name}.`)});
+  c.querySelectorAll("form[data-form]").forEach(f=>{
+    if(f.dataset.form==="thread"){ f.onsubmit=e=>{e.preventDefault();const title=f.title.value.trim(), url=f.url.value.trim();if(!title)return;
+        if(url&&!/^https:\/\//i.test(url)){say("Links need to start with https://");return}
+        ui.menu=null; document.activeElement?.blur(); commit([upd(id,d=>{d.thread={title,...(url?{url}:{})}})],`Thread named ${title}.`)};
+      f.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Escape"){ui.menu=null;i.blur();render()}})); return; }
+    const kind=f.dataset.form, inp=f.querySelector("input"), k=kind==="edit"?ui.edit.k:null;
+    const close=()=>{ if(kind==="add") ui.adding=null; if(kind==="edit") ui.edit=null; if(kind==="rename"||kind==="goal") ui.menu=null; };
+    let done=false;
+    const finish=(v)=>{ if(done) return; done=true;
+      if(kind==="edit"){ ui.edit=null; if(v&&v!==cur(id)?.tasks?.[k]?.text){commit([upd(id,d=>{d.tasks[k].text=v})],"Step updated.");return} }
+      if(kind==="rename"){ ui.menu=null; if(v&&v!==p.name){commit([upd(id,d=>{d.name=v})],"End goal updated.");return} }
+      render(); };
+    f.onsubmit=e=>{e.preventDefault(); const v=inp.value.trim(); if(!v) return;
+      if(kind==="add"){ const a=ui.adding, item=a.cp?{text:v,cp:true}:{text:v,done:false};
+        if(a.cp) ui.adding=null; else if(a.at!=null) ui.adding={...a,at:a.at+1};
+        inp.value=""; inp.blur(); insertItems(id,a.at,[item], a.cp?"Checkpoint added.":`Added "${v}".`); return; }
+      if(kind==="goal"){ ui.menu=null; inp.blur();
+        const first={text:p.name,done:p.status==="done",...(p.sweepId?{sweepId:p.sweepId}:{}),...(p.logged?{logged:true}:{})};
+        commit([upd(id,d=>{d.name=v;d.sweepId=null;d.logged=false;d.tasks=[first,...(d.tasks||[])];fixStatus(d)})],`Now a step towards ${v}.`); return; }
+      inp.blur(); finish(v);
+    };
+    inp.addEventListener("keydown",e=>{if(e.key==="Escape"){done=true;close();inp.blur();render()}});
+    if(kind!=="goal") inp.addEventListener("blur",()=>setTimeout(()=>{ if(typing()) return;
+      if(kind==="add"){ if(ui.adding&&ui.adding.id===id){ui.adding=null;render()} return; }
+      finish(inp.value.trim()); },200));
+  });
+}
+function toggleSel(id,k){
+  if(!ui.sel||ui.sel.id!==id) ui.sel={id,ks:[]};
+  ui.sel.colour=false; ui.sel.mode=null; const ks=ui.sel.ks, i=ks.indexOf(k); i>=0?ks.splice(i,1):ks.push(k); ks.sort((a,b)=>a-b);
+  if(!ks.length) ui.sel=null;
+  render();
+}
+function renderSel(){
+  const b=$("#selbar"); if(!ui.sel||!cur(ui.sel.id)){b.hidden=true;ui.sel=null;return}
+  const n=ui.sel.ks.length; b.hidden=false;
+  if(ui.sel.colour){ const t0=cur(ui.sel.id).tasks[ui.sel.ks[0]]; b.innerHTML=`<span>Colour</span>${swatches("data-sc",ui.sel.ks.every(k=>cur(ui.sel.id).tasks[k]?.color===t0?.color)?t0?.color:"-")}<button data-s="back">Back</button>`;
+    b.querySelectorAll("[data-sc]").forEach(x=>x.onclick=()=>{const v=x.dataset.sc,{id,ks}=ui.sel; ui.sel=null; commit([upd(id,d=>{ks.forEach(k=>{if(v)d.tasks[k].color=v;else delete d.tasks[k].color})})],v?`Coloured ${ks.length} step${ks.length>1?"s":""} ${v}.`:"Colour removed.")});
+    b.querySelector("[data-s=back]").onclick=()=>{ui.sel.colour=false;renderSel()}; return; }
+  if(ui.sel.mode==="date"){ b.innerHTML=`<span>Date</span><input type="date" data-sd><button data-s2="0">Today</button><button data-s2="1">Tomorrow</button><button data-s2="x">Clear</button><button data-s="back">Back</button>`;
+    const setD=v=>{const {id,ks}=ui.sel; ui.sel=null; commit([upd(id,d=>{ks.forEach(k=>{if(v)d.tasks[k].day=v;else delete d.tasks[k].day})})],v?`Dated ${short(v)}.`:"Date cleared.")};
+    b.querySelector("[data-sd]").onchange=e=>setD(e.target.value); b.querySelectorAll("[data-s2]").forEach(x=>x.onclick=()=>setD(x.dataset.s2==="x"?null:addDays(today(),+x.dataset.s2)));
+    b.querySelector("[data-s=back]").onclick=()=>{ui.sel.mode=null;renderSel()}; return; }
+  if(ui.sel.mode==="mins"){ b.innerHTML=`<span>Minutes</span>${[5,15,25,45,60,90].map(m=>`<button data-sm="${m}">${m}</button>`).join("")}<button data-sm="0">Clear</button><button data-s="back">Back</button>`;
+    b.querySelectorAll("[data-sm]").forEach(x=>x.onclick=()=>{const v=+x.dataset.sm,{id,ks}=ui.sel; ui.sel=null; commit([upd(id,d=>{ks.forEach(k=>{if(v)d.tasks[k].mins=v;else delete d.tasks[k].mins})})],v?`${v} minutes.`:"Minutes cleared.")});
+    b.querySelector("[data-s=back]").onclick=()=>{ui.sel.mode=null;renderSel()}; return; }
+  b.innerHTML=`<span>${n} selected</span><button data-s="date">Date</button><button data-s="mins">Minutes</button><button data-s="trigger">Make a trigger</button><button data-s="colour">Colour</button><button data-s="star">${ui.sel.ks.every(k=>cur(ui.sel.id).tasks[k]?.star)?"Unstar":"★ Star"}</button><button data-s="copy">Copy to next line</button><button data-s="move">Move to next line</button><button data-s="del">Remove</button><button data-s="clear">Clear</button>`;
+  b.querySelectorAll("[data-s]").forEach(x=>x.onclick=()=>{const s=x.dataset.s;
+    if(s==="star"){const {id,ks}=ui.sel, on=!ks.every(k=>cur(id).tasks[k]?.star); ui.sel=null; commit([upd(id,d=>{ks.forEach(k=>{d.tasks[k].star=on})})],on?`Starred ${ks.length} step${ks.length>1?"s":""}.`:"Stars removed.");return}
+    if(s==="colour"){ui.sel.colour=true;renderSel();return}
+    if(s==="date"||s==="mins"){ui.sel.mode=s;renderSel();return}
+    if(s==="trigger"){const {id,ks}=ui.sel, names=ks.map(k=>cur(id).tasks[k].text); ui.sel=null; render();
+      if(!mcp){say("Couldn't reach your Progress Pad.");return}
+      Promise.all(names.map(nm=>pad("add_trigger",{name:nm.slice(0,120),plan:false}))).then(()=>say(names.length>1?`${names.length} triggers added to your library.`:`"${names[0]}" is a trigger now.`)).catch(()=>say("Couldn't add the trigger. Try again."));return}
+    if(s==="clear"){ui.sel=null;render()} else if(s==="del") removeItems(ui.sel.id,[...ui.sel.ks]); else copyMoveNext(s);});
+}
+
+/* ---------- gestures: drag, swipe, hold, double-tap ---------- */
+let drag=null, blockUntil=0;
+const blocked=()=>Date.now()<blockUntil;
+document.addEventListener("pointerdown",e=>{
+  if(e.button>0||drag) return;
+  const tgt=e.target; if(tgt.closest("input,.x,form")) return;
+  if(tgt.closest(".donecol")) return;
+  const row=tgt.closest(".srow"), name=tgt.closest("[data-name]"), si=tgt.closest(".sitem [data-sid]");
+  let info;
+  if(row) info={kind:"row",id:row.closest(".col").dataset.id,k:+row.dataset.k,el:row};
+  else if(name) info={kind:"line",id:name.closest(".col").dataset.id,el:name};
+  else if(si) info={kind:"sweep",item:sweepItems.find(x=>x.id===si.dataset.sid),el:si};
+  else return;
+  drag={...info,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false};
+  if(info.kind==="row") drag.hold=setTimeout(()=>{ if(drag&&!drag.on){ navigator.vibrate?.(15); drag.held=true; toggleSel(drag.id,drag.k); } },480);
+});
+document.addEventListener("pointermove",e=>{
+  if(!drag||e.pointerId!==drag.pid) return;
+  const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+  if(drag.held) return;
+  if(!drag.on){ if(Math.hypot(dx,dy)<7) return; clearTimeout(drag.hold); startDrag(); }
+  e.preventDefault();
+  drag.ghost.style.left=e.clientX+"px"; drag.ghost.style.top=e.clientY+"px";
+  clearMarks(); drag.target=null;
+  if(drag.kind==="line"){
+    const cs=[...$("#cols").querySelectorAll(".col:not(.donecol):not(.pin)")].filter(c=>c.dataset.id!==drag.id);
+    let idx=cs.length; for(let i=0;i<cs.length;i++){const b=cs[i].getBoundingClientRect(); if(e.clientX<b.left+b.width/2){idx=i;break}}
+    drag.target={idx}; cs[idx]?.classList.add("dropl");
+    return;
+  }
+  const under=document.elementFromPoint(e.clientX,e.clientY);
+  const colEl=under?.closest(".col:not(.mini):not(.donecol):not(.mark):not(.pin)"), overT=under?.closest("#theT");
+  const quick=Date.now()-drag.t0<450;
+  if(drag.kind==="row"&&dx<-60&&Math.abs(dy)<35&&(quick||!colEl||colEl.dataset.id===drag.id)){ drag.del=true; drag.ghost.classList.add("del"); drag.ghost.textContent="Release to remove"; return; }
+  if(drag.del){ drag.del=false; drag.ghost.classList.remove("del"); drag.ghost.textContent=drag.label; }
+  if(colEl){
+    let at=null, mark=null; for(const r of colEl.querySelectorAll(".srow")){const b=r.getBoundingClientRect(); if(e.clientY<b.top+b.height/2){at=+r.dataset.k;mark=r;break}}
+    drag.target={id:colEl.dataset.id,at}; mark?mark.classList.add("dropb"):colEl.querySelector(".steps").classList.add("drope");
+  } else if(overT){ drag.target={newLine:true}; overT.classList.add("drop"); }
+},{passive:false});
+document.addEventListener("touchmove",e=>{if(drag&&drag.on)e.preventDefault()},{passive:false});
+function startDrag(){
+  drag.on=true; drag.t0=Date.now();
+  if(drag.kind==="row"){ const p=cur(drag.id); drag.ks=ui.sel&&ui.sel.id===drag.id&&ui.sel.ks.includes(drag.k)?[...ui.sel.ks]:[drag.k];
+    drag.label=drag.ks.length>1?`${drag.ks.length} steps`:p.tasks[drag.k].text;
+    drag.ks.forEach(k=>document.querySelector(`.col[data-id="${drag.id}"] .srow[data-k="${k}"]`)?.classList.add("ghosted")); }
+  else if(drag.kind==="line"){ drag.label=cur(drag.id).name; drag.el.closest(".col").style.opacity=".3"; }
+  else drag.label=drag.item?.title||"";
+  const g=document.createElement("div"); g.className="ghost"; g.textContent=drag.label; document.body.append(g); drag.ghost=g;
+  g.style.left=drag.x+"px"; g.style.top=drag.y+"px";
+}
+function clearMarks(){document.querySelectorAll(".dropb,.drope,.dropl,.t.drop").forEach(x=>x.classList.remove("dropb","drope","dropl","drop"))}
+function endDrag(){
+  if(!drag) return; clearTimeout(drag.hold); const d=drag; drag=null;
+  if(d.held){ blockUntil=Date.now()+80; return; }
+  if(!d.on) return;
+  blockUntil=Date.now()+350; d.ghost.remove(); clearMarks();
+  if(d.kind==="line"){ d.el.closest(".col").style.opacity=""; if(d.target) reorderLines(d.id,d.target.idx); else render(); return; }
+  if(d.kind==="row"){
+    if(d.del) return removeItems(d.id,d.ks);
+    if(d.target?.newLine){ const p=cur(d.id), items=d.ks.map(k=>clone(p.tasks[k])); ui.sel=null;
+      const n=newLine("New line",items); ui.menu={id:n.id,mode:"rename"};
+      return commit([n,upd(d.id,x=>{x.tasks=x.tasks.filter((t,k)=>!d.ks.includes(k));fixStatus(x)})],"Moved to a new line. Give it a name."); }
+    if(d.target){ const at=d.target.at==null?(cur(d.target.id).tasks||[]).length:d.target.at; return moveItems(d.id,d.ks,d.target.id,at); }
+    return render();
+  }
+  if(d.kind==="sweep"&&d.item){
+    if(d.target?.newLine) pullNew(d.item);
+    else if(d.target) insertItems(d.target.id,d.target.at,[{text:d.item.title,done:false,sweepId:d.item.id}],`Added to ${cur(d.target.id).name}.`);
+  }
+}
+document.addEventListener("pointerup",endDrag); document.addEventListener("pointercancel",endDrag);
+let lastTap={id:null,t:0};
+document.addEventListener("click",e=>{
+  const colEl=e.target.closest(".col:not(.donecol)"); if(!colEl||e.target.closest(".srow,button,form,input")) return;
+  const steps=colEl.querySelector(".steps"), sb=steps.getBoundingClientRect(); if(e.clientY<sb.top||e.clientY>sb.bottom) return;
+  const id=steps.dataset.steps, now=Date.now();
+  if(lastTap.id===id&&now-lastTap.t<400){
+    let at=null; for(const r of steps.querySelectorAll(".srow")){const b=r.getBoundingClientRect(); if(e.clientY<b.top+b.height/2){at=+r.dataset.k;break}}
+    ui.adding={id,at,cp:false}; ui.open.add(id); lastTap={id:null,t:0}; render();
+  } else lastTap={id,t:now};
+});
+document.addEventListener("focusout",()=>setTimeout(()=>{if(ui.pending&&!typing())render()},250));
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&ui.sel){ui.sel=null;render()} });
+
+/* ---------- phone pager: 3 lines per screen ---------- */
+const phone=matchMedia("(max-width:640px)");
+function updatePager(){
+  const el=$("#cols"), pg=$("#pager"), n=el.querySelectorAll(".col").length;
+  if(!phone.matches||n<=3||document.body.classList.contains("zoomed")){pg.replaceChildren();return}
+  const pages=Math.ceil(n/3), w=el.clientWidth, cur=Math.round(el.scrollLeft/w);
+  pg.replaceChildren(...Array.from({length:pages},(_,i)=>{const b=document.createElement("button");b.className=i===Math.min(cur,pages-1)?"on":"";b.setAttribute("aria-label","Page "+(i+1));
+    b.onclick=()=>el.scrollTo({left:i*w,behavior:"smooth"});return b}));
+}
+$("#cols").addEventListener("scroll",()=>{updateMini();clearTimeout(window._pt);window._pt=setTimeout(updatePager,80)},{passive:true});
+addEventListener("resize",()=>updateMini());
+(function(){ const m=$("#minimap"); let on=false;
+  const go=e=>{ const el=$("#cols"), r=m.getBoundingClientRect(); el.style.scrollBehavior="auto"; el.scrollLeft=(e.clientX-r.left)/r.width*el.scrollWidth-el.clientWidth/2; el.style.scrollBehavior=""; };
+  m.addEventListener("pointerdown",e=>{ on=true; m.setPointerCapture(e.pointerId); go(e); e.stopPropagation(); });
+  m.addEventListener("pointermove",e=>{ if(on) go(e); });
+  m.addEventListener("pointerup",()=>{ on=false; }); m.addEventListener("pointercancel",()=>{ on=false; });
+})();
+phone.addEventListener?.("change",()=>render());
+addEventListener("resize",updatePager);
+
+/* ---------- zoom, like a timeline ---------- */
+let Z=1; try{Z=+localStorage.getItem("pt-zoom")||1}catch(e){}
+function setZoom(z,ax){
+  const el=$("#cols"); z=Math.min(2.5,Math.max(0.35,Math.round(z*100)/100)); if(!isFinite(z)) return;
+  const old=Z, a=ax??el.clientWidth/2, at=el.scrollLeft+a;
+  Z=z; document.documentElement.style.setProperty("--z",z);
+  document.body.classList.toggle("zoomed",Math.abs(z-1)>0.001);
+  $("#zl").textContent=Math.round(z*100)+"%";
+  try{localStorage.setItem("pt-zoom",String(z))}catch(e){}
+  el.scrollLeft=Math.max(0,at*(z/old)-a); updatePager(); updateMini();
+}
+function fitZoom(){ const el=$("#cols"), n=el.querySelectorAll(".col").length; if(!n) return; setZoom((el.clientWidth-14)/(n*150),0); el.scrollLeft=0; }
+$("#zIn").onclick=()=>setZoom(Z*1.25); $("#zOut").onclick=()=>setZoom(Z/1.25); $("#zl").onclick=()=>setZoom(1); $("#zFit").onclick=fitZoom;
+document.addEventListener("wheel",e=>{ if(!(e.ctrlKey||e.metaKey)) return; e.preventDefault();
+  const r=$("#cols").getBoundingClientRect(); setZoom(Z*Math.exp(-e.deltaY*(Math.abs(e.deltaY)>=40?0.002:0.01)),Math.min(r.width,Math.max(0,e.clientX-r.left))); },{passive:false});
+document.addEventListener("keydown",e=>{ if(!(e.ctrlKey||e.metaKey)||typing()) return;
+  if(e.key==="="||e.key==="+"){e.preventDefault();setZoom(Z*1.25)} else if(e.key==="-"){e.preventDefault();setZoom(Z/1.25)} else if(e.key==="0"){e.preventDefault();setZoom(1)} });
+var pinch=null;
+const span=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+$("#cols").addEventListener("touchstart",e=>{ if(e.touches.length!==2) return;
+  if(drag){ clearTimeout(drag.hold);
+    if(drag.on){ drag.ghost?.remove(); clearMarks(); document.querySelectorAll(".ghosted").forEach(x=>x.classList.remove("ghosted")); if(drag.kind==="line") drag.el.closest(".col").style.opacity=""; }
+    drag=null; blockUntil=Date.now()+350; }
+  pinch={d:span(e.touches),z:Z,mx:(e.touches[0].clientX+e.touches[1].clientX)/2}; },{passive:true});
+$("#cols").addEventListener("touchmove",e=>{ if(!pinch||e.touches.length!==2) return; e.preventDefault();
+  const r=$("#cols").getBoundingClientRect(); setZoom(pinch.z*span(e.touches)/pinch.d,pinch.mx-r.left); },{passive:false});
+const endPinch=e=>{ if(e.touches.length<2&&pinch){ pinch=null; blockUntil=Date.now()+350; if(ui.pending) render(); } };
+$("#cols").addEventListener("touchend",endPinch); $("#cols").addEventListener("touchcancel",endPinch);
+if(Z!==1){ const z=Z; Z=1; setZoom(z); }
+
+/* ---------- today, lanes, replay, colour filter, keys ---------- */
+function goToday(){ const el=$("#cols"), c=[...el.querySelectorAll(".col")].find(x=>x.classList.contains("istoday"))||[...el.querySelectorAll(".col:not(.donecol)")].find(x=>{const p=cur(x.dataset.id);return p&&dayOf(p)>=today()});
+  if(c){ el.scrollTo({left:Math.max(0,c.offsetLeft-el.offsetLeft-24),behavior:"smooth"}); } say("Back to today on the T."); }
+$("#zToday").onclick=goToday;
+$("#zLanes").onclick=()=>{ ui.lanes=!ui.lanes; try{localStorage.setItem("pt-lanes",ui.lanes?"1":"0")}catch(e){} $("#zLanes").classList.toggle("on",ui.lanes); render(); say(ui.lanes?"Lanes: lines grouped by colour.":"Lines back in day order."); };
+$("#zLanes").classList.toggle("on",ui.lanes);
+$("#zReplay").onclick=()=>{ if(ui.replay){ ui.replay=null; document.body.classList.remove("replay"); $("#zReplay").classList.remove("on"); render(); return; }
+  const v=$("#viewbar"); v.hidden=false; v.innerHTML=`<span>Replay a day</span><input type="date" id="rpd" max="${today()}" value="${addDays(today(),-1)}"><button id="rpgo">Show</button><button id="rpx">Cancel</button>`;
+  $("#rpx").onclick=()=>render(); $("#rpgo").onclick=()=>{ const d=$("#rpd").value; if(!d) return; ui.replay=d; document.body.classList.add("replay"); $("#zReplay").classList.add("on");
+    const hits=sprints.reduce((n,p)=>n+(p.tasks||[]).filter(x=>x.doneAt===d).length,0); render(); say(`${nice(d)}: ${hits} step${hits===1?"":"s"} ticked. Tap Replay to finish.`); }; };
+function renderFilter(){ const box=$("#cfilter"), used=[...new Set(sprints.filter(p=>p.status!=="done"&&COLOURS[p.color]).map(p=>p.color))];
+  if(used.length<1){box.replaceChildren();return}
+  box.innerHTML=used.map(c=>`<button class="cf${ui.cfilter===c?" on":""}" data-cf="${c}" style="--c:${COLOURS[c]}" aria-label="Show only ${c} lines"></button>`).join("");
+  box.querySelectorAll("[data-cf]").forEach(b=>b.onclick=()=>{ const c=b.dataset.cf;
+    if(ui.cfilter===c){ ui.cfilter=null; setHidden([],"Showing every line."); return; }
+    ui.cfilter=c; setHidden(visibleLines().filter(p=>p.color!==c).map(p=>p.id),`Only ${c} lines. Tap the dot again to see everything.`); }); }
+document.addEventListener("keydown",e=>{ if(e.ctrlKey||e.metaKey||e.altKey) return; const a=document.activeElement; if(a&&(a.tagName==="INPUT"||a.tagName==="TEXTAREA")) return;
+  const el=$("#cols"), step=(el.querySelector(".col:not(.donecol)")?.getBoundingClientRect().width||150);
+  if(e.key==="ArrowRight"){el.scrollBy({left:step,behavior:"smooth"});e.preventDefault()}
+  else if(e.key==="ArrowLeft"){el.scrollBy({left:-step,behavior:"smooth"});e.preventDefault()}
+  else if(e.key==="t"||e.key==="T") goToday();
+  else if(e.key==="f"||e.key==="F") fitZoom();
+  else if((e.key==="s"||e.key==="S")&&ui.focusId&&cur(ui.focusId)){ const p=cur(ui.focusId); setHidden(visibleLines().filter(o=>o.id!==p.id).map(o=>o.id),`Solo: ${p.name}.`); }
+  else if(e.key==="Escape"&&(ui.hidden.size||ui.pick)){ ui.cfilter=null; setHidden([],"Showing every line."); } });
+
+/* ---------- focus mode ---------- */
+$("#theT").onclick=()=>{ if(blocked())return; const on=document.body.classList.toggle("focus"); say(on?"Focus: next steps only. Tap the T again to see everything.":"Showing everything."); };
+
+/* ---------- Mind Sweep ---------- */
+function onT(){const ids=new Set();sprints.forEach(p=>{if(p.sweepId)ids.add(p.sweepId);(p.tasks||[]).forEach(t=>t.sweepId&&ids.add(t.sweepId))});return ids}
+function renderSweep(){
+  const el=$("#sweepList"); if(!sweepItems.length&&el.dataset.loaded!=="1") return;
+  const ids=onT(), items=sweepItems.filter(i=>!ids.has(i.id));
+  if(!items.length){el.innerHTML='<div class="empty">Nothing open in your Mind Sweep.</div>';return}
+  const active=visibleLines().filter(p=>p.status!=="done");
+  el.replaceChildren(...items.map(i=>{
+    const d=document.createElement("div");d.className="sitem";
+    d.innerHTML=`<div class="shead"><button class="tick" data-sdone aria-label="Mark ${esc(i.title)} done"><span class="dot"></span></button><button data-sid="${esc(i.id)}">${esc(i.title)}</button></div>${sweepOpen===i.id?`<div class="where"><button data-new>New line</button>${active.map(p=>`<button data-to="${esc(p.id)}">Add to ${esc(p.name)}</button>`).join("")}</div>`:""}`;
+    d.querySelector("[data-sid]").onclick=()=>{if(blocked())return;sweepOpen=sweepOpen===i.id?null:i.id;renderSweep()};
+    d.querySelector("[data-new]")?.addEventListener("click",()=>pullNew(i));
+    d.querySelector("[data-sdone]").onclick=()=>sweepDone(i);
+    d.querySelectorAll("[data-to]").forEach(b=>b.onclick=()=>{sweepOpen=null;insertItems(b.dataset.to,null,[{text:i.title,done:false,sweepId:i.id}],`Added to ${cur(b.dataset.to).name}.`)});
+    return d;}));
+}
+function sweepDone(i){
+  if(!mcp){say("Couldn't reach your Progress Pad.");return}
+  sweepItems=sweepItems.filter(x=>x.id!==i.id); sweepOpen=null; renderSweep();
+  pad("update_mind_sweep_item",{id:i.id,status:"achieved"}).catch(()=>say("Couldn't mark that done. Try again."));
+  pad("add_entry",{kind:"done",text:i.title,notes:"From the Progress T (Mind Sweep)"}).catch(()=>{});
+  say(`Done: ${i.title}. Added to your Done list.`,()=>{ pad("update_mind_sweep_item",{id:i.id,status:"todo"}).catch(()=>{}); sweepItems=[i,...sweepItems]; renderSweep(); });
+}
+function pullNew(i){ sweepOpen=null; const n=newLine(i.title,[],{sweepId:i.id}); ui.adding={id:n.id,at:null,cp:false}; commit([n],"On the T. Add its first step, or tap its name to make it a step."); }
+async function openSweep(){
+  const box=$("#sweep"), el=$("#sweepList"); if(!box.hidden){box.hidden=true;return}
+  box.hidden=false; el.dataset.loaded=""; el.innerHTML='<div class="empty">Loading your Mind Sweep…</div>';
+  try{const r=await pad("list_mind_sweep",{status:"todo",limit:200}); sweepItems=(r&&r.items)||[]; el.dataset.loaded="1"; renderSweep();}
+  catch(e){el.innerHTML='<div class="empty">Couldn\'t reach your Mind Sweep just now. Try again in a moment.</div>'}
+}
+$("#sweepBtn").onclick=openSweep; $("#sweepClose").onclick=()=>{$("#sweep").hidden=true};
+$("#newBtn").onclick=()=>{const f=$("#newSprint");f.hidden=!f.hidden;if(!f.hidden)f.name.focus()};
+$("#newSprint").onsubmit=e=>{ e.preventDefault(); if(!db) return; const f=e.target, n=newLine(f.name.value.trim());
+  f.reset(); f.hidden=true; f.name.blur(); ui.adding={id:n.id,at:null,cp:false}; commit([n],"New line on the T. Add its first step."); };
+
+/* ---------- start ---------- */
+(async()=>{
+  const timer=setTimeout(()=>say("Still loading. Check you're signed in."),10000);
+  claude.use("mcp").then(m=>{mcp=m}).catch(()=>{});
+  claude.use("sample").then(x=>{sample=x;render()}).catch(()=>{});
+  db=await claude.use("db");
+  if(!db){clearTimeout(timer);$("#cols").innerHTML='<div class="empty">Sign in to see your sprints.</div>';return}
+  db.collection("projects").onSnapshot(snap=>{
+    if(!snap.metadata.fromCache) clearTimeout(timer);
+    const all=snap.docs.map(d=>({id:d.id,...clone(d.data())}));
+    sprints=all.filter(x=>x.kind!=="pin"); pins=all.filter(x=>x.kind==="pin");
+    render();
+  },()=>{clearTimeout(timer);say("Couldn't load your sprints.")});
+})();
+</script>
+</body>
+</html>

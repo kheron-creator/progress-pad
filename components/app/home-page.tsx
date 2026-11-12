@@ -61,6 +61,8 @@ import { TriggerCard } from "@/components/ui/trigger-card";
 import { WritingSection, type WritingSectionItem } from "@/components/ui/writing-section";
 import { useSessionStore } from "@/components/app/session-store-provider";
 import { useRegisterUnsavedLeave } from "@/components/app/unsaved-leave-provider";
+import { SweepToSprintPrompt, type SweepPromptItem } from "@/components/app/sweep-to-sprint-prompt";
+import { TodayOnTheT } from "@/components/app/today-on-the-t";
 import { createClient } from "@/lib/supabase/client";
 import {
   HOME_BANNERS,
@@ -363,6 +365,7 @@ function ItemIcon({ children }: { children: ReactNode }) {
 
 export function HomePage() {
   const router = useRouter();
+  const [askItem, setAskItem] = useState<SweepPromptItem | null>(null);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const date = useMemo(
@@ -1138,6 +1141,7 @@ export function HomePage() {
         const sortOrder = frontMindSweepSortOrder(mindSweepByDate[onDate] ?? []);
         const row = await addMindSweepItem(createClient(), { onDate, title, notes, sortOrder });
         setMindSweepByDate((current) => mergeMindSweepItems(current, [{ ...row, on_date: onDate }]));
+        setAskItem({ id: row.id, title: row.title });
       } else {
         const kind = writingKindForSection(sectionId);
         if (!kind) {
@@ -1489,6 +1493,7 @@ export function HomePage() {
         onReorder={isMindSweep ? (orderedIds) => void reorderMindSweepItems(orderedIds) : undefined}
         onItemDirtyChange={(id, dirty) => setWritingItemDirty(section.id, id, dirty)}
         sectionDragHandle={sectionDragHandle}
+        notice={isMindSweep ? <SweepToSprintPrompt item={askItem} onClose={() => setAskItem(null)} /> : undefined}
         onAdd={isComposer ? (title, notes) => addWritingItem(section.id, title, notes) : undefined}
         onDelete={
           isComposer
@@ -1521,6 +1526,8 @@ export function HomePage() {
         image={HOME_BANNER_IMAGES.hero}
         priority
       />
+
+      <TodayOnTheT />
 
       <section id="flow-overview" className="flex scroll-mt-28 flex-col items-center gap-1 py-2 text-center">
         <Chip
