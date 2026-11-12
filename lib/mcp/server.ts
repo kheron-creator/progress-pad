@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { PILLAR_IDS, type PillarId, type WritingKind } from "@/lib/home/store";
 import type { McpUser } from "@/lib/mcp/auth";
+import { listMicroSprints, newSprintId, saveMicroSprint } from "@/lib/micro-sprints/store";
 import { addDays, MCP_TIME_ZONE, resolveDate, todayIso } from "@/lib/mcp/dates";
 import { flattenDayTriggers, isMissingTimesDone, loadDatePlan } from "@/lib/triggers/store";
 
@@ -36,6 +37,7 @@ const SERVER_INSTRUCTIONS = `Progress Pad is a personal journal and habit dashbo
 - Six Life Pillars: daily 1-10 ratings for mentally, emotionally, professionally, physically, socially, romantically. A drop of 3+ points is a "disaster pattern" worth gently asking about.
 - Writing sections per day: gratitude, quotes, journal ("Let's Journal"), reflections, and done (the Done List of wins).
 - Mind Sweep: a brain dump of open loops, each todo or achieved.
+- Micro sprints: 5 to 90 minute focus bursts shown as lines on "the T" (Mind Sweep > Micro sprints), each with small steps.
 - Triggers: small habit cues kept in a library and planned onto days, one at a time or as scenarios (saved routines). Each is todo or achieved for that day, and can be achieved more than once (times_done, e.g. 4 sets of press-ups).
 Write what the user said in their own words. Nothing here deletes data; deleting stays in the app.`;
 
@@ -735,6 +737,46 @@ export function createProgressPadServer(user: McpUser) {
         }
 
         return json({ updated: data });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "list_micro_sprints",
+    {
+      title: "List micro sprints",
+      description:
+        'List the micro sprints on "the T" (Mind Sweep > Micro sprints): short 5 to 90 minute focus bursts. Each has an id and data: {name, start, order, status "active"|"done", doneAt, sweepId, thread {title,url}, tasks: [{text, done, doneAt, cp (checkpoint), star, sweepId, logged}], activity, links}.',
+      annotations: { readOnlyHint: true },
+    },
+    async () => {
+      try {
+        return json({ sprints: await listMicroSprints(supabase) });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "save_micro_sprint",
+    {
+      title: "Save a micro sprint",
+      description:
+        'Create or replace one micro sprint on the T. Pass the whole sprint `data` (read it with list_micro_sprints first and change only what you mean to). Leave out `id` to create a new sprint. New sprints need name, start (YYYY-MM-DD), status "active" and tasks [{text, done: false}].',
+      inputSchema: {
+        id: z.string().regex(/^[A-Za-z0-9_-]{1,100}$/).optional(),
+        data: z.record(z.string(), z.unknown()),
+      },
+      annotations: { idempotentHint: true },
+    },
+    async ({ id, data }) => {
+      try {
+        const sprintId = id ?? newSprintId();
+        await saveMicroSprint(supabase, userId, sprintId, data);
+        return json({ saved: { id: sprintId } });
       } catch (error) {
         return fail(error);
       }
