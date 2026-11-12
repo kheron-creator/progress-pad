@@ -748,7 +748,7 @@ export function createProgressPadServer(user: McpUser) {
     {
       title: "List micro sprints",
       description:
-        'List the micro sprints on "the T" (Mind Sweep > Micro sprints): short 5 to 90 minute focus bursts. Each has an id and data: {name, start, day (YYYY-MM-DD it sits on), order, status "active"|"done", doneAt, sweepId, color, trim, askPT, thread {title,url}, tasks: [{text, done, doneAt, cp (checkpoint), star, color, day, mins, draft, sweepId, logged}], activity, links}. Docs with kind "pin" are day markers or notes on the line: {kind:"pin", type:"flag"|"note", text, day}. When a sprint has askPT true, the user asked PT for steps: add 3 to 6 small steps with draft: true (they keep or drop them), then set askPT false.',
+        'List the micro sprints on "the T" (Mind Sweep > Micro sprints): short 5 to 90 minute focus bursts. Each has an id and data: {name, start, day (YYYY-MM-DD it sits on), order, status "active"|"done", doneAt, sweepId, color, trim, askPT, thread {title,url}, tasks: [{text, done, doneAt, cp (checkpoint), star, color, day, mins, draft, sweepId, logged}], activity, links}. Docs with kind "pin" are day markers or notes on the line: {kind:"pin", type:"flag"|"note", text, day}. When a sprint has askPT true, the user asked PT for steps (askPTNote, if set, is their own rough idea in their words: flesh it out): add 3 to 6 small steps with draft: true (they keep or drop them), then remove askPT and askPTNote.',
       annotations: { readOnlyHint: true },
     },
     async () => {
