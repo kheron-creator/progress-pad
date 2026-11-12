@@ -82,6 +82,21 @@
   .dsub button{color:var(--accent);text-decoration:underline;text-underline-offset:3px;font-size:13px;margin-top:2px}
   .donecol .name{cursor:default}
   .pager{display:flex;justify-content:center;gap:8px;margin-top:4px}
+  .viewbar{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;font-size:14px;color:var(--muted);margin-top:8px}
+  .viewbar button{color:var(--accent);text-decoration:underline;text-underline-offset:3px;font-size:14px}
+  .col.mark{flex:0 0 58px;max-width:58px;opacity:.55}
+  body.zoomed .col.mark{flex:0 0 58px;zoom:1}
+  .mark .stub{width:2px;height:28px;background:var(--line)}
+  .mark .stubdot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--line);margin:2px 0 0 -3.5px}
+  .mark .mname{font-size:11px;line-height:1.25;color:var(--muted);margin:6px 0 0 -11px;padding-right:4px;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .cols.one .col:not(.mark){flex:1 1 auto;max-width:none}
+  .cols.one .txt,.cols.one .srow input{font-size:18px}
+  .cols.one .steps{gap:16px}
+  .name.picked{color:var(--accent)}
+  .name.picked::before{content:"\2713  "}
+  .minimap{position:relative;height:16px;margin-top:6px;border:1px solid var(--line);border-radius:8px;touch-action:none;cursor:pointer}
+  .minimap i{position:absolute;top:4px;width:1.5px;height:6px;background:var(--muted);opacity:.6}
+  .minimap b{position:absolute;top:-2px;bottom:-2px;border:2px solid var(--accent);border-radius:6px;background:color-mix(in srgb,var(--accent) 12%,transparent)}
   .pager button{width:8px;height:8px;border-radius:50%;background:var(--line);padding:0}
   .pager button.on{background:var(--accent);width:18px;border-radius:4px}
   @media (max-width:640px){
@@ -146,7 +161,9 @@
   <div class="zoombar" id="zoombar"><button id="zOut" aria-label="Zoom out">−</button><button class="zl" id="zl" aria-label="Reset zoom">100%</button><button id="zIn" aria-label="Zoom in">+</button><button class="zfit" id="zFit">Fit</button></div>
   <button class="t" id="theT" aria-label="The T. Tap for focus mode"><div class="stem"></div><div class="bar"></div></button>
   <div class="cols" id="cols"></div>
+  <div class="minimap" id="minimap" hidden aria-label="Mini map: drag to travel along the T"></div>
   <div class="pager" id="pager" aria-hidden="true"></div>
+  <div class="viewbar" id="viewbar" hidden></div>
   <div class="nudge" id="nudge"></div>
   <p class="sum" id="sum"></p>
   <details class="hint"><summary>How to use the T</summary>
@@ -159,6 +176,8 @@
     Finished sprints move to the Done line on the left. Tap one to see its steps or reopen it.<br>
     Tap the T to focus on next steps and starred steps only.<br>
     Zoom in and out with − and +, a pinch, or Ctrl/⌘ + scroll. "Fit" shows every line.<br>
+    Tap a line's name, then "Solo" to see only that line, "Just these" to pick a few, or "Hide" to put one away. Hidden lines stay as small marks: tap one to bring it back.<br>
+    Drag along the mini map under the T to travel.<br>
     Hold a step and tap "Colour" to highlight it. Tap a line's name, then "Colour", to colour the whole line.
   </details>
 </main>
@@ -219,7 +238,8 @@ let db=null, mcp=null, sprints=[], sweepItems=[], sweepOpen=null;
 const COLOURS={green:"#00E14B",yellow:"#FFD43B",orange:"#FF9F43",pink:"#FF6FAE",purple:"#A77BFF",blue:"#4DA3FF"};
 const cvar=c=>COLOURS[c]?` style="--c:${COLOURS[c]}"`:"";
 const swatches=(attr,curc)=>`<div class="swatches">${Object.keys(COLOURS).map(k=>`<button class="sw${curc===k?" on":""}" ${attr}="${k}" style="--c:${COLOURS[k]}" aria-label="${k}"></button>`).join("")}<button class="sw none${curc?"":" on"}" ${attr}="" aria-label="No colour"></button></div>`;
-const ui={adding:null, edit:null, menu:null, confirmDel:null, showEarlier:false, open:new Set(), sel:null, pending:false};
+let hiddenInit=[]; try{hiddenInit=JSON.parse(localStorage.getItem("pt-hidden")||"[]")}catch(e){}
+const ui={hidden:new Set(hiddenInit), pick:null, adding:null, edit:null, menu:null, confirmDel:null, showEarlier:false, open:new Set(), sel:null, pending:false};
 $("#date").textContent=nice(today());
 
 /* ---------- helpers ---------- */
@@ -333,6 +353,35 @@ function reorderLines(id,toIdx){
 
 /* ---------- render ---------- */
 const isEarlier=p=>p.status==="done"&&(p.doneAt||"")<today();
+function saveHidden(){ try{localStorage.setItem("pt-hidden",JSON.stringify([...ui.hidden]))}catch(e){} }
+function setHidden(ids,msg){ ui.hidden=new Set(ids); ui.pick=null; ui.menu=null; saveHidden(); render(); if(msg) say(msg); }
+function markCol(p){
+  const c=document.createElement("div"); c.className="col mark"; c.dataset.id=p.id;
+  c.innerHTML=`<div class="stub"></div><div class="stubdot"></div><button class="mname" data-show="${esc(p.id)}" title="Show ${esc(p.name)}">${esc(p.name)}</button>`;
+  c.querySelector("[data-show]").onclick=()=>{ if(blocked())return; ui.hidden.delete(p.id); saveHidden(); render(); };
+  return c;
+}
+function renderView(){
+  const v=$("#viewbar"), lines=visibleLines().filter(p=>cur(p.id));
+  [...ui.hidden].forEach(id=>{ if(!lines.some(p=>p.id===id)) ui.hidden.delete(id); });
+  if(ui.pick){ v.hidden=false; const n=ui.pick.size;
+    v.innerHTML=`<span>Tap line names to pick them</span>${n?`<button data-v="show">Show ${n===1?"this line":"these "+n}</button>`:""}<button data-v="cancel">Cancel</button>`;
+  } else if(ui.hidden.size){ v.hidden=false; const shown=lines.length-ui.hidden.size;
+    v.innerHTML=`<span>Showing ${shown} of ${lines.length} lines</span><button data-v="all">Show all</button>`;
+  } else { v.hidden=true; v.replaceChildren(); return; }
+  v.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{ const k=b.dataset.v;
+    if(k==="all") setHidden([],"Showing every line.");
+    else if(k==="cancel"){ ui.pick=null; render(); }
+    else if(k==="show"){ const keep=ui.pick; setHidden(lines.filter(p=>!keep.has(p.id)).map(p=>p.id),"Just these. Tap Show all to see everything."); } });
+}
+function updateMini(){
+  const el=$("#cols"), m=$("#minimap"), sw=el.scrollWidth, cw=el.clientWidth;
+  if(!sw||sw<=cw+4){ m.hidden=true; return; } m.hidden=false;
+  const base=el.getBoundingClientRect().left-el.scrollLeft;
+  const ticks=[...el.querySelectorAll(".col")].map(c=>{ const i=document.createElement("i"); i.style.left=((c.getBoundingClientRect().left-base+12)/sw*100)+"%"; return i; });
+  const w=document.createElement("b"); w.style.left=(el.scrollLeft/sw*100)+"%"; w.style.width=(cw/sw*100)+"%";
+  m.replaceChildren(...ticks,w);
+}
 function visibleLines(){
   const by=(a,b)=>((a.order??1e9)-(b.order??1e9))||((a.start||"")<(b.start||"")?-1:1);
   return sprints.filter(p=>p.status!=="done").sort(by);
@@ -346,8 +395,10 @@ function render(){
   renderSel();
   if(!$("#sweep").hidden) renderSweep();
   if(!sprints.length){el.innerHTML='<div class="empty">No micro sprints yet. Tap "+ Micro sprint", "Pull from Mind Sweep", or tell PT "make a micro sprint".</div>';return}
-  const cols=visibleLines().map(col), dc=doneCol(); if(dc) cols.unshift(dc);
-  const keep=el.scrollLeft; el.replaceChildren(...cols); el.scrollLeft=keep; updatePager();
+  renderView();
+  const lines=visibleLines(), cols=lines.map(p=>ui.hidden.has(p.id)?markCol(p):col(p)), dc=ui.hidden.size?null:doneCol(); if(dc) cols.unshift(dc);
+  el.classList.toggle("one",lines.filter(p=>!ui.hidden.has(p.id)).length===1&&lines.length>1);
+  const keep=el.scrollLeft; el.replaceChildren(...cols); el.scrollLeft=keep; updatePager(); updateMini();
   const f=el.querySelector("input[data-autofocus]"); if(f){f.focus(); if(f.closest("[data-form=edit],[data-form=rename]")) f.select();}
 }
 function doneCol(){
@@ -400,14 +451,14 @@ function col(p){
   const c=document.createElement("div"); c.className="col"+(done?" done":"")+(mini?" mini":"")+(COLOURS[p.color]?" tint":""); c.dataset.id=p.id; if(COLOURS[p.color]) c.style.setProperty("--c",COLOURS[p.color]);
   c.innerHTML=`<div class="steps" data-steps="${p.id}">${rows}</div>
     <button class="circle" data-circle aria-label="${done?(mini?"Show steps":"Hide steps"):"Mark complete"}">${TICK}</button>
-    ${menu==="rename"?`<form class="rename" data-form="rename"><input name="name" value="${esc(p.name)}" required data-autofocus></form>`:`<button class="name" data-name>${esc(p.name)}</button>`}
+    ${menu==="rename"?`<form class="rename" data-form="rename"><input name="name" value="${esc(p.name)}" required data-autofocus></form>`:`<button class="name${ui.pick&&ui.pick.has(p.id)?" picked":""}" data-name>${esc(p.name)}</button>`}
     ${mini?"":`<div class="meta">${d} of ${st.length}${done?" · complete":""}</div>`}
     ${menu==="step"?`<div class="stepify"><form class="goal" data-form="goal"><label>Make "${esc(p.name)}" the first step towards:</label><input name="goal" placeholder="End goal" required data-autofocus><button class="small" type="submit">Save</button></form>
         ${others.length?`<div class="or">or add it as a step on</div><div class="where">${others.map(o=>`<button data-into="${esc(o.id)}">${esc(o.name)}</button>`).join("")}</div>`:""}
         <button class="small" data-m="close">Cancel</button></div>`:""}
     ${menu==="colour"?`<div class="menu">${swatches("data-lc",p.color)}<button data-m="close">Done</button></div>`:""}
     ${menu==="menu"?(ui.confirmDel===p.id?`<div class="menu">Remove line? <button data-yes>Yes</button><button data-no>No</button></div>`
-      :`<div class="menu"><button data-m="rename">Change end goal</button><button data-m="step">Make it a step</button><button data-m="thread">${p.thread?"Edit thread":"Name a thread"}</button><button data-m="colour">Colour</button>${done?`<button data-m="reopen">Reopen</button>`:""}<button data-m="remove">Remove</button><button data-m="close">Done</button></div>`):""}`;
+      :`<div class="menu">${done?"":`<button data-m="solo">Solo</button><button data-m="pick">Just these…</button><button data-m="hide">Hide</button>`}<button data-m="rename">Change end goal</button><button data-m="step">Make it a step</button><button data-m="thread">${p.thread?"Edit thread":"Name a thread"}</button><button data-m="colour">Colour</button>${done?`<button data-m="reopen">Reopen</button>`:""}<button data-m="remove">Remove</button><button data-m="close">Done</button></div>`):""}`;
   wire(c,p);
   return c;
 }
@@ -426,8 +477,13 @@ function wire(c,p){
   c.querySelector("[data-addcp]")?.addEventListener("click",()=>{ui.adding={id,at:null,cp:true};render()});
   c.querySelectorAll("[data-at]").forEach(b=>b.onclick=()=>{ui.adding={id,at:+b.dataset.at,cp:true};render()});
   c.querySelector("[data-circle]").onclick=()=>{if(blocked())return;toggleSprint(id)};
-  c.querySelector("[data-name]")?.addEventListener("click",()=>{if(blocked())return;ui.menu=ui.menu?.id===id?null:{id,mode:"menu"};ui.confirmDel=null;ui.adding=null;render()});
+  c.querySelector("[data-name]")?.addEventListener("click",()=>{if(blocked())return;
+    if(ui.pick){ ui.pick.has(id)?ui.pick.delete(id):ui.pick.add(id); render(); return; }
+    ui.menu=ui.menu?.id===id?null:{id,mode:"menu"};ui.confirmDel=null;ui.adding=null;render()});
   c.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{const m=b.dataset.m;
+    if(m==="solo"){ setHidden(visibleLines().filter(o=>o.id!==id).map(o=>o.id),`Solo: ${p.name}. Tap Show all to see everything.`); return; }
+    if(m==="hide"){ ui.hidden.add(id); saveHidden(); ui.menu=null; render(); say(`${p.name} is hidden. Tap its mark to bring it back.`); return; }
+    if(m==="pick"){ ui.menu=null; ui.pick=new Set([id]); render(); return; }
     if(m==="close") ui.menu=null; else if(m==="remove") ui.confirmDel=id;
     else if(m==="reopen"){ui.menu=null;sweepStatus(p.sweepId,"todo");commit([upd(id,d=>{d.status="active";d.doneAt=null})],"Reopened.");return}
     else ui.menu={id,mode:m};
@@ -514,7 +570,7 @@ document.addEventListener("pointermove",e=>{
     return;
   }
   const under=document.elementFromPoint(e.clientX,e.clientY);
-  const colEl=under?.closest(".col:not(.mini):not(.donecol)"), overT=under?.closest("#theT");
+  const colEl=under?.closest(".col:not(.mini):not(.donecol):not(.mark)"), overT=under?.closest("#theT");
   const quick=Date.now()-drag.t0<450;
   if(drag.kind==="row"&&dx<-60&&Math.abs(dy)<35&&(quick||!colEl||colEl.dataset.id===drag.id)){ drag.del=true; drag.ghost.classList.add("del"); drag.ghost.textContent="Release to remove"; return; }
   if(drag.del){ drag.del=false; drag.ghost.classList.remove("del"); drag.ghost.textContent=drag.label; }
@@ -577,7 +633,14 @@ function updatePager(){
   pg.replaceChildren(...Array.from({length:pages},(_,i)=>{const b=document.createElement("button");b.className=i===Math.min(cur,pages-1)?"on":"";b.setAttribute("aria-label","Page "+(i+1));
     b.onclick=()=>el.scrollTo({left:i*w,behavior:"smooth"});return b}));
 }
-$("#cols").addEventListener("scroll",()=>{clearTimeout(window._pt);window._pt=setTimeout(updatePager,80)},{passive:true});
+$("#cols").addEventListener("scroll",()=>{updateMini();clearTimeout(window._pt);window._pt=setTimeout(updatePager,80)},{passive:true});
+addEventListener("resize",()=>updateMini());
+(function(){ const m=$("#minimap"); let on=false;
+  const go=e=>{ const el=$("#cols"), r=m.getBoundingClientRect(); el.style.scrollBehavior="auto"; el.scrollLeft=(e.clientX-r.left)/r.width*el.scrollWidth-el.clientWidth/2; el.style.scrollBehavior=""; };
+  m.addEventListener("pointerdown",e=>{ on=true; m.setPointerCapture(e.pointerId); go(e); e.stopPropagation(); });
+  m.addEventListener("pointermove",e=>{ if(on) go(e); });
+  m.addEventListener("pointerup",()=>{ on=false; }); m.addEventListener("pointercancel",()=>{ on=false; });
+})();
 phone.addEventListener?.("change",()=>render());
 addEventListener("resize",updatePager);
 
@@ -590,7 +653,7 @@ function setZoom(z,ax){
   document.body.classList.toggle("zoomed",Math.abs(z-1)>0.001);
   $("#zl").textContent=Math.round(z*100)+"%";
   try{localStorage.setItem("pt-zoom",String(z))}catch(e){}
-  el.scrollLeft=Math.max(0,at*(z/old)-a); updatePager();
+  el.scrollLeft=Math.max(0,at*(z/old)-a); updatePager(); updateMini();
 }
 function fitZoom(){ const el=$("#cols"), n=el.querySelectorAll(".col").length; if(!n) return; setZoom((el.clientWidth-14)/(n*150),0); el.scrollLeft=0; }
 $("#zIn").onclick=()=>setZoom(Z*1.25); $("#zOut").onclick=()=>setZoom(Z/1.25); $("#zl").onclick=()=>setZoom(1); $("#zFit").onclick=fitZoom;
