@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useSessionStore } from "@/components/app/session-store-provider";
 import { useRegisterUnsavedLeave } from "@/components/app/unsaved-leave-provider";
+import { SweepToSprintPrompt, type SweepPromptItem } from "@/components/app/sweep-to-sprint-prompt";
 import { AddMindSweepForm } from "@/components/ui/add-mind-sweep-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -145,6 +146,7 @@ export function ActiveMindSweepPage() {
   const [draftDate, setDraftDate] = useState(today);
   const [addSaving, setAddSaving] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [askItem, setAskItem] = useState<SweepPromptItem | null>(null);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null);
   const [celebrateName, setCelebrateName] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
@@ -300,6 +302,7 @@ export function ActiveMindSweepPage() {
       const sortOrder = frontMindSweepSortOrder(mindSweepByDate[onDate] ?? []);
       const row = await addMindSweepItem(createClient(), { ...payload, onDate, sortOrder });
       setMindSweepByDate((current) => mergeMindSweepItems(current, [row]));
+      setAskItem({ id: row.id, title: row.title });
       setDraftTitle("");
       setDraftNotes("");
       setDraftDate(today);
@@ -531,6 +534,8 @@ export function ActiveMindSweepPage() {
           ))}
         </div>
       </Card>
+
+      <SweepToSprintPrompt item={askItem} onClose={() => setAskItem(null)} />
 
       {composerOpen ? (
         <AddMindSweepForm

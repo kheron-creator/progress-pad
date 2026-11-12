@@ -106,7 +106,7 @@
     .col:nth-child(3n+1){scroll-snap-align:start}
     .srow{touch-action:pan-x}
   }
-  .zoombar{display:flex;gap:4px;align-items:center;justify-content:flex-end;margin-top:10px}
+  .zoombar{display:flex;gap:4px;align-items:center;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
   .zoombar button{min-width:28px;height:28px;border:1px solid var(--line);border-radius:8px;display:grid;place-items:center;font-size:15px;line-height:1;color:var(--muted);text-align:center;padding:0 6px}
   .zoombar button:hover{color:var(--ink)}
   .zoombar .zl{border-color:transparent;font-size:13px;min-width:46px}
@@ -124,6 +124,35 @@
   .sw.on{box-shadow:0 0 0 2px var(--ink)}
   .sw.none{background:linear-gradient(135deg,transparent 45%,var(--muted) 45%,var(--muted) 55%,transparent 55%)}
   .selbar .sw{border-color:var(--ink)}
+  .dayh{display:block;height:20px;margin:6px 0 2px -11px;font-family:var(--head);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  .dayh.today{color:var(--accent)}
+  .dayh.late{color:var(--muted);font-style:italic}
+  .col.istoday .steps{border-left-color:var(--accent)}
+  .col.tint.istoday .steps{border-left-color:var(--c)}
+  .daymenu input[type=date],.selbar input[type=date],.pinf input[type=date]{width:auto;font-size:14px;padding:4px 6px}
+  .tags{display:inline-flex;gap:4px;margin-left:6px;vertical-align:1px}
+  .tg{font-size:11px;font-weight:600;padding:1px 6px;border-radius:8px;background:var(--sel);color:var(--accent);white-space:nowrap}
+  .tg.mins{background:none;border:1px solid var(--line);color:var(--muted)}
+  .srow.due:not(.done){background:color-mix(in srgb,var(--accent) 12%,transparent)}
+  .srow.draft{opacity:.55}
+  .srow.draft .dot{border-style:dashed}
+  .dkeep{font-size:12px;color:var(--accent);font-weight:600;padding:2px 4px}
+  .col.pin{flex:0 0 96px;max-width:96px;padding-top:26px}
+  body.zoomed .col.pin{flex:0 0 96px;zoom:1}
+  .pinb{display:block;font-size:12px;line-height:1.3;text-align:left;overflow-wrap:anywhere;padding:6px 8px;border-radius:8px;margin-left:-6px}
+  .pin.flag .pinb{border-left:3px solid var(--warn);color:var(--ink);font-family:var(--head);font-weight:600}
+  .pin.note .pinb{background:#FFF3B0;color:#121414;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+  .pinday{display:block;font-size:11px;color:var(--muted);margin:4px 0 0 -4px}
+  .pinf{display:flex;flex-direction:column;gap:6px;margin-left:-6px;font-size:13px}
+  .pinf button{font-size:13px;text-decoration:underline;text-underline-offset:3px}
+  .zoombar .cf{width:16px;height:16px;min-width:16px;padding:0;border-radius:50%;background:var(--c);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--line)}
+  .zoombar .cf.on{box-shadow:0 0 0 2px var(--ink)}
+  .zoombar .zsp{flex:1}
+  .zoombar .ztxt{font-size:13px}
+  .zoombar .ztxt.on{color:var(--accent);border-color:var(--accent)}
+  body.replay .srow{opacity:.25}
+  body.replay .srow.rhit{opacity:1;background:color-mix(in srgb,var(--spring) 18%,transparent)}
+  .folded{font-size:12px;color:var(--muted);margin-left:8px;text-decoration:underline;text-underline-offset:3px}
   .sum{font-size:14px;color:var(--muted);margin:6px 0 0}
   .empty{color:var(--muted);font-size:14px;padding:18px 0}
   .srow.star .txt{color:var(--ink);text-shadow:0 0 10px color-mix(in srgb,var(--spring) 70%,transparent),0 0 2px color-mix(in srgb,var(--spring) 60%,transparent)}
@@ -158,7 +187,7 @@
   </div>
   <form class="new" id="newSprint" hidden><input name="name" placeholder="What's the micro sprint?" required><button class="small" type="submit">Add</button></form>
   <div class="sweep" id="sweep" hidden><h2><span>MIND SWEEP · TICK IF DONE, OR DRAG ONTO A LINE</span><button class="small" id="sweepClose">Close</button></h2><div class="scroll" id="sweepList"></div></div>
-  <div class="zoombar" id="zoombar"><button id="zOut" aria-label="Zoom out">−</button><button class="zl" id="zl" aria-label="Reset zoom">100%</button><button id="zIn" aria-label="Zoom in">+</button><button class="zfit" id="zFit">Fit</button></div>
+  <div class="zoombar" id="zoombar"><span id="cfilter" style="display:flex;gap:6px;align-items:center"></span><span class="zsp"></span><button class="ztxt" id="zLanes" title="Group lines by colour">Lanes</button><button class="ztxt" id="zReplay" title="See what you ticked on a past day">Replay</button><button class="ztxt" id="zToday">Today</button><button id="zOut" aria-label="Zoom out">−</button><button class="zl" id="zl" aria-label="Reset zoom">100%</button><button id="zIn" aria-label="Zoom in">+</button><button class="zfit" id="zFit">Fit</button></div>
   <button class="t" id="theT" aria-label="The T. Tap for focus mode"><div class="stem"></div><div class="bar"></div></button>
   <div class="cols" id="cols"></div>
   <div class="minimap" id="minimap" hidden aria-label="Mini map: drag to travel along the T"></div>
@@ -178,6 +207,11 @@
     Zoom in and out with − and +, a pinch, or Ctrl/⌘ + scroll. "Fit" shows every line.<br>
     Tap a line's name, then "Solo" to see only that line, "Just these" to pick a few, or "Hide" to put one away. Hidden lines stay as small marks: tap one to bring it back.<br>
     Drag along the mini map under the T to travel.<br>
+    Each line hangs from its day. Tap the day above a line (or the name, then "Change day") to move it. Drag a line's name next to another line to join that line's day. Missed days show as "Catch up".<br>
+    Hold a step to give it a Date or Minutes, or make it a Trigger. Steps due today glow.<br>
+    Tap a day, then "+ Marker" or "+ Note" to pin a flag or a sticky note on the T.<br>
+    Keys: ← → move along the T, T today, F fit, S solo the last line you touched, Esc show all.<br>
+    Lanes groups lines by colour. Replay shows what you ticked on a past day.<br>
     Hold a step and tap "Colour" to highlight it. Tap a line's name, then "Colour", to colour the whole line.
   </details>
 </main>
@@ -234,18 +268,23 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const clone=o=>JSON.parse(JSON.stringify(o));
 const TICK='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const SERVER="Progress Pad - EFG";
-let db=null, mcp=null, sprints=[], sweepItems=[], sweepOpen=null;
+let db=null, mcp=null, sample=null, sprints=[], pins=[], sweepItems=[], sweepOpen=null;
 const COLOURS={green:"#00E14B",yellow:"#FFD43B",orange:"#FF9F43",pink:"#FF6FAE",purple:"#A77BFF",blue:"#4DA3FF"};
 const cvar=c=>COLOURS[c]?` style="--c:${COLOURS[c]}"`:"";
 const swatches=(attr,curc)=>`<div class="swatches">${Object.keys(COLOURS).map(k=>`<button class="sw${curc===k?" on":""}" ${attr}="${k}" style="--c:${COLOURS[k]}" aria-label="${k}"></button>`).join("")}<button class="sw none${curc?"":" on"}" ${attr}="" aria-label="No colour"></button></div>`;
 let hiddenInit=[]; try{hiddenInit=JSON.parse(localStorage.getItem("pt-hidden")||"[]")}catch(e){}
-const ui={hidden:new Set(hiddenInit), pick:null, adding:null, edit:null, menu:null, confirmDel:null, showEarlier:false, open:new Set(), sel:null, pending:false};
+let lanesInit=false; try{lanesInit=localStorage.getItem("pt-lanes")==="1"}catch(e){}
+const ui={hidden:new Set(hiddenInit), pick:null, lanes:lanesInit, replay:null, cfilter:null, focusId:null, pinEdit:null, adding:null, edit:null, menu:null, confirmDel:null, showEarlier:false, open:new Set(), sel:null, pending:false};
 $("#date").textContent=nice(today());
 
 /* ---------- helpers ---------- */
 const cur=id=>sprints.find(s=>s.id===id);
-const stepsOf=t=>t.filter(x=>!x.cp);
-const reachedAt=(t,i)=>t.slice(0,i).filter(x=>!x.cp).every(x=>x.done);
+const stepsOf=t=>t.filter(x=>!x.cp&&!x.draft);
+const addDays=(d,n)=>{const x=new Date(d+"T12:00:00");x.setDate(x.getDate()+n);return x.toLocaleDateString("en-CA")};
+const dayOf=p=>p.day||p.start||today();
+const short=d=>d?new Date(d+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric"}):"";
+const curAny=id=>cur(id)||pins.find(x=>x.id===id);
+const reachedAt=(t,i)=>t.slice(0,i).filter(x=>!x.cp&&!x.draft).every(x=>x.done);
 const dataOf=p=>{const {id,...d}=p;return clone(d)};
 function fixStatus(d){
   const st=stepsOf(d.tasks||[]);
@@ -266,15 +305,16 @@ function say(t,undo){
 /* ---------- writes with undo ---------- */
 // changes: [{id, data}] (whole new doc) or [{id, del:true}]
 function commit(changes,msg){
-  const before=changes.map(c=>{const p=cur(c.id);return {id:c.id,data:p?dataOf(p):null}});
+  const before=changes.map(c=>{const p=curAny(c.id);return {id:c.id,data:p?dataOf(p):null}});
   apply(changes);
   if(msg) say(msg,()=>{apply(before.map(b=>b.data?{id:b.id,data:b.data}:{id:b.id,del:true}));});
 }
 async function apply(changes){
   for(const c of changes){
-    const i=sprints.findIndex(s=>s.id===c.id);
-    if(c.del){ if(i>=0) sprints.splice(i,1); }
-    else { const p={id:c.id,...clone(c.data)}; if(i>=0) sprints[i]=p; else sprints.push(p); }
+    const arr=(c.data&&c.data.kind==="pin")||pins.some(x=>x.id===c.id)?pins:sprints;
+    const i=arr.findIndex(s=>s.id===c.id);
+    if(c.del){ if(i>=0) arr.splice(i,1); }
+    else { const p={id:c.id,...clone(c.data)}; if(i>=0) arr[i]=p; else arr.push(p); }
   }
   render();
   for(const c of changes){
@@ -295,10 +335,10 @@ function toggleStep(id,i){
     else sweepStatus(t[i].sweepId,"todo");
     t.forEach((x,k)=>{ if(x.cp&&on&&reachedAt(t,k)&&!reachedAt(was,k)){ hits.push(x.text); if(!x.logged){x.logged=true; logWin("Checkpoint: "+x.text);} } });
     const wasDone=d.status==="done"; fixStatus(d);
-    if(d.status==="done"&&!wasDone) sweepStatus(d.sweepId,"achieved");
+    if(d.status==="done"&&!wasDone){ sweepStatus(d.sweepId,"achieved"); if(!d.logged){ d.logged=true; logWin("Sprint complete: "+d.name); } }
     if(d.status!=="done"&&wasDone) sweepStatus(d.sweepId,"todo");
   });
-  const d=ch.data, on=d.tasks[i].done, nx=d.tasks.find(x=>!x.cp&&!x.done);
+  const d=ch.data, on=d.tasks[i].done, nx=d.tasks.find(x=>!x.cp&&!x.done&&!x.draft);
   const others=sprints.filter(s=>s.id!==id&&s.status!=="done").length;
   let msg="Unticked.";
   if(on){
@@ -311,7 +351,7 @@ function toggleStep(id,i){
 function toggleSprint(id){
   const p=cur(id);
   if(p.status==="done"){ ui.open.has(id)?ui.open.delete(id):ui.open.add(id); render(); return; }
-  commit([upd(id,d=>{d.status="done";d.doneAt=today(); if(!d.logged){d.logged=true; logWin(d.name,d.sweepId);} else sweepStatus(d.sweepId,"achieved");})], `${p.name} complete and moved to Done. Back to the T.`);
+  commit([upd(id,d=>{d.status="done";d.doneAt=today(); if(!d.logged){d.logged=true; logWin("Sprint complete: "+d.name,d.sweepId);} else sweepStatus(d.sweepId,"achieved");})], `${p.name} complete and moved to Done. Back to the T.`);
 }
 function insertItems(id,at,items,msg){
   commit([upd(id,d=>{d.tasks=d.tasks||[]; d.tasks.splice(at==null?d.tasks.length:at,0,...items); fixStatus(d);})],msg);
@@ -333,7 +373,7 @@ function moveItems(src,ks,dst,at){
 function newLine(name,tasks,extra){
   const id="s"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
   const maxO=Math.max(0,...sprints.map(s=>s.order||0));
-  return {id,data:fixStatus({name,start:today(),order:maxO+1,status:"active",tasks:tasks||[],activity:[],links:[],...(extra||{})})};
+  return {id,data:fixStatus({name,start:today(),day:today(),order:maxO+1,status:"active",tasks:tasks||[],activity:[],links:[],...(extra||{})})};
 }
 function copyMoveNext(mode){
   const {id,ks}=ui.sel, list=visibleLines(), i=list.findIndex(s=>s.id===id);
@@ -346,9 +386,53 @@ function copyMoveNext(mode){
   commit(changes,`${mode==="copy"?"Copied":"Moved"} ${items.length} step${items.length>1?"s":""} to ${label}.`);
 }
 function reorderLines(id,toIdx){
-  const list=visibleLines().filter(s=>s.id!==id); list.splice(toIdx,0,cur(id));
-  const changes=[]; list.forEach((s,k)=>{ if((s.order??-1)!==k+1) changes.push(upd(s.id,d=>{d.order=k+1})) });
-  if(changes.length) commit(changes,"Line moved."); else render();
+  const list=visibleLines().filter(s=>s.id!==id), nb=list[toIdx-1]||list[toIdx];
+  const p=cur(id), nd=nb?(dayOf(nb)<today()?today():dayOf(nb)):dayOf(p);
+  list.splice(toIdx,0,p);
+  const changes=[]; list.forEach((s,k)=>{ const move=s.id===id&&nd!==dayOf(p); if((s.order??-1)!==k+1||move) changes.push(upd(s.id,d=>{d.order=k+1; if(move) d.day=nd;})) });
+  if(changes.length) commit(changes,nd!==dayOf(p)?`${p.name} moved to ${short(nd)}.`:"Line moved."); else render();
+}
+function setDay(id,d){ const p=cur(id); ui.menu=null; if(!d||d===dayOf(p)){render();return}
+  commit([upd(id,x=>{x.day=d})],`${p.name} is on ${d===today()?"today":nice(d)}.`); }
+function calLink(p){
+  const d=dayOf(p)<today()?today():dayOf(p), st=stepsOf(p.tasks||[]).filter(x=>!x.done);
+  const mins=st.reduce((n,x)=>n+(+x.mins||0),0)||30, start=new Date(d+"T15:00:00"), end=new Date(start.getTime()+mins*60000);
+  const f=x=>x.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent("Micro sprint: "+p.name)+"&dates="+f(start)+"/"+f(end)+"&details="+encodeURIComponent(st.map(x=>"• "+x.text).join("\n"));
+}
+async function suggestSteps(id){
+  const p=cur(id); ui.menu=null;
+  if(!sample){ commit([upd(id,d=>{d.askPT=true})],"Asked PT. Draft steps will appear here next time you chat with PT."); return; }
+  say("PT is thinking of steps…");
+  try{
+    const have=(p.tasks||[]).map(x=>x.text).join("; ")||"none yet";
+    const r=await sample.json(`You help someone with ADHD break a goal into a micro sprint: 3 to 6 small, concrete steps, each 5 to 90 minutes, in the order to do them. Goal: "${p.name}". Steps they already have: ${have}. Reply as JSON: {"steps":[{"text":"short step in plain words","mins":number}]}. Do not repeat existing steps.`,{modelTier:"quick"});
+    const steps=(r&&Array.isArray(r.steps)?r.steps:[]).filter(x=>x&&x.text).slice(0,6).map(x=>({text:String(x.text).slice(0,140),done:false,draft:true,...(+x.mins?{mins:Math.min(90,Math.max(5,Math.round(+x.mins)))}:{})}));
+    if(!steps.length){say("PT couldn't suggest steps just now.");return}
+    commit([upd(id,d=>{d.tasks=[...(d.tasks||[]),...steps]})],`PT suggested ${steps.length} steps. Tap Keep on the ones you want.`);
+  }catch(e){ say(e&&e.code==="not_granted"?"Allow PT to help, then try again.":"PT couldn't suggest steps just now."); }
+}
+function splitAt(id,k){ const p=cur(id), t=p.tasks||[], cpText=t[k].text;
+  const n=newLine(cpText,clone(t.slice(k+1)),{day:dayOf(p),...(p.color?{color:p.color}:{}),...(p.thread?{thread:clone(p.thread)}:{})});
+  ui.menu=null; commit([upd(id,d=>{d.tasks=d.tasks.slice(0,k);fixStatus(d)}),n],`Split: ${cpText} is its own line now.`); }
+function joinNext(id){ const list=visibleLines(), i=list.findIndex(x=>x.id===id), nx=list[i+1]; ui.menu=null;
+  if(!nx){say("There's no line after this one to join.");render();return}
+  commit([upd(id,d=>{d.tasks=[...(d.tasks||[]),{text:nx.name,cp:true},...clone(nx.tasks||[])];fixStatus(d)}),{id:nx.id,del:true}],`Joined ${nx.name} onto ${cur(id).name}.`); }
+function newPin(type,day){ const id="p"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  ui.menu=null; ui.pinEdit=id; commit([{id,data:{kind:"pin",type,text:type==="note"?"Note":"Marker",day}}],type==="note"?"Note pinned. Type your note.":"Marker added. Name it."); }
+function pinCol(pn){
+  const c=document.createElement("div"); c.className="col pin "+(pn.type==="note"?"note":"flag"); c.dataset.id=pn.id;
+  if(ui.pinEdit===pn.id){
+    c.innerHTML=`<form class="pinf"><input name="text" value="${esc(pn.text)}" required data-autofocus><input type="date" name="day" value="${esc(pn.day)}"><button type="submit">Save</button><button type="button" data-rm>Remove</button></form>`;
+    const f=c.querySelector("form");
+    f.onsubmit=e=>{e.preventDefault();const v=f.text.value.trim();ui.pinEdit=null;document.activeElement?.blur();if(!v){render();return}
+      commit([{id:pn.id,data:{...dataOf(pn),text:v,day:f.day.value||pn.day}}],"Saved.")};
+    c.querySelector("[data-rm]").onclick=()=>{ui.pinEdit=null;commit([{id:pn.id,del:true}],"Removed.")};
+  } else {
+    c.innerHTML=`<button class="pinb">${pn.type==="note"?"":"⚑ "}${esc(pn.text)}</button><span class="pinday">${esc(short(pn.day))}</span>`;
+    c.querySelector(".pinb").onclick=()=>{if(blocked())return;ui.pinEdit=pn.id;render()};
+  }
+  return c;
 }
 
 /* ---------- render ---------- */
@@ -370,7 +454,7 @@ function renderView(){
     v.innerHTML=`<span>Showing ${shown} of ${lines.length} lines</span><button data-v="all">Show all</button>`;
   } else { v.hidden=true; v.replaceChildren(); return; }
   v.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{ const k=b.dataset.v;
-    if(k==="all") setHidden([],"Showing every line.");
+    if(k==="all"){ ui.cfilter=null; setHidden([],"Showing every line."); }
     else if(k==="cancel"){ ui.pick=null; render(); }
     else if(k==="show"){ const keep=ui.pick; setHidden(lines.filter(p=>!keep.has(p.id)).map(p=>p.id),"Just these. Tap Show all to see everything."); } });
 }
@@ -383,7 +467,9 @@ function updateMini(){
   m.replaceChildren(...ticks,w);
 }
 function visibleLines(){
-  const by=(a,b)=>((a.order??1e9)-(b.order??1e9))||((a.start||"")<(b.start||"")?-1:1);
+  const ck=p=>{const k=Object.keys(COLOURS).indexOf(p.color);return k<0?99:k};
+  const dk=p=>dayOf(p)<today()?"0000-00-00":dayOf(p); /* missed days gather in Catch up, just left of today */
+  const by=(a,b)=>(ui.lanes?ck(a)-ck(b):0)||(dk(a)<dk(b)?-1:dk(a)>dk(b)?1:0)||((a.order??1e9)-(b.order??1e9))||((a.start||"")<(b.start||"")?-1:1);
   return sprints.filter(p=>p.status!=="done").sort(by);
 }
 function typing(){const a=document.activeElement;return a&&a.tagName==="INPUT"&&$("#cols").contains(a)}
@@ -396,7 +482,15 @@ function render(){
   if(!$("#sweep").hidden) renderSweep();
   if(!sprints.length){el.innerHTML='<div class="empty">No micro sprints yet. Tap "+ Micro sprint", "Pull from Mind Sweep", or tell PT "make a micro sprint".</div>';return}
   renderView();
-  const lines=visibleLines(), cols=lines.map(p=>ui.hidden.has(p.id)?markCol(p):col(p)), dc=ui.hidden.size?null:doneCol(); if(dc) cols.unshift(dc);
+  const lines=visibleLines(), cols=[], ps=[...pins].sort((a,b)=>a.day<b.day?-1:a.day>b.day?1:0); let lastHd=null;
+  lines.forEach(p=>{
+    if(!ui.lanes) while(ps.length&&ps[0].day<=dayOf(p)&&!(dayOf(p)<today()&&ps[0].day>=today())) cols.push(pinCol(ps.shift()));
+    const dk=dayOf(p)<today()?"late":dayOf(p), hd=dk!==lastHd?dk:null; lastHd=dk;
+    cols.push(ui.hidden.has(p.id)?markCol(p):col(p,hd));
+  });
+  ps.forEach(x=>cols.push(pinCol(x)));
+  const dc=ui.hidden.size?null:doneCol(); if(dc) cols.unshift(dc);
+  renderFilter();
   el.classList.toggle("one",lines.filter(p=>!ui.hidden.has(p.id)).length===1&&lines.length>1);
   const keep=el.scrollLeft; el.replaceChildren(...cols); el.scrollLeft=keep; updatePager(); updateMini();
   const f=el.querySelector("input[data-autofocus]"); if(f){f.focus(); if(f.closest("[data-form=edit],[data-form=rename]")) f.select();}
@@ -420,27 +514,33 @@ function doneCol(){
   c.querySelector("[data-more]")?.addEventListener("click",()=>{ui.showEarlier=!ui.showEarlier;render()});
   return c;
 }
-function col(p){
+function col(p,hd){
   const t=p.tasks||[], st=stepsOf(t), d=st.filter(x=>x.done).length, done=p.status==="done";
   const mini=done&&!ui.open.has(p.id)&&!(ui.adding&&ui.adding.id===p.id)&&!(ui.menu&&ui.menu.id===p.id);
   const menu=ui.menu&&ui.menu.id===p.id?ui.menu.mode:null, ed=!!menu;
-  const nx=done?-1:t.findIndex(x=>!x.cp&&!x.done);
+  const nx=done?-1:t.findIndex(x=>!x.cp&&!x.done&&!x.draft);
   const gate=t.findIndex((x,i)=>x.cp&&!reachedAt(t,i));
   const add=ui.adding&&ui.adding.id===p.id?ui.adding:null;
   const form=a=>`<form class="addstep" data-form="add"><input name="text" placeholder="${a.cp?"Checkpoint name":"New step"}" required enterkeyhint="done" data-autofocus></form>`;
   const sel=ui.sel&&ui.sel.id===p.id?ui.sel.ks:[];
   let rows="";
+  const dkey=dayOf(p), isT=dkey===today(), late=dkey<today();
+  const dayBtn=hd?`<button class="dayh${isT?" today":""}${late?" late":""}" data-dayh>${late?"Catch up":isT?"Today":esc(short(dkey))}</button>`:`<span class="dayh"></span>`;
   const th=p.thread;
-  if(th&&th.title&&menu!=="thread") rows+=th.url?`<a class="thread" href="${esc(th.url)}" target="_blank" rel="noopener">${esc(th.title)} <span aria-hidden="true">↗</span></a>`:`<button class="thread" data-m="thread">${esc(th.title)}</button>`;
+  const sameThread=th&&th.title?sprints.filter(o=>o.id!==p.id&&o.status!=="done"&&o.thread&&o.thread.title===th.title):[];
+  if(th&&th.title&&menu!=="thread") rows+=th.url?`<a class="thread" href="${esc(th.url)}" target="_blank" rel="noopener">${esc(th.title)} <span aria-hidden="true">↗</span>${sameThread.length?` · also ${esc(sameThread.map(o=>short(dayOf(o))).join(", "))}`:""}</a>`:`<button class="thread" data-m="thread">${esc(th.title)}${sameThread.length?` · also ${esc(sameThread.map(o=>short(dayOf(o))).join(", "))}`:""}</button>`;
   if(menu==="thread") rows+=`<form class="threadf" data-form="thread"><input name="title" placeholder="Thread name" value="${esc(th?.title||"")}" required data-autofocus><input name="url" placeholder="Link (optional)" value="${esc(th?.url||"")}"><div class="threadb"><button class="small" type="submit">Save</button>${th?`<button class="small" type="button" data-unlink>Remove</button>`:""}<button class="small" type="button" data-m="close">Cancel</button></div></form>`;
   if(!mini){
     if(add&&add.at===0&&t.length) rows+=form(add);
+    const fold=p.trim&&!ed, nDone=t.filter(x=>!x.cp&&x.done).length;
+    if(fold&&nDone) rows+=`<button class="folded" data-unfold>${nDone} done step${nDone>1?"s":""} folded · show</button>`;
     t.forEach((s,i)=>{
-      const cls=["srow",s.cp?"cp":"",s.cp&&reachedAt(t,i)?"hit":"",s.done?"done":"",i===nx?"next":"",gate>=0&&i>gate?"later":"",sel.includes(i)?"sel":"",s.star?"star":"",COLOURS[s.color]?"tint":""].filter(Boolean).join(" ");
+      if(fold&&s.done&&!s.cp) return;
+      const cls=["srow",s.draft?"draft":"",s.day===today()?"due":"",ui.replay&&s.doneAt===ui.replay?"rhit":"",s.cp?"cp":"",s.cp&&reachedAt(t,i)?"hit":"",s.done?"done":"",i===nx?"next":"",gate>=0&&i>gate?"later":"",sel.includes(i)?"sel":"",s.star?"star":"",COLOURS[s.color]?"tint":""].filter(Boolean).join(" ");
       const editing=ui.edit&&ui.edit.id===p.id&&ui.edit.k===i;
       const lead=s.cp?`<span class="tick"><span class="bar2"></span></span>`:`<button class="tick" data-tick="${i}" aria-label="${s.done?"Untick":"Tick"} ${esc(s.text)}"><span class="dot"></span></button>`;
-      const body=editing?`<form data-form="edit" style="flex:1"><input name="text" value="${esc(s.text)}" required enterkeyhint="done" data-autofocus></form>`:`<span class="txt" data-txt="${i}">${esc(s.text)}</span>`;
-      rows+=`<div class="${cls}" data-k="${i}"${cvar(s.color)}>${lead}${body}${s.star&&!editing?`<button class="starb" data-star="${i}" aria-label="Unstar">★</button>`:""}${ed?`<button class="x" data-del="${i}" aria-label="Remove">×</button>`:""}</div>`;
+      const body=editing?`<form data-form="edit" style="flex:1"><input name="text" value="${esc(s.text)}" required enterkeyhint="done" data-autofocus></form>`:`<span class="txt" data-txt="${i}">${esc(s.text)}${s.day||s.mins?`<span class="tags">${s.day?`<span class="tg">${esc(s.day===today()?"Today":short(s.day))}</span>`:""}${s.mins?`<span class="tg mins">${+s.mins}m</span>`:""}</span>`:""}</span>`;
+      rows+=`<div class="${cls}" data-k="${i}"${cvar(s.color)}>${lead}${body}${s.draft&&!editing?`<button class="dkeep" data-keep="${i}">Keep</button><button class="x" data-del="${i}" aria-label="Remove">×</button>`:""}${s.star&&!editing?`<button class="starb" data-star="${i}" aria-label="Unstar">★</button>`:""}${ed?`<button class="x" data-del="${i}" aria-label="Remove">×</button>`:""}</div>`;
       if(add&&add.at===i+1&&i<t.length-1) rows+=form(add);
       else if(ed&&i<t.length-1) rows+=`<button class="addcp" data-at="${i+1}">+ checkpoint here</button>`;
     });
@@ -448,22 +548,26 @@ function col(p){
     else if(!add) rows+=`<div class="plusrow"><button class="plus" data-add><b>+</b>step</button>${!done&&st.length>=2?`<button class="plus" data-addcp><b>+</b>checkpoint</button>`:""}</div>`;
   }
   const others=menu==="step"?sprints.filter(o=>o.id!==p.id&&o.status!=="done"):[];
-  const c=document.createElement("div"); c.className="col"+(done?" done":"")+(mini?" mini":"")+(COLOURS[p.color]?" tint":""); c.dataset.id=p.id; if(COLOURS[p.color]) c.style.setProperty("--c",COLOURS[p.color]);
-  c.innerHTML=`<div class="steps" data-steps="${p.id}">${rows}</div>
+  const c=document.createElement("div"); c.className="col"+(done?" done":"")+(mini?" mini":"")+(COLOURS[p.color]?" tint":"")+(isT?" istoday":""); c.dataset.id=p.id; if(COLOURS[p.color]) c.style.setProperty("--c",COLOURS[p.color]);
+  const cps=(p.tasks||[]).map((x,k)=>x.cp?k:-1).filter(k=>k>0&&k<(p.tasks||[]).length-1);
+  c.innerHTML=`${dayBtn}<div class="steps" data-steps="${p.id}">${rows}</div>
     <button class="circle" data-circle aria-label="${done?(mini?"Show steps":"Hide steps"):"Mark complete"}">${TICK}</button>
     ${menu==="rename"?`<form class="rename" data-form="rename"><input name="name" value="${esc(p.name)}" required data-autofocus></form>`:`<button class="name${ui.pick&&ui.pick.has(p.id)?" picked":""}" data-name>${esc(p.name)}</button>`}
-    ${mini?"":`<div class="meta">${d} of ${st.length}${done?" · complete":""}</div>`}
+    ${mini?"":`<div class="meta">${d} of ${st.length}${done?" · complete":""}${(()=>{const m=st.filter(x=>!x.done).reduce((n,x)=>n+(+x.mins||0),0);return m?` · ${m} min left`:""})()}${p.askPT?" · asked PT":""}</div>`}
     ${menu==="step"?`<div class="stepify"><form class="goal" data-form="goal"><label>Make "${esc(p.name)}" the first step towards:</label><input name="goal" placeholder="End goal" required data-autofocus><button class="small" type="submit">Save</button></form>
         ${others.length?`<div class="or">or add it as a step on</div><div class="where">${others.map(o=>`<button data-into="${esc(o.id)}">${esc(o.name)}</button>`).join("")}</div>`:""}
         <button class="small" data-m="close">Cancel</button></div>`:""}
     ${menu==="colour"?`<div class="menu">${swatches("data-lc",p.color)}<button data-m="close">Done</button></div>`:""}
+    ${menu==="day"?`<div class="menu daymenu"><input type="date" data-dayin value="${esc(dkey)}"><button data-dq="0">Today</button><button data-dq="1">Tomorrow</button><button data-dq="7">Next week</button><button data-pin="flag">+ Marker</button><button data-pin="note">+ Note</button><button data-m="close">Done</button></div>`:""}
     ${menu==="menu"?(ui.confirmDel===p.id?`<div class="menu">Remove line? <button data-yes>Yes</button><button data-no>No</button></div>`
-      :`<div class="menu">${done?"":`<button data-m="solo">Solo</button><button data-m="pick">Just these…</button><button data-m="hide">Hide</button>`}<button data-m="rename">Change end goal</button><button data-m="step">Make it a step</button><button data-m="thread">${p.thread?"Edit thread":"Name a thread"}</button><button data-m="colour">Colour</button>${done?`<button data-m="reopen">Reopen</button>`:""}<button data-m="remove">Remove</button><button data-m="close">Done</button></div>`):""}`;
+      :`<div class="menu">${done?"":`<button data-m="solo">Solo</button><button data-m="pick">Just these…</button><button data-m="hide">Hide</button>`}<button data-m="rename">Change end goal</button><button data-m="step">Make it a step</button><button data-m="thread">${p.thread?"Edit thread":"Name a thread"}</button><button data-m="colour">Colour</button>${done?"":`<button data-m="day">Change day</button><button data-m="suggest">${sample?"Suggest steps":"Ask PT for steps"}</button><a href="${esc(calLink(p))}" target="_blank" rel="noopener">Put in calendar</a><button data-m="trim">${p.trim?"Unfold done steps":"Fold done steps"}</button>${cps.length?`<button data-m="split">Split at ${esc(p.tasks[cps[0]].text)}</button>`:""}<button data-m="join">Join with next line</button>`}${done?`<button data-m="reopen">Reopen</button>`:""}<button data-m="remove">Remove</button><button data-m="close">Done</button></div>`):""}`;
   wire(c,p);
   return c;
 }
+const cps0=p=>(p.tasks||[]).findIndex((x,k)=>x.cp&&k>0&&k<(p.tasks||[]).length-1);
 function wire(c,p){
   const id=p.id;
+  c.addEventListener("pointerdown",()=>{ui.focusId=id},true);
   c.querySelectorAll("[data-tick]").forEach(b=>b.onclick=e=>{if(blocked())return;toggleStep(id,+b.dataset.tick)});
   c.querySelectorAll("[data-txt]").forEach(s=>s.onclick=e=>{if(blocked())return;
     if(e.metaKey||e.ctrlKey||e.shiftKey){toggleSel(id,+s.dataset.txt);return}
@@ -477,6 +581,12 @@ function wire(c,p){
   c.querySelector("[data-addcp]")?.addEventListener("click",()=>{ui.adding={id,at:null,cp:true};render()});
   c.querySelectorAll("[data-at]").forEach(b=>b.onclick=()=>{ui.adding={id,at:+b.dataset.at,cp:true};render()});
   c.querySelector("[data-circle]").onclick=()=>{if(blocked())return;toggleSprint(id)};
+  c.querySelector("[data-dayh]")?.addEventListener("click",()=>{if(blocked())return;ui.focusId=id;ui.menu=ui.menu?.id===id&&ui.menu.mode==="day"?null:{id,mode:"day"};render()});
+  c.querySelector("[data-dayin]")?.addEventListener("change",e=>setDay(id,e.target.value));
+  c.querySelectorAll("[data-dq]").forEach(b=>b.onclick=()=>setDay(id,addDays(today(),+b.dataset.dq)));
+  c.querySelectorAll("[data-pin]").forEach(b=>b.onclick=()=>newPin(b.dataset.pin,dayOf(p)<today()?today():dayOf(p)));
+  c.querySelectorAll("[data-keep]").forEach(b=>b.onclick=()=>{const k=+b.dataset.keep;commit([upd(id,d=>{delete d.tasks[k].draft;delete d.askPT;fixStatus(d)})],"Kept.")});
+  c.querySelector("[data-unfold]")?.addEventListener("click",()=>commit([upd(id,d=>{delete d.trim})],"Unfolded."));
   c.querySelector("[data-name]")?.addEventListener("click",()=>{if(blocked())return;
     if(ui.pick){ ui.pick.has(id)?ui.pick.delete(id):ui.pick.add(id); render(); return; }
     ui.menu=ui.menu?.id===id?null:{id,mode:"menu"};ui.confirmDel=null;ui.adding=null;render()});
@@ -484,6 +594,10 @@ function wire(c,p){
     if(m==="solo"){ setHidden(visibleLines().filter(o=>o.id!==id).map(o=>o.id),`Solo: ${p.name}. Tap Show all to see everything.`); return; }
     if(m==="hide"){ ui.hidden.add(id); saveHidden(); ui.menu=null; render(); say(`${p.name} is hidden. Tap its mark to bring it back.`); return; }
     if(m==="pick"){ ui.menu=null; ui.pick=new Set([id]); render(); return; }
+    if(m==="suggest"){ suggestSteps(id); return; }
+    if(m==="trim"){ ui.menu=null; commit([upd(id,d=>{if(d.trim)delete d.trim;else d.trim=true})],p.trim?"Unfolded.":"Done steps folded away."); return; }
+    if(m==="split"){ splitAt(id,cps0(p)); return; }
+    if(m==="join"){ joinNext(id); return; }
     if(m==="close") ui.menu=null; else if(m==="remove") ui.confirmDel=id;
     else if(m==="reopen"){ui.menu=null;sweepStatus(p.sweepId,"todo");commit([upd(id,d=>{d.status="active";d.doneAt=null})],"Reopened.");return}
     else ui.menu={id,mode:m};
@@ -522,7 +636,7 @@ function wire(c,p){
 }
 function toggleSel(id,k){
   if(!ui.sel||ui.sel.id!==id) ui.sel={id,ks:[]};
-  ui.sel.colour=false; const ks=ui.sel.ks, i=ks.indexOf(k); i>=0?ks.splice(i,1):ks.push(k); ks.sort((a,b)=>a-b);
+  ui.sel.colour=false; ui.sel.mode=null; const ks=ui.sel.ks, i=ks.indexOf(k); i>=0?ks.splice(i,1):ks.push(k); ks.sort((a,b)=>a-b);
   if(!ks.length) ui.sel=null;
   render();
 }
@@ -532,10 +646,21 @@ function renderSel(){
   if(ui.sel.colour){ const t0=cur(ui.sel.id).tasks[ui.sel.ks[0]]; b.innerHTML=`<span>Colour</span>${swatches("data-sc",ui.sel.ks.every(k=>cur(ui.sel.id).tasks[k]?.color===t0?.color)?t0?.color:"-")}<button data-s="back">Back</button>`;
     b.querySelectorAll("[data-sc]").forEach(x=>x.onclick=()=>{const v=x.dataset.sc,{id,ks}=ui.sel; ui.sel=null; commit([upd(id,d=>{ks.forEach(k=>{if(v)d.tasks[k].color=v;else delete d.tasks[k].color})})],v?`Coloured ${ks.length} step${ks.length>1?"s":""} ${v}.`:"Colour removed.")});
     b.querySelector("[data-s=back]").onclick=()=>{ui.sel.colour=false;renderSel()}; return; }
-  b.innerHTML=`<span>${n} selected</span><button data-s="colour">Colour</button><button data-s="star">${ui.sel.ks.every(k=>cur(ui.sel.id).tasks[k]?.star)?"Unstar":"★ Star"}</button><button data-s="copy">Copy to next line</button><button data-s="move">Move to next line</button><button data-s="del">Remove</button><button data-s="clear">Clear</button>`;
+  if(ui.sel.mode==="date"){ b.innerHTML=`<span>Date</span><input type="date" data-sd><button data-s2="0">Today</button><button data-s2="1">Tomorrow</button><button data-s2="x">Clear</button><button data-s="back">Back</button>`;
+    const setD=v=>{const {id,ks}=ui.sel; ui.sel=null; commit([upd(id,d=>{ks.forEach(k=>{if(v)d.tasks[k].day=v;else delete d.tasks[k].day})})],v?`Dated ${short(v)}.`:"Date cleared.")};
+    b.querySelector("[data-sd]").onchange=e=>setD(e.target.value); b.querySelectorAll("[data-s2]").forEach(x=>x.onclick=()=>setD(x.dataset.s2==="x"?null:addDays(today(),+x.dataset.s2)));
+    b.querySelector("[data-s=back]").onclick=()=>{ui.sel.mode=null;renderSel()}; return; }
+  if(ui.sel.mode==="mins"){ b.innerHTML=`<span>Minutes</span>${[5,15,25,45,60,90].map(m=>`<button data-sm="${m}">${m}</button>`).join("")}<button data-sm="0">Clear</button><button data-s="back">Back</button>`;
+    b.querySelectorAll("[data-sm]").forEach(x=>x.onclick=()=>{const v=+x.dataset.sm,{id,ks}=ui.sel; ui.sel=null; commit([upd(id,d=>{ks.forEach(k=>{if(v)d.tasks[k].mins=v;else delete d.tasks[k].mins})})],v?`${v} minutes.`:"Minutes cleared.")});
+    b.querySelector("[data-s=back]").onclick=()=>{ui.sel.mode=null;renderSel()}; return; }
+  b.innerHTML=`<span>${n} selected</span><button data-s="date">Date</button><button data-s="mins">Minutes</button><button data-s="trigger">Make a trigger</button><button data-s="colour">Colour</button><button data-s="star">${ui.sel.ks.every(k=>cur(ui.sel.id).tasks[k]?.star)?"Unstar":"★ Star"}</button><button data-s="copy">Copy to next line</button><button data-s="move">Move to next line</button><button data-s="del">Remove</button><button data-s="clear">Clear</button>`;
   b.querySelectorAll("[data-s]").forEach(x=>x.onclick=()=>{const s=x.dataset.s;
     if(s==="star"){const {id,ks}=ui.sel, on=!ks.every(k=>cur(id).tasks[k]?.star); ui.sel=null; commit([upd(id,d=>{ks.forEach(k=>{d.tasks[k].star=on})})],on?`Starred ${ks.length} step${ks.length>1?"s":""}.`:"Stars removed.");return}
     if(s==="colour"){ui.sel.colour=true;renderSel();return}
+    if(s==="date"||s==="mins"){ui.sel.mode=s;renderSel();return}
+    if(s==="trigger"){const {id,ks}=ui.sel, names=ks.map(k=>cur(id).tasks[k].text); ui.sel=null; render();
+      if(!mcp){say("Couldn't reach your Progress Pad.");return}
+      Promise.all(names.map(nm=>pad("add_trigger",{name:nm.slice(0,120),plan:false}))).then(()=>say(names.length>1?`${names.length} triggers added to your library.`:`"${names[0]}" is a trigger now.`)).catch(()=>say("Couldn't add the trigger. Try again."));return}
     if(s==="clear"){ui.sel=null;render()} else if(s==="del") removeItems(ui.sel.id,[...ui.sel.ks]); else copyMoveNext(s);});
 }
 
@@ -564,13 +689,13 @@ document.addEventListener("pointermove",e=>{
   drag.ghost.style.left=e.clientX+"px"; drag.ghost.style.top=e.clientY+"px";
   clearMarks(); drag.target=null;
   if(drag.kind==="line"){
-    const cs=[...$("#cols").querySelectorAll(".col:not(.donecol)")].filter(c=>c.dataset.id!==drag.id);
+    const cs=[...$("#cols").querySelectorAll(".col:not(.donecol):not(.pin)")].filter(c=>c.dataset.id!==drag.id);
     let idx=cs.length; for(let i=0;i<cs.length;i++){const b=cs[i].getBoundingClientRect(); if(e.clientX<b.left+b.width/2){idx=i;break}}
     drag.target={idx}; cs[idx]?.classList.add("dropl");
     return;
   }
   const under=document.elementFromPoint(e.clientX,e.clientY);
-  const colEl=under?.closest(".col:not(.mini):not(.donecol):not(.mark)"), overT=under?.closest("#theT");
+  const colEl=under?.closest(".col:not(.mini):not(.donecol):not(.mark):not(.pin)"), overT=under?.closest("#theT");
   const quick=Date.now()-drag.t0<450;
   if(drag.kind==="row"&&dx<-60&&Math.abs(dy)<35&&(quick||!colEl||colEl.dataset.id===drag.id)){ drag.del=true; drag.ghost.classList.add("del"); drag.ghost.textContent="Release to remove"; return; }
   if(drag.del){ drag.del=false; drag.ghost.classList.remove("del"); drag.ghost.textContent=drag.label; }
@@ -674,6 +799,31 @@ const endPinch=e=>{ if(e.touches.length<2&&pinch){ pinch=null; blockUntil=Date.n
 $("#cols").addEventListener("touchend",endPinch); $("#cols").addEventListener("touchcancel",endPinch);
 if(Z!==1){ const z=Z; Z=1; setZoom(z); }
 
+/* ---------- today, lanes, replay, colour filter, keys ---------- */
+function goToday(){ const el=$("#cols"), c=[...el.querySelectorAll(".col")].find(x=>x.classList.contains("istoday"))||[...el.querySelectorAll(".col:not(.donecol)")].find(x=>{const p=cur(x.dataset.id);return p&&dayOf(p)>=today()});
+  if(c){ el.scrollTo({left:Math.max(0,c.offsetLeft-el.offsetLeft-24),behavior:"smooth"}); } say("Back to today on the T."); }
+$("#zToday").onclick=goToday;
+$("#zLanes").onclick=()=>{ ui.lanes=!ui.lanes; try{localStorage.setItem("pt-lanes",ui.lanes?"1":"0")}catch(e){} $("#zLanes").classList.toggle("on",ui.lanes); render(); say(ui.lanes?"Lanes: lines grouped by colour.":"Lines back in day order."); };
+$("#zLanes").classList.toggle("on",ui.lanes);
+$("#zReplay").onclick=()=>{ if(ui.replay){ ui.replay=null; document.body.classList.remove("replay"); $("#zReplay").classList.remove("on"); render(); return; }
+  const v=$("#viewbar"); v.hidden=false; v.innerHTML=`<span>Replay a day</span><input type="date" id="rpd" max="${today()}" value="${addDays(today(),-1)}"><button id="rpgo">Show</button><button id="rpx">Cancel</button>`;
+  $("#rpx").onclick=()=>render(); $("#rpgo").onclick=()=>{ const d=$("#rpd").value; if(!d) return; ui.replay=d; document.body.classList.add("replay"); $("#zReplay").classList.add("on");
+    const hits=sprints.reduce((n,p)=>n+(p.tasks||[]).filter(x=>x.doneAt===d).length,0); render(); say(`${nice(d)}: ${hits} step${hits===1?"":"s"} ticked. Tap Replay to finish.`); }; };
+function renderFilter(){ const box=$("#cfilter"), used=[...new Set(sprints.filter(p=>p.status!=="done"&&COLOURS[p.color]).map(p=>p.color))];
+  if(used.length<1){box.replaceChildren();return}
+  box.innerHTML=used.map(c=>`<button class="cf${ui.cfilter===c?" on":""}" data-cf="${c}" style="--c:${COLOURS[c]}" aria-label="Show only ${c} lines"></button>`).join("");
+  box.querySelectorAll("[data-cf]").forEach(b=>b.onclick=()=>{ const c=b.dataset.cf;
+    if(ui.cfilter===c){ ui.cfilter=null; setHidden([],"Showing every line."); return; }
+    ui.cfilter=c; setHidden(visibleLines().filter(p=>p.color!==c).map(p=>p.id),`Only ${c} lines. Tap the dot again to see everything.`); }); }
+document.addEventListener("keydown",e=>{ if(e.ctrlKey||e.metaKey||e.altKey) return; const a=document.activeElement; if(a&&(a.tagName==="INPUT"||a.tagName==="TEXTAREA")) return;
+  const el=$("#cols"), step=(el.querySelector(".col:not(.donecol)")?.getBoundingClientRect().width||150);
+  if(e.key==="ArrowRight"){el.scrollBy({left:step,behavior:"smooth"});e.preventDefault()}
+  else if(e.key==="ArrowLeft"){el.scrollBy({left:-step,behavior:"smooth"});e.preventDefault()}
+  else if(e.key==="t"||e.key==="T") goToday();
+  else if(e.key==="f"||e.key==="F") fitZoom();
+  else if((e.key==="s"||e.key==="S")&&ui.focusId&&cur(ui.focusId)){ const p=cur(ui.focusId); setHidden(visibleLines().filter(o=>o.id!==p.id).map(o=>o.id),`Solo: ${p.name}.`); }
+  else if(e.key==="Escape"&&(ui.hidden.size||ui.pick)){ ui.cfilter=null; setHidden([],"Showing every line."); } });
+
 /* ---------- focus mode ---------- */
 $("#theT").onclick=()=>{ if(blocked())return; const on=document.body.classList.toggle("focus"); say(on?"Focus: next steps only. Tap the T again to see everything.":"Showing everything."); };
 
@@ -716,11 +866,13 @@ $("#newSprint").onsubmit=e=>{ e.preventDefault(); if(!db) return; const f=e.targ
 (async()=>{
   const timer=setTimeout(()=>say("Still loading. Check you're signed in."),10000);
   claude.use("mcp").then(m=>{mcp=m}).catch(()=>{});
+  claude.use("sample").then(x=>{sample=x;render()}).catch(()=>{});
   db=await claude.use("db");
   if(!db){clearTimeout(timer);$("#cols").innerHTML='<div class="empty">Sign in to see your sprints.</div>';return}
   db.collection("projects").onSnapshot(snap=>{
     if(!snap.metadata.fromCache) clearTimeout(timer);
-    sprints=snap.docs.map(d=>({id:d.id,...clone(d.data())}));
+    const all=snap.docs.map(d=>({id:d.id,...clone(d.data())}));
+    sprints=all.filter(x=>x.kind!=="pin"); pins=all.filter(x=>x.kind==="pin");
     render();
   },()=>{clearTimeout(timer);say("Couldn't load your sprints.")});
 })();

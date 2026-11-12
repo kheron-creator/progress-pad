@@ -5,8 +5,9 @@ import { errorMessage, routeUser } from "@/lib/micro-sprints/route-user";
 
 export const dynamic = "force-dynamic";
 
-// The three pad actions the Micro sprints page needs: read open Mind Sweep items,
-// tick one achieved (or back to todo), and log a win on today's Done List.
+// The pad actions the Micro sprints page needs: read open Mind Sweep items,
+// tick one achieved (or back to todo), log a win on today's Done List,
+// and turn a step into a trigger in the library.
 const action = z.discriminatedUnion("tool", [
   z.object({
     tool: z.literal("list_mind_sweep"),
@@ -23,6 +24,10 @@ const action = z.discriminatedUnion("tool", [
       text: z.string().trim().min(1).max(500),
       notes: z.string().max(10000).optional(),
     }),
+  }),
+  z.object({
+    tool: z.literal("add_trigger"),
+    input: z.object({ name: z.string().trim().min(1).max(200), plan: z.boolean().optional() }).passthrough(),
   }),
 ]);
 
@@ -66,6 +71,31 @@ export async function POST(request: Request) {
         throw error;
       }
       return Response.json({ payload: { updated: data } });
+    }
+
+    if (call.tool === "add_trigger") {
+      const name = call.input.name;
+      const { data: found, error: findError } = await supabase
+        .from("triggers")
+        .select("id, name")
+        .is("deleted_at", null)
+        .ilike("name", name.replace(/[%_\\]/g, "\\$&"))
+        .limit(1);
+      if (findError) {
+        throw findError;
+      }
+      if (found && found.length > 0) {
+        return Response.json({ payload: { trigger: found[0], existed: true } });
+      }
+      const { data, error } = await supabase
+        .from("triggers")
+        .insert({ user_id: userId, name, emoji: "✨" })
+        .select("id, name")
+        .single();
+      if (error) {
+        throw error;
+      }
+      return Response.json({ payload: { trigger: data, existed: false } });
     }
 
     const { data, error } = await supabase

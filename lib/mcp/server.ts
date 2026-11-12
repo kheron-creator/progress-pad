@@ -748,7 +748,7 @@ export function createProgressPadServer(user: McpUser) {
     {
       title: "List micro sprints",
       description:
-        'List the micro sprints on "the T" (Mind Sweep > Micro sprints): short 5 to 90 minute focus bursts. Each has an id and data: {name, start, order, status "active"|"done", doneAt, sweepId, thread {title,url}, tasks: [{text, done, doneAt, cp (checkpoint), star, sweepId, logged}], activity, links}.',
+        'List the micro sprints on "the T" (Mind Sweep > Micro sprints): short 5 to 90 minute focus bursts. Each has an id and data: {name, start, day (YYYY-MM-DD it sits on), order, status "active"|"done", doneAt, sweepId, color, trim, askPT, thread {title,url}, tasks: [{text, done, doneAt, cp (checkpoint), star, color, day, mins, draft, sweepId, logged}], activity, links}. Docs with kind "pin" are day markers or notes on the line: {kind:"pin", type:"flag"|"note", text, day}. When a sprint has askPT true, the user asked PT for steps: add 3 to 6 small steps with draft: true (they keep or drop them), then set askPT false.',
       annotations: { readOnlyHint: true },
     },
     async () => {
@@ -765,7 +765,7 @@ export function createProgressPadServer(user: McpUser) {
     {
       title: "Save a micro sprint",
       description:
-        'Create or replace one micro sprint on the T. Pass the whole sprint `data` (read it with list_micro_sprints first and change only what you mean to). Leave out `id` to create a new sprint. New sprints need name, start (YYYY-MM-DD), status "active" and tasks [{text, done: false}].',
+        'Create or replace one micro sprint on the T. Pass the whole sprint `data` (read it with list_micro_sprints first and change only what you mean to). Leave out `id` to create a new sprint. New sprints need name, start and day (YYYY-MM-DD), status "active" and tasks [{text, done: false}]. Steps can carry day and mins (5 to 90).',
       inputSchema: {
         id: z.string().regex(/^[A-Za-z0-9_-]{1,100}$/).optional(),
         data: z.record(z.string(), z.unknown()),
