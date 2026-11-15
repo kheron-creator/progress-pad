@@ -55,6 +55,7 @@ export type Database = {
           name: string;
           emoji: string | null;
           source_key: string | null;
+          link?: string | null;
           deleted_at: string | null;
           created_at: string;
           updated_at: string;
@@ -65,6 +66,7 @@ export type Database = {
           name: string;
           emoji?: string | null;
           source_key?: string | null;
+          link?: string | null;
           deleted_at?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -75,6 +77,7 @@ export type Database = {
           name?: string;
           emoji?: string | null;
           source_key?: string | null;
+          link?: string | null;
           deleted_at?: string | null;
           created_at?: string;
           updated_at?: string;

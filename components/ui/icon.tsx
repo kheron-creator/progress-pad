@@ -10,6 +10,7 @@ import {
   CalendarBlankIcon as PhosphorCalendarBlankIcon,
   CameraIcon as PhosphorCameraIcon,
   HeadphonesIcon as PhosphorHeadphonesIcon,
+  ArrowUpRightIcon as PhosphorArrowUpRightIcon,
   CaretLeftIcon,
   CaretRightIcon,
   CaretDownIcon,
@@ -133,6 +134,7 @@ export const LightningIcon = withIcon(PhosphorLightningIcon);
 export const HeadCircuitIcon = withIcon(PhosphorHeadCircuitIcon);
 export const HeartIcon = withIcon(PhosphorHeartIcon);
 export const HeadphonesIcon = withIcon(PhosphorHeadphonesIcon);
+export const ArrowUpRightIcon = withIcon(PhosphorArrowUpRightIcon);
 export const LeafIcon = withIcon(PhosphorLeafIcon);
 export const TrashIcon = withIcon(PhosphorTrashIcon);
 export const CopyIcon = withIcon(PhosphorCopySimpleIcon);

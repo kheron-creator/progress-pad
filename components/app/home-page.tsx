@@ -47,6 +47,8 @@ import {
   UsersThreeIcon,
   CloseIcon,
   CheckIcon,
+  ArrowUpRightIcon,
+  HeadphonesIcon,
 } from "@/components/ui/icon";
 import { flowSectionDomId } from "@/components/app/app-flow-navigator";
 import { IconButton } from "@/components/ui/icon-button";
@@ -358,6 +360,23 @@ function ItemIcon({ children }: { children: ReactNode }) {
     <IconMark size="sm" tone="accent">
       {children}
     </IconMark>
+  );
+}
+
+
+/** A quiet link on a trigger card, e.g. straight to an affirmation in MemoPad. */
+function TriggerLinkButton({ link, name }: { link: string; name: string }) {
+  const isMemoPad = /memo-pad/i.test(new URL(link).hostname);
+  return (
+    <a
+      href={link}
+      aria-label={isMemoPad ? `Listen in MemoPad: ${name}` : `Open link for ${name}`}
+      title={isMemoPad ? "Listen in MemoPad" : "Open"}
+      className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-foreground-muted hover:bg-background-subtle hover:text-foreground"
+      onClick={(event) => event.stopPropagation()}
+    >
+      {isMemoPad ? <HeadphonesIcon size={18} /> : <ArrowUpRightIcon size={18} />}
+    </a>
   );
 }
 
@@ -1677,6 +1696,9 @@ export function HomePage() {
                                       "cursor-pointer",
                                       hiddenOnMobile && "hidden md:flex",
                                     )}
+                                    secondaryAction={
+                                      trigger.link ? <TriggerLinkButton link={trigger.link} name={trigger.name} /> : undefined
+                                    }
                                     onClick={() => void toggleTrigger(trigger.id)}
                                     onDelete={() => void removeTriggerFromDay(trigger.id)}
                                   />
