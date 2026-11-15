@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/avatar";
 import { isoDate } from "@/components/ui/calendar-strip";
 import { Header } from "@/components/ui/header";
-import { MoonIcon, SignOutIcon, SunIcon, UserIcon } from "@/components/ui/icon";
+import { HeadphonesIcon, MoonIcon, SignOutIcon, SunIcon, UserIcon } from "@/components/ui/icon";
 import { defaultNavItems } from "@/components/ui/nav-links";
 import { Text } from "@/components/ui/text";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -19,6 +19,22 @@ import { NotificationsMenu } from "./notifications-menu";
 import { useSessionStore } from "./session-store-provider";
 import { useTheme } from "./theme-provider";
 import { useUnsavedLeave } from "./unsaved-leave-provider";
+
+const MEMOPAD_URL = "https://memo-pad-5pl1.vercel.app";
+
+function MemoPadLink() {
+  return (
+    <a
+      href={MEMOPAD_URL}
+      aria-label="Open MemoPad"
+      title="Open MemoPad"
+      className="type-label inline-flex h-9 items-center gap-1.5 rounded-full px-2 text-foreground hover:bg-background-subtle md:px-3"
+    >
+      <HeadphonesIcon size={18} className="shrink-0" />
+      <span className="hidden md:inline">MemoPad</span>
+    </a>
+  );
+}
 
 const navHrefs: Record<string, string> = {
   dashboard: "/dashboard",
@@ -210,7 +226,12 @@ export function AppHeader() {
       homeHref="/home"
       initials={initials}
       avatarSrc={user.avatarUrl?.trim() || undefined}
-      tools={<NotificationsMenu />}
+      tools={
+        <>
+          <MemoPadLink />
+          <NotificationsMenu />
+        </>
+      }
       account={
         <AccountMenu
           name={user.name}
