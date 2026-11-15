@@ -155,6 +155,20 @@
   .tour .tb .skip{font-size:14px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
   .tour .tb .ok{background:var(--accent);color:var(--on-accent);border-radius:999px;padding:7px 20px;font-weight:600;font-size:15px}
   .guideb{display:block;margin:10px auto 0;font-size:14px;color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+  button.tg{cursor:pointer}
+  .tg.add{background:none;border:1px dashed var(--line);color:var(--muted);font-weight:500}
+  .tg.late{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn)}
+  .tg.now{background:var(--accent);color:var(--on-accent)}
+  body:not(.dates) .tg.add{display:none}
+  .dedit{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:2px 0 6px 18px;font-size:13px}
+  .dedit input{width:auto;flex:none;font:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:3px 6px;background:var(--bg);color:var(--ink)}
+  .dedit button{text-decoration:underline;text-underline-offset:3px}
+  .lightbar{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin-top:6px;font-size:13px;color:var(--muted)}
+  .lightbar button{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13px}
+  .lightbar button.on{border-color:var(--accent);color:var(--accent);font-weight:600}
+  .lightbar input{width:auto;flex:none;font:inherit;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;background:var(--bg);color:var(--ink)}
+  body.lighting .srow:not(.lit),body.lighting .plusrow{opacity:.22}
+  body.lighting .srow.lit{opacity:1;background:color-mix(in srgb,var(--spring) 20%,transparent);border-radius:8px}
   .dkeep{font-size:12px;color:var(--accent);font-weight:600;padding:2px 4px}
   .col.pin{flex:0 0 96px;max-width:96px;padding-top:26px}
   body.zoomed .col.pin{flex:0 0 96px;zoom:1}
@@ -206,7 +220,8 @@
   </div>
   <form class="new" id="newSprint" hidden><input name="name" placeholder="What's the micro sprint?" required><button class="small" type="submit">Add</button></form>
   <div class="sweep" id="sweep" hidden><h2><span>MIND SWEEP · TICK IF DONE, OR DRAG ONTO A LINE</span><button class="small" id="sweepClose">Close</button></h2><div class="scroll" id="sweepList"></div></div>
-  <div class="zoombar" id="zoombar"><span id="cfilter" style="display:flex;gap:6px;align-items:center"></span><span class="zsp"></span><button class="ztxt" id="zLanes" title="Group lines by colour">Lanes</button><button class="ztxt" id="zReplay" title="See what you ticked on a past day">Replay</button><button class="ztxt" id="zToday">Today</button><button id="zOut" aria-label="Zoom out">−</button><button class="zl" id="zl" aria-label="Reset zoom">100%</button><button id="zIn" aria-label="Zoom in">+</button><button class="zfit" id="zFit">Fit</button></div>
+  <div class="zoombar" id="zoombar"><span id="cfilter" style="display:flex;gap:6px;align-items:center"></span><span class="zsp"></span><button class="ztxt" id="zDates" title="Give each step a date and light up steps">Dates</button><button class="ztxt" id="zLanes" title="Group lines by colour">Lanes</button><button class="ztxt" id="zReplay" title="See what you ticked on a past day">Replay</button><button class="ztxt" id="zToday">Today</button><button id="zOut" aria-label="Zoom out">−</button><button class="zl" id="zl" aria-label="Reset zoom">100%</button><button id="zIn" aria-label="Zoom in">+</button><button class="zfit" id="zFit">Fit</button></div>
+  <div class="lightbar" id="lightbar" hidden></div>
   <button class="t" id="theT" aria-label="The T. Tap for focus mode"><div class="stem"></div><div class="bar"></div></button>
   <div class="cols" id="cols"></div>
   <div class="minimap" id="minimap" hidden aria-label="Mini map: drag to travel along the T"></div>
@@ -216,10 +231,11 @@
   <p class="sum" id="sum"></p>
   <button class="guideb" id="guideBtn">Show me how the T works</button>
   <details class="hint"><summary>How to use the T</summary>
-    Tap a dot to tick. Tap the words to edit. Double-tap a line to add a step there.<br>
+    Tap a dot to tick. Tap the words to edit. Double-tap a line to see just that line (double-tap again for all).<br>
     Drag a step up, down or onto another line. Swipe it left to remove.<br>
     Hold a step to select it (or Ctrl/⌘-click), then copy or move to the next line.<br>
     Drag a line's name sideways to reorder lines. Double-tap the name to rename it. Tap it once for more.<br>
+    Tap Dates, then "+ date" on any step to schedule it. Light up glows next steps, today, this week or a day you pick.<br>
     Hold a step and tap "★ Star" to make it glow. Tap the ★ to unstar.<br>
     Tap a line's name, then "Name a thread" to label the line and link its thread.<br>
     Finished sprints move to the Done line on the left. Tap one to see its steps or reopen it.<br>
@@ -294,7 +310,7 @@ const cvar=c=>COLOURS[c]?` style="--c:${COLOURS[c]}"`:"";
 const swatches=(attr,curc)=>`<div class="swatches">${Object.keys(COLOURS).map(k=>`<button class="sw${curc===k?" on":""}" ${attr}="${k}" style="--c:${COLOURS[k]}" aria-label="${k}"></button>`).join("")}<button class="sw none${curc?"":" on"}" ${attr}="" aria-label="No colour"></button></div>`;
 let hiddenInit=[]; try{hiddenInit=JSON.parse(localStorage.getItem("pt-hidden")||"[]")}catch(e){}
 let lanesInit=false; try{lanesInit=localStorage.getItem("pt-lanes")==="1"}catch(e){}
-const ui={hidden:new Set(hiddenInit), pick:null, lanes:lanesInit, replay:null, cfilter:null, focusId:null, pinEdit:null, adding:null, edit:null, menu:null, confirmDel:null, showEarlier:false, open:new Set(), sel:null, pending:false, chat:{}, thinking:null};
+const ui={hidden:new Set(hiddenInit), pick:null, lanes:lanesInit, replay:null, cfilter:null, focusId:null, pinEdit:null, adding:null, edit:null, menu:null, confirmDel:null, showEarlier:false, open:new Set(), sel:null, pending:false, chat:{}, thinking:null, dateEdit:null, light:null, dates:(()=>{try{return localStorage.getItem("pt-dates")==="1"}catch(e){return false}})()};
 $("#date").textContent=nice(today());
 
 /* ---------- helpers ---------- */
@@ -479,6 +495,9 @@ function pinCol(pn){
 /* ---------- render ---------- */
 const isEarlier=p=>p.status==="done"&&(p.doneAt||"")<today();
 function saveHidden(){ try{localStorage.setItem("pt-hidden",JSON.stringify([...ui.hidden]))}catch(e){} }
+function soloToggle(id){ const p=cur(id), others=visibleLines().filter(o=>o.id!==id);
+  if(others.length&&others.every(o=>ui.hidden.has(o.id))&&!ui.hidden.has(id)){ ui.cfilter=null; setHidden([],"Showing every line."); return; }
+  setHidden(others.map(o=>o.id),`Showing just ${p.name.replace(/[.!]+$/,"")}. Double-tap it again to see every line.`); }
 function setHidden(ids,msg){ ui.hidden=new Set(ids); ui.pick=null; ui.menu=null; saveHidden(); render(); if(msg) say(msg); }
 function markCol(p){
   const c=document.createElement("div"); c.className="col mark"; c.dataset.id=p.id;
@@ -519,7 +538,7 @@ function render(){
   const el=$("#cols");
   const open=sprints.filter(p=>p.status!=="done"), left=open.reduce((n,p)=>n+stepsOf(p.tasks||[]).filter(t=>!t.done).length,0);
   $("#sum").textContent=!sprints.length?"":open.length?`${open.length} line${open.length>1?"s":""} open · ${left} step${left===1?"":"s"} to go`:"Everything on the T is done.";
-  renderSel();
+  renderSel(); renderLight();
   if(!$("#sweep").hidden) renderSweep();
   if(!sprints.length){el.innerHTML='<div class="empty">No micro sprints yet. Tap "+ Micro sprint", "Pull from Mind Sweep", or tell PT "make a micro sprint".</div>';return}
   renderView();
@@ -577,11 +596,12 @@ function col(p,hd){
     if(fold&&nDone) rows+=`<button class="folded" data-unfold>${nDone} done step${nDone>1?"s":""} folded · show</button>`;
     t.forEach((s,i)=>{
       if(fold&&s.done&&!s.cp) return;
-      const cls=["srow",s.draft?"draft":"",s.day===today()?"due":"",ui.replay&&s.doneAt===ui.replay?"rhit":"",s.cp?"cp":"",s.cp&&reachedAt(t,i)?"hit":"",s.done?"done":"",i===nx?"next":"",gate>=0&&i>gate?"later":"",sel.includes(i)?"sel":"",s.star?"star":"",COLOURS[s.color]?"tint":""].filter(Boolean).join(" ");
+      const cls=["srow",isLit(s,i,nx)?"lit":"",s.draft?"draft":"",s.day===today()?"due":"",ui.replay&&s.doneAt===ui.replay?"rhit":"",s.cp?"cp":"",s.cp&&reachedAt(t,i)?"hit":"",s.done?"done":"",i===nx?"next":"",gate>=0&&i>gate?"later":"",sel.includes(i)?"sel":"",s.star?"star":"",COLOURS[s.color]?"tint":""].filter(Boolean).join(" ");
       const editing=ui.edit&&ui.edit.id===p.id&&ui.edit.k===i;
       const lead=s.cp?`<span class="tick"><span class="bar2"></span></span>`:`<button class="tick" data-tick="${i}" aria-label="${s.done?"Untick":"Tick"} ${esc(s.text)}"><span class="dot"></span></button>`;
-      const body=editing?`<form data-form="edit" style="flex:1"><input name="text" value="${esc(s.text)}" required enterkeyhint="done" data-autofocus></form>`:`<span class="txt" data-txt="${i}">${esc(s.text)}${s.day||s.mins?`<span class="tags">${s.day?`<span class="tg">${esc(s.day===today()?"Today":short(s.day))}</span>`:""}${s.mins?`<span class="tg mins">${+s.mins}m</span>`:""}</span>`:""}</span>`;
+      const body=editing?`<form data-form="edit" style="flex:1"><input name="text" value="${esc(s.text)}" required enterkeyhint="done" data-autofocus></form>`:`<span class="txt" data-txt="${i}">${esc(s.text)}${s.day||s.mins||(!s.cp&&!s.done&&!done)?`<span class="tags">${s.day?`<button class="tg${!s.done&&s.day<today()?" late":!s.done&&s.day===today()?" now":""}" data-dchip="${i}" aria-label="Change date">${esc(s.day===today()?"Today":short(s.day))}</button>`:!s.cp&&!s.done&&!done?`<button class="tg add" data-dchip="${i}" aria-label="Give this step a date">+ date</button>`:""}${s.mins?`<span class="tg mins">${+s.mins}m</span>`:""}</span>`:""}</span>`;
       rows+=`<div class="${cls}" data-k="${i}"${cvar(s.color)}>${lead}${body}${s.draft&&!editing?`<button class="dkeep" data-keep="${i}">Keep</button><button class="x" data-del="${i}" aria-label="Remove">×</button>`:""}${s.star&&!editing?`<button class="starb" data-star="${i}" aria-label="Unstar">★</button>`:""}${ed?`<button class="x" data-del="${i}" aria-label="Remove">×</button>`:""}</div>`;
+      if(ui.dateEdit&&ui.dateEdit.id===p.id&&ui.dateEdit.k===i) rows+=`<div class="dedit"><input type="date" data-dein value="${esc(s.day||"")}"><button data-deq="0">Today</button><button data-deq="1">Tomorrow</button><button data-deq="7">Next week</button>${s.day?`<button data-deq="x">Clear</button>`:""}<button data-dex>Close</button></div>`;
       if(add&&add.at===i+1&&i<t.length-1) rows+=form(add);
       else if(ed&&i<t.length-1) rows+=`<button class="addcp" data-at="${i+1}">+ checkpoint here</button>`;
     });
@@ -634,6 +654,11 @@ function wire(c,p){
   c.querySelectorAll("[data-dq]").forEach(b=>b.onclick=()=>setDay(id,addDays(today(),+b.dataset.dq)));
   c.querySelectorAll("[data-pin]").forEach(b=>b.onclick=()=>newPin(b.dataset.pin,dayOf(p)<today()?today():dayOf(p)));
   c.querySelectorAll("[data-keep]").forEach(b=>b.onclick=()=>{const k=+b.dataset.keep;commit([upd(id,d=>{delete d.tasks[k].draft;delete d.askPT;fixStatus(d)})],"Kept.")});
+  c.querySelectorAll("[data-dchip]").forEach(b=>{ b.addEventListener("pointerdown",e=>e.stopPropagation()); b.onclick=e=>{e.stopPropagation(); if(blocked())return; const k=+b.dataset.dchip; ui.dateEdit=ui.dateEdit&&ui.dateEdit.id===id&&ui.dateEdit.k===k?null:{id,k}; render();}; });
+  const setStepDay=(v)=>{ const k=ui.dateEdit.k; ui.dateEdit=null; document.activeElement?.blur(); commit([upd(id,d=>{if(v)d.tasks[k].day=v;else delete d.tasks[k].day})],v?`${cur(id).tasks[k].text}: ${v===today()?"today":nice(v)}.`:"Date cleared."); };
+  c.querySelector("[data-dein]")?.addEventListener("change",e=>{ if(e.target.value) setStepDay(e.target.value); });
+  c.querySelectorAll("[data-deq]").forEach(b=>b.onclick=()=>setStepDay(b.dataset.deq==="x"?null:addDays(today(),+b.dataset.deq)));
+  c.querySelector("[data-dex]")?.addEventListener("click",()=>{ui.dateEdit=null;render()});
   c.querySelectorAll("[data-dk]").forEach(b=>b.onclick=()=>keepDrafts(id));
   c.querySelectorAll("[data-dc]").forEach(b=>b.onclick=()=>clearDrafts(id));
   c.querySelector("[data-dp]")?.addEventListener("click",()=>planOpen(id));
@@ -795,14 +820,14 @@ function endDrag(){
 }
 document.addEventListener("pointerup",endDrag); document.addEventListener("pointercancel",endDrag);
 let lastTap={id:null,t:0};
-document.addEventListener("click",e=>{
-  const colEl=e.target.closest(".col:not(.donecol)"); if(!colEl||e.target.closest(".srow,button,form,input")) return;
-  const steps=colEl.querySelector(".steps"), sb=steps.getBoundingClientRect(); if(e.clientY<sb.top||e.clientY>sb.bottom) return;
-  const id=steps.dataset.steps, now=Date.now();
-  if(lastTap.id===id&&now-lastTap.t<400){
-    let at=null; for(const r of steps.querySelectorAll(".srow")){const b=r.getBoundingClientRect(); if(e.clientY<b.top+b.height/2){at=+r.dataset.k;break}}
-    ui.adding={id,at,cp:false}; ui.open.add(id); lastTap={id:null,t:0}; render();
-  } else lastTap={id,t:now};
+document.addEventListener("pointerup",e=>{
+  if(drag?.on||pinch) { lastTap={id:null,t:0}; return; }
+  const colEl=e.target.closest(".col:not(.donecol):not(.pin):not(.mark)");
+  if(!colEl||e.target.closest(".tick,.name,.circle,.dayh,.thread,.menu,.plan,.dedit,.stepify,.threadf,.plusrow,.addcp,.drafts,.folded,a,textarea,[data-form=add],[data-form=rename],button:not(.txt)")) { lastTap={id:null,t:0}; return; }
+  const id=colEl.dataset.id, now=Date.now(), x=e.clientX, y=e.clientY; if(!id||!cur(id)) return;
+  if(lastTap.id===id&&now-lastTap.t<400&&Math.hypot(x-lastTap.x,y-lastTap.y)<40){ lastTap={id:null,t:0};
+    ui.edit=null; ui.adding=null; ui.sel=null; document.activeElement?.blur?.(); setTimeout(()=>soloToggle(id),0); }
+  else lastTap={id,t:now,x,y};
 });
 document.addEventListener("focusout",()=>setTimeout(()=>{if(ui.pending&&!typing())render()},250));
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&ui.sel){ui.sel=null;render()} });
@@ -916,6 +941,27 @@ async function openSweep(){
   catch(e){el.innerHTML='<div class="empty">Couldn\'t reach your Mind Sweep just now. Try again in a moment.</div>'}
 }
 $("#sweepBtn").onclick=openSweep; $("#sweepClose").onclick=()=>{$("#sweep").hidden=true};
+/* ---------- dates and light up ---------- */
+function isLit(s,i,nx){ const L=ui.light; if(!L||s.cp) return false;
+  if(L==="next") return i===nx;
+  if(s.done||s.draft||!s.day) return false;
+  if(L==="today") return s.day<=today();
+  if(L==="week") return s.day<=addDays(today(),6);
+  return s.day===L; }
+function renderLight(){
+  const b=$("#lightbar"); document.body.classList.toggle("dates",ui.dates); $("#zDates").classList.toggle("on",ui.dates);
+  document.body.classList.toggle("lighting",!!ui.light);
+  if(!ui.dates&&!ui.light){ b.hidden=true; b.replaceChildren(); return; }
+  b.hidden=false; const L=ui.light, pick=L&&/^\d{4}-/.test(L);
+  const count=fn=>sprints.filter(p=>p.status!=="done").reduce((n,p)=>{const t=p.tasks||[], nx=t.findIndex(x=>!x.cp&&!x.done&&!x.draft);return n+t.filter((s,i)=>fn(s,i,nx)).length},0);
+  const saved=ui.light; const n=k=>{ui.light=k; const c=count(isLit); ui.light=saved; return c;};
+  b.innerHTML=`<span>Light up</span><button data-l="next" class="${L==="next"?"on":""}">Next steps</button><button data-l="today" class="${L==="today"?"on":""}">Today · ${n("today")}</button><button data-l="week" class="${L==="week"?"on":""}">This week · ${n("week")}</button><input type="date" data-lpick value="${pick?esc(L):""}" aria-label="Light up a day" class="${pick?"on":""}">${L?`<button data-l="off">Off</button>`:""}`;
+  b.querySelectorAll("[data-l]").forEach(x=>x.onclick=()=>{ const k=x.dataset.l; ui.light=k==="off"||ui.light===k?null:k; render();
+    if(ui.light){ const c=count(isLit); say(ui.light==="next"?"Lit up: the next step on every line.":c?`Lit up ${c} step${c===1?"":"s"}.`:"Nothing dated for then yet. Turn on Dates and tap \"+ date\" on a step."); } });
+  b.querySelector("[data-lpick]").onchange=e=>{ const v=e.target.value; e.target.blur(); ui.light=v||null; render(); if(v){const c=count(isLit); say(`${nice(v)}: ${c} step${c===1?"":"s"}.`);} };
+}
+$("#zDates").onclick=()=>{ ui.dates=!ui.dates; try{localStorage.setItem("pt-dates",ui.dates?"1":"0")}catch(e){} if(!ui.dates){ui.dateEdit=null;} render(); say(ui.dates?"Dates on. Tap \"+ date\" on any step to schedule it.":"Dates hidden. Dated steps keep their date."); };
+
 /* ---------- guided tour ---------- */
 const LIVE='.col:not(.done):not(.donecol):not(.pin):not(.mini)';
 const TOUR=[
@@ -924,7 +970,9 @@ const TOUR=[
   {s:LIVE+" .dayh",t:"Days",x:"Lines sit on days: Catch up for anything overdue, then Today, then later days. Tap the day to move a line to another day."},
   {s:LIVE+" .srow:not(.done):not(.cp):not(.draft) .tick",t:"Tick a step",x:"Tap the dot to tick a step off. It goes straight onto your Done list, and its Mind Sweep item is marked done too."},
   {s:LIVE+" .srow:not(.cp) .txt",t:"Edit and hold",x:"Tap the words to change them. Hold a step to pick it, then colour it, give it a date or minutes, star it, or make it a trigger."},
+  {s:"#zDates",t:"Dates on steps",x:"Tap Dates to give any step its own date: tap \"+ date\" on the step. Then use Light up to glow the next steps, today, this week, or any day you pick."},
   {s:LIVE+" .plusrow",t:"Add steps",x:"Add another step here. A checkpoint is a small milestone that keeps later steps waiting until you reach it."},
+  {s:LIVE+" .steps",t:"Just this line",x:"Double-tap a line (between its steps) to see only that line. Double-tap it again and every line comes back."},
   {s:LIVE+" .circle",t:"Finish the line",x:"The circle fills in when every step is done. Finished lines move to the Done line on the left, so you can still see them."},
   {s:LIVE+" .name",t:"Name and menu",x:"Double-tap a line's name to rename it. Tap it once for more: Rename, Solo, Change day, Plan steps with PT, Colour, Put in calendar, and more. Drag the name sideways to reorder lines."},
   {s:"#zoombar",t:"Get around",x:"Zoom in and out like a video timeline with − and +, or pinch. Lanes groups lines by colour, Replay shows what you ticked on a past day, and Today jumps back to now."},
