@@ -144,6 +144,17 @@
   .planb button:not(.small){text-decoration:underline;text-underline-offset:3px}
   .drafts{margin-left:4px;font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
   .drafts button{color:var(--accent);font-weight:600}
+  .tour{position:fixed;inset:0;z-index:60}
+  .tour .spot{position:fixed;border-radius:12px;box-shadow:0 0 0 9999px rgba(18,20,20,.55);outline:2px solid var(--accent);outline-offset:2px;transition:all .25s ease;pointer-events:none}
+  .tour .spot.none{width:0;height:0;outline:0;left:50%;top:40%}
+  .tour .card{position:fixed;width:min(320px,calc(100vw - 24px));background:var(--surface);color:var(--ink);border-radius:16px;padding:16px 16px 12px;box-shadow:0 8px 30px rgba(0,0,0,.25);transition:top .25s ease,left .25s ease}
+  .tour h3{font-family:var(--head);font-size:15px;margin:0 0 6px}
+  .tour p{margin:0 0 12px;font-size:15px;line-height:1.4}
+  .tour .tb{display:flex;align-items:center;gap:12px}
+  .tour .tb .n{font-size:12px;color:var(--muted);margin-right:auto}
+  .tour .tb .skip{font-size:14px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+  .tour .tb .ok{background:var(--accent);color:var(--on-accent);border-radius:999px;padding:7px 20px;font-weight:600;font-size:15px}
+  .guideb{display:block;margin:10px auto 0;font-size:14px;color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:3px}
   .dkeep{font-size:12px;color:var(--accent);font-weight:600;padding:2px 4px}
   .col.pin{flex:0 0 96px;max-width:96px;padding-top:26px}
   body.zoomed .col.pin{flex:0 0 96px;zoom:1}
@@ -203,6 +214,7 @@
   <div class="viewbar" id="viewbar" hidden></div>
   <div class="nudge" id="nudge"></div>
   <p class="sum" id="sum"></p>
+  <button class="guideb" id="guideBtn">Show me how the T works</button>
   <details class="hint"><summary>How to use the T</summary>
     Tap a dot to tick. Tap the words to edit. Double-tap a line to add a step there.<br>
     Drag a step up, down or onto another line. Swipe it left to remove.<br>
@@ -901,6 +913,58 @@ async function openSweep(){
   catch(e){el.innerHTML='<div class="empty">Couldn\'t reach your Mind Sweep just now. Try again in a moment.</div>'}
 }
 $("#sweepBtn").onclick=openSweep; $("#sweepClose").onclick=()=>{$("#sweep").hidden=true};
+/* ---------- guided tour ---------- */
+const LIVE='.col:not(.done):not(.donecol):not(.pin):not(.mini)';
+const TOUR=[
+  {t:"Welcome to the T",x:"This is where your micro sprints live: short bursts of 5 to 90 minutes of focus. Tap OK to see how it works."},
+  {s:"#theT",t:"The T",x:"The bar across the top is home base. Every line hanging from it is one micro sprint. Tap the bar any time for focus mode, which shows only your next steps."},
+  {s:LIVE+" .dayh",t:"Days",x:"Lines sit on days: Catch up for anything overdue, then Today, then later days. Tap the day to move a line to another day."},
+  {s:LIVE+" .srow:not(.done):not(.cp):not(.draft) .tick",t:"Tick a step",x:"Tap the dot to tick a step off. It goes straight onto your Done list, and its Mind Sweep item is marked done too."},
+  {s:LIVE+" .srow:not(.cp) .txt",t:"Edit and hold",x:"Tap the words to change them. Hold a step to pick it, then colour it, give it a date or minutes, star it, or make it a trigger."},
+  {s:LIVE+" .plusrow",t:"Add steps",x:"Add another step here. A checkpoint is a small milestone that keeps later steps waiting until you reach it."},
+  {s:LIVE+" .circle",t:"Finish the line",x:"The circle fills in when every step is done. Finished lines move to the Done line on the left, so you can still see them."},
+  {s:LIVE+" .name",t:"The line's menu",x:"Tap a line's name for more: Solo, Change day, Plan steps with PT, Colour, Put in calendar, and more. Drag the name sideways to reorder lines."},
+  {s:"#zoombar",t:"Get around",x:"Zoom in and out like a video timeline with − and +, or pinch. Lanes groups lines by colour, Replay shows what you ticked on a past day, and Today jumps back to now."},
+  {s:"#newBtn",t:"New micro sprint",x:"Tap here to start a new line. Or tell PT \"make a micro sprint\" in chat."},
+  {s:"#sweepBtn",t:"From your Mind Sweep",x:"Pull open Mind Sweep items onto the T, as a new line or as a step on a line you already have."},
+  {t:"You're ready",x:"That's the T. Tap \"Show me how the T works\" at the bottom whenever you want this guide again."}];
+let tourAt=-1, tourEl=null, tourTimer=null;
+function tourTarget(st){ if(!st.s) return null; const el=document.querySelector(st.s); if(!el) return null; const r=el.getBoundingClientRect(); return r.width||r.height?el:null; }
+function tourPlace(){
+  if(tourAt<0||!tourEl) return; const st=TOUR[tourAt], el=tourTarget(st), spot=tourEl.querySelector(".spot"), card=tourEl.querySelector(".card");
+  const vw=innerWidth, vh=innerHeight, cw=card.offsetWidth, chh=card.offsetHeight;
+  if(!el){ spot.className="spot none"; spot.removeAttribute("style"); card.style.left=Math.max(12,(vw-cw)/2)+"px"; card.style.top=Math.max(12,(vh-chh)/2)+"px"; return; }
+  const r=el.getBoundingClientRect(), pad=6; spot.className="spot";
+  Object.assign(spot.style,{left:(r.left-pad)+"px",top:(r.top-pad)+"px",width:(r.width+pad*2)+"px",height:(r.height+pad*2)+"px"});
+  let top=r.bottom+14; if(top+chh>vh-12) top=r.top-chh-14; if(top<12) top=Math.min(vh-chh-12,r.bottom+14);
+  const left=Math.min(vw-cw-12,Math.max(12,r.left+r.width/2-cw/2));
+  card.style.left=left+"px"; card.style.top=Math.max(12,top)+"px";
+}
+function tourShow(i){
+  while(i<TOUR.length&&TOUR[i].s&&!document.querySelector(TOUR[i].s)) i++;
+  if(i>=TOUR.length){ tourEnd(); return; }
+  tourAt=i; const st=TOUR[i], el=tourTarget(st)||(st.s&&document.querySelector(st.s));
+  const shown=TOUR.filter(x=>!x.s||document.querySelector(x.s)), n=shown.indexOf(st)+1;
+  const card=tourEl.querySelector(".card");
+  card.innerHTML=`<h3>${esc(st.t)}</h3><p>${esc(st.x)}</p><div class="tb"><span class="n">${n} of ${shown.length}</span>${i<TOUR.length-1?`<button class="skip" data-ts>Skip</button>`:""}<button class="ok" data-tok>${i<TOUR.length-1?"OK":"Done"}</button></div>`;
+  card.querySelector("[data-tok]").onclick=()=>tourShow(tourAt+1);
+  card.querySelector("[data-ts]")?.addEventListener("click",tourEnd);
+  card.querySelector("[data-tok]").focus({preventScroll:true});
+  if(el) el.scrollIntoView({block:"nearest",inline:"center",behavior:"smooth"});
+  tourPlace(); setTimeout(tourPlace,350);
+}
+function tourStart(){
+  if(tourEl) tourEnd(); ui.menu=null; ui.sel=null; ui.adding=null; ui.edit=null; render();
+  tourEl=document.createElement("div"); tourEl.className="tour"; tourEl.setAttribute("role","dialog"); tourEl.setAttribute("aria-label","How the T works");
+  tourEl.innerHTML='<div class="spot none"></div><div class="card"></div>'; document.body.append(tourEl);
+  tourTimer=setInterval(tourPlace,400); tourShow(0);
+}
+function tourEnd(){ try{localStorage.setItem("pt-tour","1")}catch(e){} clearInterval(tourTimer); tourEl?.remove(); tourEl=null; tourAt=-1; }
+addEventListener("resize",tourPlace); addEventListener("scroll",tourPlace,true);
+document.addEventListener("keydown",e=>{ if(!tourEl) return; if(e.key==="Escape"){tourEnd();e.stopImmediatePropagation()} else if(e.key==="ArrowRight"){tourShow(tourAt+1);e.stopImmediatePropagation()} },true);
+$("#guideBtn").onclick=tourStart;
+let tourAuto=false;
+function maybeTour(){ if(tourAuto) return; tourAuto=true; let seen=false; try{seen=localStorage.getItem("pt-tour")==="1"}catch(e){} if(!seen) setTimeout(tourStart,700); }
 $("#newBtn").onclick=()=>{const f=$("#newSprint");f.hidden=!f.hidden;if(!f.hidden)f.name.focus()};
 $("#newSprint").onsubmit=e=>{ e.preventDefault(); if(!db) return; const f=e.target, n=newLine(f.name.value.trim());
   f.reset(); f.hidden=true; f.name.blur(); ui.adding={id:n.id,at:null,cp:false}; commit([n],"New line on the T. Add its first step."); };
@@ -916,7 +980,7 @@ $("#newSprint").onsubmit=e=>{ e.preventDefault(); if(!db) return; const f=e.targ
     if(!snap.metadata.fromCache) clearTimeout(timer);
     const all=snap.docs.map(d=>({id:d.id,...clone(d.data())}));
     sprints=all.filter(x=>x.kind!=="pin"); pins=all.filter(x=>x.kind==="pin");
-    render();
+    render(); if(sprints.length) maybeTour();
   },()=>{clearTimeout(timer);say("Couldn't load your sprints.")});
 })();
 </script>
