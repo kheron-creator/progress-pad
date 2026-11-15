@@ -65,7 +65,7 @@
   .col.mini .name{font-weight:500;color:var(--muted)}
   .meta{font-size:13px;color:var(--muted);margin-left:-11px}
   .menu{margin:4px 0 0 -11px;font-size:14px;display:flex;gap:10px;flex-wrap:wrap}
-  .menu button{text-decoration:underline;text-underline-offset:3px}
+  .menu button,.menu a{text-decoration:underline;text-underline-offset:3px;color:inherit}
   .rename{margin:8px 0 0 -11px;width:calc(100% + 11px)}
   .stepify{margin:8px 0 0 -11px;font-size:14px;display:flex;flex-direction:column;gap:6px;padding-right:8px}
   .stepify label,.stepify .or{color:var(--muted)}
@@ -219,7 +219,7 @@
     Tap a dot to tick. Tap the words to edit. Double-tap a line to add a step there.<br>
     Drag a step up, down or onto another line. Swipe it left to remove.<br>
     Hold a step to select it (or Ctrl/⌘-click), then copy or move to the next line.<br>
-    Drag a line's name sideways to reorder lines. Tap the name for more.<br>
+    Drag a line's name sideways to reorder lines. Double-tap the name to rename it. Tap it once for more.<br>
     Hold a step and tap "★ Star" to make it glow. Tap the ★ to unstar.<br>
     Tap a line's name, then "Name a thread" to label the line and link its thread.<br>
     Finished sprints move to the Done line on the left. Tap one to see its steps or reopen it.<br>
@@ -595,7 +595,7 @@ function col(p,hd){
   const cps=(p.tasks||[]).map((x,k)=>x.cp?k:-1).filter(k=>k>0&&k<(p.tasks||[]).length-1);
   c.innerHTML=`${dayBtn}<div class="steps" data-steps="${p.id}">${rows}</div>
     <button class="circle" data-circle aria-label="${done?(mini?"Show steps":"Hide steps"):"Mark complete"}">${TICK}</button>
-    ${menu==="rename"?`<form class="rename" data-form="rename"><input name="name" value="${esc(p.name)}" required data-autofocus></form>`:`<button class="name${ui.pick&&ui.pick.has(p.id)?" picked":""}" data-name>${esc(p.name)}</button>`}
+    ${menu==="rename"?`<form class="rename" data-form="rename"><input name="name" value="${esc(p.name)}" placeholder="Name this line" required enterkeyhint="done" data-autofocus></form>`:`<button class="name${ui.pick&&ui.pick.has(p.id)?" picked":""}" data-name>${esc(p.name)}</button>`}
     ${mini?"":`<div class="meta">${d} of ${st.length}${done?" · complete":""}${(()=>{const m=st.filter(x=>!x.done).reduce((n,x)=>n+(+x.mins||0),0);return m?` · ${m} min left`:""})()}${p.askPT?" · asked PT":""}</div>`}
     ${menu==="step"?`<div class="stepify"><form class="goal" data-form="goal"><label>Make "${esc(p.name)}" the first step towards:</label><input name="goal" placeholder="End goal" required data-autofocus><button class="small" type="submit">Save</button></form>
         ${others.length?`<div class="or">or add it as a step on</div><div class="where">${others.map(o=>`<button data-into="${esc(o.id)}">${esc(o.name)}</button>`).join("")}</div>`:""}
@@ -607,11 +607,12 @@ function col(p,hd){
       <form data-plan><textarea name="idea" rows="3" placeholder="${ch.msgs&&ch.msgs.length?"Tell PT what to change":"e.g. call them, send the deck, ask for a date"}" ${busy?"disabled":""} data-autofocus></textarea>
       <div class="planb"><button class="small" type="submit" ${busy?"disabled":""}>Send</button>${!(ch.msgs&&ch.msgs.length)?`<button type="button" data-pj ${busy?"disabled":""}>Just suggest</button>`:""}${nd?`<button type="button" data-dk>Keep all</button><button type="button" data-dc>Clear drafts</button>`:""}${ch.undo&&!busy?`<button type="button" data-pu>Undo</button>`:""}<button type="button" data-m="close">Close</button></div></form></div>`})():""}
     ${menu==="menu"?(ui.confirmDel===p.id?`<div class="menu">Remove line? <button data-yes>Yes</button><button data-no>No</button></div>`
-      :`<div class="menu">${done?"":`<button data-m="solo">Solo</button><button data-m="pick">Just these…</button><button data-m="hide">Hide</button>`}<button data-m="rename">Change end goal</button><button data-m="step">Make it a step</button><button data-m="thread">${p.thread?"Edit thread":"Name a thread"}</button><button data-m="colour">Colour</button>${done?"":`<button data-m="day">Change day</button><button data-m="suggest">Plan steps with PT</button><a href="${esc(calLink(p))}" target="_blank" rel="noopener">Put in calendar</a><button data-m="trim">${p.trim?"Unfold done steps":"Fold done steps"}</button>${cps.length?`<button data-m="split">Split at ${esc(p.tasks[cps[0]].text)}</button>`:""}<button data-m="join">Join with next line</button>`}${done?`<button data-m="reopen">Reopen</button>`:""}<button data-m="remove">Remove</button><button data-m="close">Done</button></div>`):""}`;
+      :`<div class="menu"><button data-m="rename"><b>Rename</b></button>${done?"":`<button data-m="solo">Solo</button><button data-m="pick">Just these…</button><button data-m="hide">Hide</button>`}<button data-m="step">Make it a step</button><button data-m="thread">${p.thread?"Edit thread":"Name a thread"}</button><button data-m="colour">Colour</button>${done?"":`<button data-m="day">Change day</button><button data-m="suggest">Plan steps with PT</button><a href="${esc(calLink(p))}" target="_blank" rel="noopener">Put in calendar</a><button data-m="trim">${p.trim?"Unfold done steps":"Fold done steps"}</button>${cps.length?`<button data-m="split">Split at ${esc(p.tasks[cps[0]].text)}</button>`:""}<button data-m="join">Join with next line</button>`}${done?`<button data-m="reopen">Reopen</button>`:""}<button data-m="remove">Remove</button><button data-m="close">Done</button></div>`):""}`;
   wire(c,p);
   return c;
 }
 const cps0=p=>(p.tasks||[]).findIndex((x,k)=>x.cp&&k>0&&k<(p.tasks||[]).length-1);
+let lastNameTap={id:null,t:0};
 function wire(c,p){
   const id=p.id;
   c.addEventListener("pointerdown",()=>{ui.focusId=id},true);
@@ -644,6 +645,8 @@ function wire(c,p){
   c.querySelector("[data-unfold]")?.addEventListener("click",()=>commit([upd(id,d=>{delete d.trim})],"Unfolded."));
   c.querySelector("[data-name]")?.addEventListener("click",()=>{if(blocked())return;
     if(ui.pick){ ui.pick.has(id)?ui.pick.delete(id):ui.pick.add(id); render(); return; }
+    const now=Date.now(), dbl=lastNameTap.id===id&&now-lastNameTap.t<400; lastNameTap={id,t:now};
+    if(dbl){ ui.menu={id,mode:"rename"}; ui.confirmDel=null; ui.adding=null; render(); return; }
     ui.menu=ui.menu?.id===id?null:{id,mode:"menu"};ui.confirmDel=null;ui.adding=null;render()});
   c.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{const m=b.dataset.m;
     if(m==="solo"){ setHidden(visibleLines().filter(o=>o.id!==id).map(o=>o.id),`Solo: ${p.name}. Tap Show all to see everything.`); return; }
@@ -672,7 +675,7 @@ function wire(c,p){
     let done=false;
     const finish=(v)=>{ if(done) return; done=true;
       if(kind==="edit"){ ui.edit=null; if(v&&v!==cur(id)?.tasks?.[k]?.text){commit([upd(id,d=>{d.tasks[k].text=v})],"Step updated.");return} }
-      if(kind==="rename"){ ui.menu=null; if(v&&v!==p.name){commit([upd(id,d=>{d.name=v})],"End goal updated.");return} }
+      if(kind==="rename"){ ui.menu=null; if(v&&v!==p.name){commit([upd(id,d=>{d.name=v})],`Renamed to ${v}.`);return} }
       render(); };
     f.onsubmit=e=>{e.preventDefault(); const v=inp.value.trim(); if(!v) return;
       if(kind==="add"){ const a=ui.adding, item=a.cp?{text:v,cp:true}:{text:v,done:false};
@@ -923,7 +926,7 @@ const TOUR=[
   {s:LIVE+" .srow:not(.cp) .txt",t:"Edit and hold",x:"Tap the words to change them. Hold a step to pick it, then colour it, give it a date or minutes, star it, or make it a trigger."},
   {s:LIVE+" .plusrow",t:"Add steps",x:"Add another step here. A checkpoint is a small milestone that keeps later steps waiting until you reach it."},
   {s:LIVE+" .circle",t:"Finish the line",x:"The circle fills in when every step is done. Finished lines move to the Done line on the left, so you can still see them."},
-  {s:LIVE+" .name",t:"The line's menu",x:"Tap a line's name for more: Solo, Change day, Plan steps with PT, Colour, Put in calendar, and more. Drag the name sideways to reorder lines."},
+  {s:LIVE+" .name",t:"Name and menu",x:"Double-tap a line's name to rename it. Tap it once for more: Rename, Solo, Change day, Plan steps with PT, Colour, Put in calendar, and more. Drag the name sideways to reorder lines."},
   {s:"#zoombar",t:"Get around",x:"Zoom in and out like a video timeline with − and +, or pinch. Lanes groups lines by colour, Replay shows what you ticked on a past day, and Today jumps back to now."},
   {s:"#newBtn",t:"New micro sprint",x:"Tap here to start a new line. Or tell PT \"make a micro sprint\" in chat."},
   {s:"#sweepBtn",t:"From your Mind Sweep",x:"Pull open Mind Sweep items onto the T, as a new line or as a step on a line you already have."},
