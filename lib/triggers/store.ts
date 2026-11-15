@@ -10,6 +10,8 @@ export type StoredTrigger = {
   name: string;
   emoji: string | null;
   source_key: string | null;
+  /** Optional web link the trigger opens, e.g. a MemoPad affirmation. */
+  link?: string | null;
 };
 
 export type StoredScenario = {
@@ -37,10 +39,24 @@ export type FlattenedDayTrigger = {
   id: string;
   name: string;
   emoji: string | null;
+  link: string | null;
   status: DateTriggerStatus;
   /** How many times it was done that day; 0 while todo. */
   timesDone: number;
 };
+
+/** Only plain web links are opened from a trigger. */
+export function safeTriggerLink(link: string | null | undefined) {
+  if (!link) {
+    return null;
+  }
+  try {
+    const url = new URL(link);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
 
 /** True when the database hasn't had the times_done migration yet. */
 export function isMissingTimesDone(error: { code?: string; message?: string } | null) {
@@ -109,7 +125,8 @@ export async function ensureOnboardingTriggers(
 export async function loadLibraryTriggers(supabase: Client) {
   const { data, error } = await supabase
     .from("triggers")
-    .select("id, name, emoji, source_key")
+    // "*" so the optional link column comes through once its migration is run
+    .select("*")
     .is("deleted_at", null)
     .order("created_at", { ascending: true });
 
@@ -566,6 +583,7 @@ export function flattenDayTriggers(
       id,
       name: trigger.name,
       emoji: trigger.emoji,
+      link: safeTriggerLink(trigger.link),
       status: achieved ? "achieved" : "todo",
       timesDone: achieved ? Math.max(1, timesDone[id] ?? 1) : 0,
     });
@@ -755,7 +773,7 @@ async function loadTriggersByIds(supabase: Client, ids: string[]) {
 
   const { data, error } = await supabase
     .from("triggers")
-    .select("id, name, emoji, source_key")
+    .select("*")
     .in("id", ids);
 
   if (error) {
