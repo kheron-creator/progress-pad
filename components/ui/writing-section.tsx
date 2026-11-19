@@ -67,6 +67,8 @@ type WritingSectionProps = {
   progressLabel?: string;
   accent?: string;
   sectionDragHandle?: ReactNode;
+  /** Shown between the composer and the list, e.g. a follow-up question about what was just added. */
+  notice?: ReactNode;
   className?: string;
 };
 
@@ -219,6 +221,7 @@ export function WritingSection({
   progressLabel,
   accent = "var(--pp-bondi-blue-400)",
   sectionDragHandle,
+  notice,
   className,
 }: WritingSectionProps) {
   const dndId = useId();
@@ -392,6 +395,7 @@ export function WritingSection({
           rows={4}
         />
       )}
+      {notice}
       {items.length > 0 ? (
         sortable ? (
           <DndContext

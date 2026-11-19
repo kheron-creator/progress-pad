@@ -329,6 +329,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      micro_sprints: {
+        Row: {
+          user_id: string;
+          id: string;
+          data: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          id: string;
+          data?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          id?: string;
+          data?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       notifications: {
         Row: {
           id: string;
