@@ -59,6 +59,7 @@ import { ToastRegion, useToasts } from "@/components/ui/toast-region";
 import { UndoSnackbar, useUndoSnackbar } from "@/components/ui/undo-snackbar";
 import { TriggerCard } from "@/components/ui/trigger-card";
 import { WritingSection, type WritingSectionItem } from "@/components/ui/writing-section";
+import { MyAffirmations } from "@/components/app/my-affirmations";
 import { useSessionStore } from "@/components/app/session-store-provider";
 import { useRegisterUnsavedLeave } from "@/components/app/unsaved-leave-provider";
 import { createClient } from "@/lib/supabase/client";
@@ -1785,6 +1786,7 @@ export function HomePage() {
           </div>
         </SortableContext>
       </DndContext>
+      <MyAffirmations />
       {celebrateName ? (
         <p
           ref={celebrateNoteRef}
