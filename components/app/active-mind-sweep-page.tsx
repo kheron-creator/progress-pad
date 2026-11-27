@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { MindSweepPopOutButton } from "@/components/app/mind-sweep-float";
 import { useSessionStore } from "@/components/app/session-store-provider";
 import { useRegisterUnsavedLeave } from "@/components/app/unsaved-leave-provider";
 import { AddMindSweepForm } from "@/components/ui/add-mind-sweep-form";
@@ -505,10 +506,13 @@ export function ActiveMindSweepPage() {
               </Text>
             </div>
           </div>
-          <Button size="md" className="shrink-0 self-start" onClick={openComposer}>
-            <PlusIcon size={16} />
-            {ACTIVE_MIND_SWEEP.newLabel}
-          </Button>
+          <div className="flex shrink-0 flex-wrap items-center gap-2 self-start">
+            <MindSweepPopOutButton />
+            <Button size="md" onClick={openComposer}>
+              <PlusIcon size={16} />
+              {ACTIVE_MIND_SWEEP.newLabel}
+            </Button>
+          </div>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {stats.map((stat) => (

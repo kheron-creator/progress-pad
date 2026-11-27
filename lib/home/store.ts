@@ -57,6 +57,11 @@ export async function loadHomeWriting(supabase: Client) {
   };
 }
 
+/** Fresh copy of every Mind Sweep item, grouped by day (used to keep pop-outs in sync). */
+export async function loadMindSweepByDate(supabase: Client) {
+  return groupMindSweepByDate(await loadMindSweepItems(supabase));
+}
+
 export async function addWritingEntry(
   supabase: Client,
   input: { onDate: string; kind: WritingKind; title: string; notes?: string },
